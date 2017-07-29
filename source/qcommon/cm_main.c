@@ -66,7 +66,7 @@ static void CM_Clear( cmodel_state_t *cms ) {
 
 	if( cms->map_faces ) {
 		for( i = 0; i < cms->numfaces; i++ )
-			Mem_Free( cms->map_faces[i].facets );
+			Mem_Free( cms->map_faces[i].verts );
 		Mem_Free( cms->map_faces );
 		cms->map_faces = NULL;
 		cms->numfaces = 0;
@@ -133,6 +133,12 @@ static void CM_Clear( cmodel_state_t *cms ) {
 		Mem_Free( cms->map_brushes );
 		cms->map_brushes = NULL;
 		cms->numbrushes = 0;
+	}
+
+	if( cms->numvertexes ) {
+		Mem_Free( cms->map_verts );
+		cms->map_verts = NULL;
+		cms->numvertexes = 0;
 	}
 
 	if( cms->map_pvs ) {

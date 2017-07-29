@@ -61,8 +61,11 @@ typedef struct {
 
 	vec3_t mins, maxs;
 
-	int numfacets;
-	cbrush_t *facets;
+	int numtriangles;
+	int *elems;
+
+	int numverts;
+	vec3_t *verts;
 } cface_t;
 
 typedef struct {

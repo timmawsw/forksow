@@ -191,13 +191,13 @@ static int CM_CreateFacetFromPoints( cmodel_state_t *cms, cbrush_t *facet, vec3_
 static void CM_CreatePatch( cmodel_state_t *cms, cface_t *patch, cshaderref_t *shaderref, vec3_t *verts, int *patch_cp ) {
 	int step[2], size[2], flat[2];
 	vec3_t *patchpoints;
-	int i, j, k,u, v;
-	int numsides, totalsides;
-	cbrush_t *facets, *facet;
+	int i, /*j, k, */u, v;
+	//int numsides, totalsides;
+	int *elems;
 	vec3_t *points;
-	vec3_t tverts[4];
+	//vec3_t tverts[4];
 	uint8_t *data;
-	cplane_t *brushplanes;
+	//cplane_t *brushplanes;
 
 	// find the degree of subdivision in the u and v directions
 	Patch_GetFlatness( CM_SUBDIV_LEVEL, ( vec_t * )verts[0], 3, patch_cp, flat );
@@ -215,89 +215,33 @@ static void CM_CreatePatch( cmodel_state_t *cms, cface_t *patch, cshaderref_t *s
 	Patch_RemoveLinearColumnsRows( patchpoints[0], 3, &size[0], &size[1], 0, NULL, NULL );
 
 	data = Mem_Alloc( cms->mempool, size[0] * size[1] * sizeof( vec3_t ) +
-					  ( size[0] - 1 ) * ( size[1] - 1 ) * 2 * ( sizeof( cbrush_t ) + 32 * sizeof( cplane_t ) ) );
+					  ( size[0] - 1 ) * ( size[1] - 1 ) * 6 );
 
 	points = ( vec3_t * )data; data += size[0] * size[1] * sizeof( vec3_t );
-	facets = ( cbrush_t * )data; data += ( size[0] - 1 ) * ( size[1] - 1 ) * 2 * sizeof( cbrush_t );
-	brushplanes = ( cplane_t * )data; data += ( size[0] - 1 ) * ( size[1] - 1 ) * 2 * MAX_FACET_PLANES * sizeof( cplane_t );
+	elems = ( int * )data;
+
+	patch->numverts = size[0] * size[1];
+	patch->verts = points;
+	patch->numtriangles = ( size[0] - 1 ) * ( size[1] - 1 ) * 2;
+	patch->elems = elems;
+	ClearBounds( patch->mins, patch->maxs );
 
 	// fill in
 	memcpy( points, patchpoints, size[0] * size[1] * sizeof( vec3_t ) );
 	Mem_TempFree( patchpoints );
 
-	totalsides = 0;
-	patch->numfacets = 0;
-	patch->facets = NULL;
-	ClearBounds( patch->mins, patch->maxs );
-
-	// create a set of facets
-	for( v = 0; v < size[1] - 1; v++ ) {
+	for( v = 0, i = 0; v < size[1] - 1; v++ ) {
 		for( u = 0; u < size[0] - 1; u++ ) {
 			i = v * size[0] + u;
-			VectorCopy( points[i], tverts[0] );
-			VectorCopy( points[i + size[0]], tverts[1] );
-			VectorCopy( points[i + size[0] + 1], tverts[2] );
-			VectorCopy( points[i + 1], tverts[3] );
-
-			for( i = 0; i < 4; i++ )
-				AddPointToBounds( tverts[i], patch->mins, patch->maxs );
-
-			// try to create one facet from a quad
-			numsides = CM_CreateFacetFromPoints( cms, &facets[patch->numfacets], tverts, 4, shaderref, brushplanes + totalsides );
-			if( !numsides ) { // create two facets from triangles
-				VectorCopy( tverts[3], tverts[2] );
-				numsides = CM_CreateFacetFromPoints( cms, &facets[patch->numfacets], tverts, 3, shaderref, brushplanes + totalsides );
-				if( numsides ) {
-					totalsides += numsides;
-					patch->numfacets++;
-				}
-
-				VectorCopy( tverts[2], tverts[0] );
-				VectorCopy( points[v * size[0] + u + size[0] + 1], tverts[2] );
-				numsides = CM_CreateFacetFromPoints( cms, &facets[patch->numfacets], tverts, 3, shaderref, brushplanes + totalsides );
-			}
-
-			if( numsides ) {
-				totalsides += numsides;
-				patch->numfacets++;
-			}
+			elems[0] = i;
+			elems[1] = i + size[0];
+			elems[2] = i + 1;
+			elems[3] = i + 1;
+			elems[4] = i + size[0];
+			elems[5] = i + size[0] + 1;
+			elems += 6;
 		}
 	}
-
-	if( patch->numfacets ) {
-		uint8_t *fdata;
-
-		fdata = Mem_Alloc( cms->mempool, patch->numfacets * sizeof( cbrush_t ) + totalsides * ( sizeof( cbrushside_t ) + sizeof( cplane_t ) ) );
-
-		patch->facets = ( cbrush_t * )fdata; fdata += patch->numfacets * sizeof( cbrush_t );
-		memcpy( patch->facets, facets, patch->numfacets * sizeof( cbrush_t ) );
-		for( i = 0, k = 0, facet = patch->facets; i < patch->numfacets; i++, facet++ ) {
-			cplane_t *planes;
-			cbrushside_t *s;
-
-			facet->brushsides = ( cbrushside_t * )fdata; fdata += facet->numsides * sizeof( cbrushside_t );
-			planes = ( cplane_t * )fdata; fdata += facet->numsides * sizeof( cplane_t );
-
-			for( j = 0, s = facet->brushsides; j < facet->numsides; j++, s++ ) {
-				planes[j] = brushplanes[k++];
-
-				s->plane = &planes[j];
-				SnapPlane( s->plane->normal, &s->plane->dist );
-				CategorizePlane( s->plane );
-				s->surfFlags = shaderref->flags;
-			}
-		}
-
-		patch->contents = shaderref->contents;
-
-		for( i = 0; i < 3; i++ ) {
-			// spread the mins / maxs by a pixel
-			patch->mins[i] -= 1;
-			patch->maxs[i] += 1;
-		}
-	}
-
-	Mem_Free( points );
 }
 
 /*
@@ -470,8 +414,10 @@ static void CMod_LoadFaces( cmodel_state_t *cms, lump_t *l ) {
 
 	for( i = 0; i < count; i++, in++, out++ ) {
 		out->contents = 0;
-		out->numfacets = 0;
-		out->facets = NULL;
+		out->numtriangles = 0;
+		out->numverts = 0;
+		//out->numfacets = 0;
+		//out->facets = NULL;
 		if( LittleLong( in->facetype ) != FACETYPE_PATCH ) {
 			continue;
 		}
@@ -501,8 +447,10 @@ static void CMod_LoadFaces_RBSP( cmodel_state_t *cms, lump_t *l ) {
 
 	for( i = 0; i < count; i++, in++, out++ ) {
 		out->contents = 0;
-		out->numfacets = 0;
-		out->facets = NULL;
+		out->numtriangles = 0;
+		out->numverts = 0;
+		//out->numfacets = 0;
+		//out->facets = NULL;
 		if( LittleLong( in->facetype ) != FACETYPE_PATCH ) {
 			continue;
 		}
@@ -617,7 +565,7 @@ static void CMod_LoadMarkFaces( cmodel_state_t *cms, lump_t *l ) {
 * CMod_LoadLeafs
 */
 static void CMod_LoadLeafs( cmodel_state_t *cms, lump_t *l ) {
-	int i, j, k;
+	int i, j/*, k*/;
 	int count;
 	cleaf_t *out;
 	dleaf_t *in;
@@ -646,7 +594,7 @@ static void CMod_LoadLeafs( cmodel_state_t *cms, lump_t *l ) {
 		// OR brushes' contents
 		for( j = 0; j < out->nummarkbrushes; j++ )
 			out->contents |= out->markbrushes[j]->contents;
-
+#if 0
 		// exclude markfaces that have no facets
 		// so we don't perform this check at runtime
 		for( j = 0; j < out->nummarkfaces; ) {
@@ -661,6 +609,7 @@ static void CMod_LoadLeafs( cmodel_state_t *cms, lump_t *l ) {
 			}
 			j = k + 1;
 		}
+#endif
 
 		// OR patches' contents
 		for( j = 0; j < out->nummarkfaces; j++ )
@@ -898,10 +847,6 @@ void CM_LoadQ3BrushModel( cmodel_state_t *cms, void *parent, void *buf, bspForma
 	CMod_LoadEntityString( cms, &header.lumps[LUMP_ENTITIES] );
 
 	FS_FreeFile( buf );
-
-	if( cms->numvertexes ) {
-		Mem_Free( cms->map_verts );
-	}
 }
 
 void CM_BoundBrush( cmodel_state_t *cms, cbrush_t *brush ) {
