@@ -33,102 +33,86 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 *
 */
 
-const gsitem_t itemdefs[] = {
-	{ }, // weapons start from 1
-
+const Item itemdefs[] = {
 	{
-		WEAP_GUNBLADE, // item tag, weapon model for weapons
-		IT_WEAPON,
+		Item_Gunblade,
 
 		"Knife", "gb",
 		RGB8( 255, 255, 255 ),
 		"Knife people in the face",
 		0,
 
-		AMMO_GUNBLADE,
 		NULL, NULL, NULL
 	},
 
 	{
-		WEAP_MACHINEGUN,
-		IT_WEAPON,
+		Item_MachineGun,
 
 		"AK-69", "mg",
 		RGB8( 254, 235, 98 ),
 		"Shoots fast direct bullets touching enemies at any range",
 		100,
 
-		AMMO_BULLETS,
 		NULL, NULL, NULL
 	},
 
 	{
-		WEAP_RIOTGUN,
-		IT_WEAPON,
+		Item_Shotgun,
 
 		"Shotgun", "rg",
 		RGB8( 255, 172, 30 ),
 		"Basically a shotgun",
 		100,
 
-		AMMO_SHELLS,
 		NULL, NULL, NULL
 	},
 
 	{
-		WEAP_GRENADELAUNCHER,
-		IT_WEAPON,
+		Item_GrenadeLauncher,
 
 		"Grenades", "gl",
 		RGB8( 62, 141, 255 ),
 		"Deprecated gun, enjoy it while it lasts nerds",
 		100,
 
-		AMMO_GRENADES,
 		PATH_GRENADE_MODEL,
 		NULL, NULL
 	},
 
 	{
-		WEAP_ROCKETLAUNCHER,
-		IT_WEAPON,
+		Item_RocketLauncher,
 
 		"Rockets", "rl",
 		RGB8( 255, 58, 66 ),
 		"Shoots slow moving rockets that deal damage in an area and push bodies away",
 		200,
 
-		AMMO_ROCKETS,
 		PATH_ROCKET_MODEL,
 		S_WEAPON_ROCKET_FLY,
 		NULL
 	},
 
 	{
-		WEAP_PLASMAGUN,
-		IT_WEAPON,
+		Item_Plasma,
 
 		"Plasma", "pg",
 		RGB8( 172, 80, 255 ),
 		"Shoots fast projectiles that deal damage in an area",
 		100,
 
-		AMMO_PLASMA,
 		PATH_PLASMA_MODEL,
 		S_WEAPON_PLASMAGUN_FLY,
 		NULL
 	},
 
 	{
-		WEAP_LASERGUN,
-		IT_WEAPON,
+		Item_Laser,
 
 		"Laser", "lg",
 		RGB8( 82, 252, 95 ),
 		"Shoots a continuous trail doing quick but low damage at a certain range",
 		200,
 
-		AMMO_LASERS,
 		NULL,
 		S_WEAPON_LASERGUN_HUM " "
 			S_WEAPON_LASERGUN_STOP " "
@@ -137,196 +121,67 @@ const gsitem_t itemdefs[] = {
 	},
 
 	{
-		WEAP_ELECTROBOLT,
-		IT_WEAPON,
+		Item_Railgun,
 
 		"Railgun", "eb",
 		RGB8( 80, 243, 255 ),
 		"Shoots a direct laser hit doing pretty high damage",
 		200,
 
-		AMMO_BOLTS,
 		NULL,
 		S_WEAPON_ELECTROBOLT_HIT,
 		NULL
 	},
 
-	//------------------------
-	// AMMO ITEMS
-	//------------------------
+	{ Item_WeaponCount },
 
-	{ AMMO_GUNBLADE },
-	{ AMMO_BULLETS },
-	{ AMMO_SHELLS },
-	{ AMMO_GRENADES },
-	{ AMMO_ROCKETS },
-	{ AMMO_PLASMA },
-	{ AMMO_LASERS },
-	{ AMMO_BOLTS },
+	{ Item_Bomb },
 
-	// end of list marker
-	{ },
+	{
+		Item_FakeBomb,
+
+		"Dummy bomb", "dummybomb",
+		RGB8( 255, 100, 255 ),
+		"Hello",
+		100,
+
+		NULL, NULL, NULL
+	},
 };
 
-// +1 for the { } at the end
-STATIC_ASSERT( ARRAY_COUNT( itemdefs ) == GS_MAX_ITEM_TAGS + 1 );
+STATIC_ASSERT( ARRAY_COUNT( itemdefs ) == Item_Count );
 
-//====================================================================
-
-/*
-* GS_FindItemByTag
-*/
-const gsitem_t *GS_FindItemByTag( const int tag ) {
-	assert( tag >= 0 );
-	assert( tag < GS_MAX_ITEM_TAGS );
-	assert( tag == itemdefs[ tag ].tag );
-	return &itemdefs[ tag ];
+const Item * GS_FindItemByType( ItemType type ) {
+	assert( type >= 0 && type < Item_Count );
+	assert( type == itemdefs[ type ].type );
+	return &itemdefs[ type ];
 }
 
-/*
-* GS_FindItemByName
-*/
-const gsitem_t *GS_FindItemByName( const char *name ) {
-	if( !name ) {
-		return NULL;
-	}
-
-	for( const gsitem_t * it = &itemdefs[1]; it->tag != 0; it++ ) {
-		if( it->name != NULL && !Q_stricmp( name, it->name ) )
-			return it;
-		if( it->shortname != NULL && !Q_stricmp( name, it->shortname ) )
-			return it;
+const Item * GS_FindItemByName( const char * name ) {
+	for( size_t i = 0; i < ARRAY_COUNT( itemdefs ); i++ ) {
+		if( itemdefs[ i ].name == NULL )
+			continue;
+		if( Q_stricmp( name, itemdefs[ i ].name ) == 0 )
+			return &itemdefs[ i ];
+		if( Q_stricmp( name, itemdefs[ i ].shortname ) == 0 )
+			return &itemdefs[ i ];
 	}
 
 	return NULL;
 }
 
-/*
-* GS_Cmd_UseItem
-*/
-const gsitem_t *GS_Cmd_UseItem( player_state_t *playerState, const char *string, int typeMask ) {
-	const gsitem_t *item = NULL;
-
-	assert( playerState );
-
-	if( playerState->pmove.pm_type >= PM_SPECTATOR ) {
-		return NULL;
+const bool GS_CanEquip( const player_state_t * playerState, ItemType type ) {
+	if( !playerState->inventory[ type ] ) {
+		return false;
 	}
 
-	if( !string || !string[0] ) {
-		return NULL;
+	if( !( playerState->pmove.stats[ PM_STAT_FEATURES ] & PMFEAT_WEAPONSWITCH ) ) {
+		return false;
 	}
 
-	if( Q_isdigit( string ) ) {
-		int tag = atoi( string );
-		item = GS_FindItemByTag( tag );
-	} else {
-		item = GS_FindItemByName( string );
+	if( type == playerState->stats[ STAT_PENDING_WEAPON ] ) {
+		return false;
 	}
 
-	if( !item ) {
-		return NULL;
-	}
-
-	if( typeMask && !( item->type & typeMask ) ) {
-		return NULL;
-	}
-
-	// we don't have this item in the inventory
-	if( !playerState->inventory[item->tag] ) {
-		if( gs.module == GS_MODULE_CGAME && !( item->type & IT_WEAPON ) ) {
-			gs.api.Printf( "Item %s is not in inventory\n", item->name );
-		}
-		return NULL;
-	}
-
-	// see if we can use it
-
-	if( item->type & IT_WEAPON ) {
-		if( !( playerState->pmove.stats[PM_STAT_FEATURES] & PMFEAT_WEAPONSWITCH ) ) {
-			return NULL;
-		}
-
-		if( item->tag == playerState->stats[STAT_PENDING_WEAPON] ) { // it's already being loaded
-			return NULL;
-		}
-
-		// check for need of any kind of ammo/fuel/whatever
-		if( item->ammo_tag != AMMO_NONE ) {
-			gs_weapon_definition_t *weapondef = GS_GetWeaponDef( item->tag );
-
-			if( weapondef ) {
-				// do we have any of these ammos ?
-				if( playerState->inventory[item->ammo_tag] >= weapondef->firedef.usage_count ) {
-					return item;
-				}
-			}
-
-			return NULL;
-		}
-
-		return item; // one of the weapon modes doesn't require ammo to be fired
-	}
-
-	return NULL;
-}
-
-/*
-* GS_Cmd_UseWeaponStep_f
-*/
-static const gsitem_t *GS_Cmd_UseWeaponStep_f( player_state_t *playerState, int step, int predictedWeaponSwitch ) {
-	const gsitem_t *item;
-	int curSlot, newSlot;
-
-	assert( playerState );
-
-	if( playerState->pmove.pm_type >= PM_SPECTATOR ) {
-		return NULL;
-	}
-
-	if( !( playerState->pmove.stats[PM_STAT_FEATURES] & PMFEAT_WEAPONSWITCH ) ) {
-		return NULL;
-	}
-
-	if( step != -1 && step != 1 ) {
-		step = 1;
-	}
-
-	if( predictedWeaponSwitch && predictedWeaponSwitch != playerState->stats[STAT_PENDING_WEAPON] ) {
-		curSlot = predictedWeaponSwitch;
-	} else {
-		curSlot = playerState->stats[STAT_PENDING_WEAPON];
-	}
-
-	curSlot = Clamp( 0, curSlot, WEAP_TOTAL - 1 );
-	newSlot = curSlot;
-	do {
-		newSlot += step;
-		if( newSlot >= WEAP_TOTAL ) {
-			newSlot = 0;
-		}
-		if( newSlot < 0 ) {
-			newSlot = WEAP_TOTAL - 1;
-		}
-
-		if( ( item = GS_Cmd_UseItem( playerState, va( "%i", newSlot ), IT_WEAPON ) ) != NULL ) {
-			return item;
-		}
-	} while( newSlot != curSlot );
-
-	return NULL;
-}
-
-/*
-* GS_Cmd_NextWeapon_f
-*/
-const gsitem_t *GS_Cmd_NextWeapon_f( player_state_t *playerState, int predictedWeaponSwitch ) {
-	return GS_Cmd_UseWeaponStep_f( playerState, 1, predictedWeaponSwitch );
-}
-
-/*
-* GS_Cmd_PrevWeapon_f
-*/
-const gsitem_t *GS_Cmd_PrevWeapon_f( player_state_t *playerState, int predictedWeaponSwitch ) {
-	return GS_Cmd_UseWeaponStep_f( playerState, -1, predictedWeaponSwitch );
+	return true;
 }

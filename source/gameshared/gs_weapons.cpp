@@ -127,24 +127,14 @@ found:
 }
 
 /*
-* GS_FiredefForPlayerState
-*/
-firedef_t *GS_FiredefForPlayerState( player_state_t *playerState, int checkweapon ) {
-	gs_weapon_definition_t *weapondef = GS_GetWeaponDef( checkweapon );
-
-	return &weapondef->firedef;
-}
-
-/*
 * GS_CheckAmmoInWeapon
 */
 bool GS_CheckAmmoInWeapon( player_state_t *playerState, int checkweapon ) {
-	firedef_t *firedef = GS_FiredefForPlayerState( playerState, checkweapon );
-
 	if( checkweapon != WEAP_NONE && !playerState->inventory[checkweapon] ) {
 		return false;
 	}
 
+	const firedef_t * firedef = GS_GetWeaponDef( checkweapon )->firedef;
 	if( !firedef->usage_count || firedef->ammo_id == AMMO_NONE ) {
 		return true;
 	}
@@ -180,11 +170,7 @@ int GS_ThinkPlayerWeapon( player_state_t *playerState, int buttons, int msecs, i
 		goto done;
 	}
 
-	if( playerState->stats[STAT_WEAPON_TIME] > 0 ) {
-		playerState->stats[STAT_WEAPON_TIME] -= msecs;
-	} else {
-		playerState->stats[STAT_WEAPON_TIME] = 0;
-	}
+	playerState->stats[STAT_WEAPON_TIME] = Max2( 0, playerState->stats[ STAT_WEAPON_TIME ] - msecs );
 
 	firedef = GS_FiredefForPlayerState( playerState, playerState->stats[STAT_WEAPON] );
 
@@ -211,16 +197,12 @@ int GS_ThinkPlayerWeapon( player_state_t *playerState, int buttons, int msecs, i
 
 	// there is a weapon to be changed
 	if( playerState->stats[STAT_WEAPON] != playerState->stats[STAT_PENDING_WEAPON] ) {
-		if( ( playerState->weaponState == WEAPON_STATE_READY ) ||
-			( playerState->weaponState == WEAPON_STATE_DROPPING ) ||
-			( playerState->weaponState == WEAPON_STATE_ACTIVATING ) ) {
-			if( playerState->weaponState != WEAPON_STATE_DROPPING ) {
-				playerState->weaponState = WEAPON_STATE_DROPPING;
-				playerState->stats[STAT_WEAPON_TIME] += firedef->weapondown_time;
+		if( playerState->weaponState == WEAPON_STATE_READY || playerState->weaponState == WEAPON_STATE_ACTIVATING ) {
+			playerState->weaponState = WEAPON_STATE_DROPPING;
+			playerState->stats[STAT_WEAPON_TIME] += firedef->weapondown_time;
 
-				if( firedef->weapondown_time ) {
-					gs.api.PredictedEvent( playerState->POVnum, EV_WEAPONDROP, 0 );
-				}
+			if( firedef->weapondown_time ) {
+				gs.api.PredictedEvent( playerState->POVnum, EV_WEAPONDROP, 0 );
 			}
 		}
 	}

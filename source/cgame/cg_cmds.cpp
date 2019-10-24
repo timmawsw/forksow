@@ -444,6 +444,32 @@ static void CG_Cmd_UseItem_f( void ) {
 	CG_UseItem( trap_Cmd_Args() );
 }
 
+static const Item * CG_UseWeaponStep( player_state_t * playerState, bool next, ItemType predicted_equipped_item ) {
+	if( predicted_equipped_item < Item_FirstWeapon || predicted_equipped_item > Item_LastWeapon ) {
+		return GS_FindItemByType( cg.lastWeapon );
+	}
+
+	ItemType weapon = predicted_equipped_item;
+	while( true ) {
+		weapon += next ? 1 : -1;
+		if( weapon < Item_FirstWeapon ) {
+			weapon += Item_WeaponCount;
+		}
+		if( weapon > Item_LastWeapon ) {
+			weapon -= Item_WeaponCount;
+		}
+
+		if( weapon == predicted_equipped_item )
+			break;
+
+		if( GS_CanEquip( playerState, weapon ) ) {
+			return GS_FindItemByType( weapon );
+		}
+	}
+
+	return NULL;
+}
+
 /*
 * CG_Cmd_NextWeapon_f
 */
@@ -459,7 +485,7 @@ static void CG_Cmd_NextWeapon_f( void ) {
 		return;
 	}
 
-	item = GS_Cmd_NextWeapon_f( &cg.frame.playerState, cg.predictedWeaponSwitch );
+	item = CG_UseWeaponStep( &cg.frame.playerState, 1, cg.predictedWeaponSwitch );
 	if( item ) {
 		CG_Predict_ChangeWeapon( item->tag );
 		trap_Cmd_ExecuteText( EXEC_NOW, va( "cmd use %i", item->tag ) );
@@ -482,7 +508,7 @@ static void CG_Cmd_PrevWeapon_f( void ) {
 		return;
 	}
 
-	item = GS_Cmd_PrevWeapon_f( &cg.frame.playerState, cg.predictedWeaponSwitch );
+	item = CG_UseWeaponStep( &cg.frame.playerState, -1, cg.predictedWeaponSwitch );
 	if( item ) {
 		CG_Predict_ChangeWeapon( item->tag );
 		trap_Cmd_ExecuteText( EXEC_NOW, va( "cmd use %i", item->tag ) );

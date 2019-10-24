@@ -208,7 +208,7 @@ typedef struct {
 
 	const Material * shaderTick;
 
-	const Material * shaderWeaponIcon[WEAP_TOTAL];
+	const Material * shaderWeaponIcon[ Item_WeaponCount ];
 	const Material * shaderKeyIcon[KEYICON_TOTAL];
 
 	const Material * shaderAlive;
@@ -308,9 +308,9 @@ typedef struct {
 	char configStrings[MAX_CONFIGSTRINGS][MAX_CONFIGSTRING_CHARS];
 	char baseConfigStrings[MAX_CONFIGSTRINGS][MAX_CONFIGSTRING_CHARS];
 
-	char weaponModels[WEAP_TOTAL][MAX_QPATH];
+	char weaponModels[ Item_WeaponCount ][MAX_QPATH];
 	int numWeaponModels;
-	weaponinfo_t *weaponInfos[WEAP_TOTAL];    // indexed list of weapon model infos
+	weaponinfo_t *weaponInfos[ Item_WeaponCount ];    // indexed list of weapon model infos
 	orientation_t weaponItemTag;
 
 	cg_clientInfo_t clientInfo[MAX_CLIENTS];

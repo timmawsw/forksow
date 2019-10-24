@@ -392,7 +392,18 @@ typedef struct {
 	float viewheight;
 	float fov;                  // horizontal field of view (unused)
 
-	int inventory[MAX_ITEMS];
+	// BitArray items;
+        //
+	// struct GrenadeInfo { short count; };
+	// struct RechargableCloakingDeviceInfo { float energy; };
+        //
+	// WeaponInfo weapons[ WEAP_TOTAL ];
+
+	u8 ammos[MAX_WEAPONS];
+	bool weapons[MAX_WEAPONS];
+
+	bool items[MAX_ITEMS];
+
 	short stats[PS_MAX_STATS];  // fast status bar updates
 	uint32_t plrkeys;           // infos on the pressed keys of chased player (self if not chasing)
 	uint8_t weaponState;

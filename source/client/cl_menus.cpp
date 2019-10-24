@@ -58,7 +58,7 @@ static int selected_map;
 
 static GameMenuState gamemenu_state;
 static constexpr int MAX_CASH = 500;
-static bool selected_weapons[ WEAP_TOTAL ];
+static bool selected_weapons[ Item_WeaponCount ];
 
 static SettingsState settings_state;
 static bool reset_video_settings;
@@ -318,8 +318,8 @@ static void SettingsKeys() {
 	ImGui::Text( "Specific weapons" );
 	ImGui::Separator();
 
-	for( int i = WEAP_NONE + 1; i < WEAP_TOTAL; i++ ) {
-		const gsitem_t * item = GS_FindItemByTag( i );
+	for( int i = 0; i < Weapon_count; i++ ) {
+		const Item * item = GS_FindItemByType( ItemType( i ) );
 		String< 128 > bind( "use {}", item->shortname );
 		KeyBindButton( item->name, bind.c_str() );
 	}

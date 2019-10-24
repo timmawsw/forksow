@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "qcommon/version.h"
 #include "qcommon/hash.h"
 #include "qcommon/csprng.h"
+#include "gameshared/gs_public.h"
 
 cvar_t *rcon_client_password;
 cvar_t *rcon_address;

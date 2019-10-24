@@ -222,93 +222,6 @@ void Pmove( pmove_t *pmove );
 
 //===============================================================
 
-//==================
-//SPLITMODELS
-//==================
-
-// The parts must be listed in draw order
-enum {
-	LOWER = 0,
-	UPPER,
-	HEAD,
-
-	PMODEL_PARTS
-};
-
-// -Torso DEATH frames and Legs DEATH frames must be the same.
-
-// ANIMATIONS
-
-enum {
-	ANIM_NONE,
-	BOTH_DEATH1,      //Death animation
-	BOTH_DEAD1,       //corpse on the ground
-	BOTH_DEATH2,
-	BOTH_DEAD2,
-	BOTH_DEATH3,
-	BOTH_DEAD3,
-
-	LEGS_STAND_IDLE,
-	LEGS_WALK_FORWARD,
-	LEGS_WALK_BACK,
-	LEGS_WALK_LEFT,
-	LEGS_WALK_RIGHT,
-
-	LEGS_RUN_FORWARD,
-	LEGS_RUN_BACK,
-	LEGS_RUN_LEFT,
-	LEGS_RUN_RIGHT,
-
-	LEGS_JUMP_LEG1,
-	LEGS_JUMP_LEG2,
-	LEGS_JUMP_NEUTRAL,
-	LEGS_LAND,
-
-	LEGS_CROUCH_IDLE,
-	LEGS_CROUCH_WALK,
-
-	LEGS_SWIM_FORWARD,
-	LEGS_SWIM_NEUTRAL,
-
-	LEGS_WALLJUMP,
-	LEGS_WALLJUMP_LEFT,
-	LEGS_WALLJUMP_RIGHT,
-	LEGS_WALLJUMP_BACK,
-
-	LEGS_DASH,
-	LEGS_DASH_LEFT,
-	LEGS_DASH_RIGHT,
-	LEGS_DASH_BACK,
-
-	TORSO_HOLD_BLADE,
-	TORSO_HOLD_PISTOL,
-	TORSO_HOLD_LIGHTWEAPON,
-	TORSO_HOLD_HEAVYWEAPON,
-	TORSO_HOLD_AIMWEAPON,
-
-	TORSO_SHOOT_BLADE,
-	TORSO_SHOOT_PISTOL,
-	TORSO_SHOOT_LIGHTWEAPON,
-	TORSO_SHOOT_HEAVYWEAPON,
-	TORSO_SHOOT_AIMWEAPON,
-
-	TORSO_WEAPON_SWITCHOUT,
-	TORSO_WEAPON_SWITCHIN,
-
-	TORSO_DROPHOLD,
-	TORSO_DROP,
-
-	TORSO_SWIM,
-
-	TORSO_PAIN1,
-	TORSO_PAIN2,
-	TORSO_PAIN3,
-
-	PMODEL_TOTAL_ANIMATIONS,
-};
-
-//===============================================================
-
 #define HEALTH_TO_INT( x )    ( ( x ) < 1.0f ? (int)ceil( ( x ) ) : (int)floor( ( x ) + 0.5f ) )
 
 // gs_items - shared items definitions
@@ -316,72 +229,44 @@ enum {
 //==================
 //	ITEM TAGS
 //==================
-// max weapons allowed by the net protocol are 128
-typedef enum {
-	WEAP_NONE = 0,
-	WEAP_GUNBLADE,
-	WEAP_MACHINEGUN,
-	WEAP_RIOTGUN,
-	WEAP_GRENADELAUNCHER,
-	WEAP_ROCKETLAUNCHER,
-	WEAP_PLASMAGUN,
-	WEAP_LASERGUN,
-	WEAP_ELECTROBOLT,
 
-	WEAP_TOTAL
-} weapon_tag_t;
+enum WeaponType {
+	Weapon_Gunblade,
+	Weapon_MachineGun,
+	Weapon_Shotgun,
+	Weapon_GrenadeLauncher,
+	Weapon_RocketLauncher,
+	Weapon_Plasma,
+	Weapon_Laser,
+	Weapon_Railgun,
 
-typedef enum {
-	AMMO_NONE = 0,
-	AMMO_GUNBLADE = WEAP_TOTAL,
-	AMMO_BULLETS,
-	AMMO_SHELLS,
-	AMMO_GRENADES,
-	AMMO_ROCKETS,
-	AMMO_PLASMA,
-	AMMO_LASERS,
-	AMMO_BOLTS,
+	Weapon_Count,
+};
 
-	AMMO_TOTAL,
-	ITEMS_TOTAL = AMMO_TOTAL,
-} ammo_tag_t;
+enum ItemType {
+	Item_Bomb,
+	Item_FakeBomb,
 
-#define GS_MAX_ITEM_TAGS ITEMS_TOTAL
+	Item_Count,
+};
 
-#define MAX_ITEM_MODELS 2
+struct Item {
+	ItemType type;
 
-// gsitem_t->type
-// define as bitflags values so they can be masked
-typedef enum {
-	IT_WEAPON = 1,
-	IT_AMMO = 2,
-} itemtype_t;
-
-typedef struct gitem_s {
-	int tag;
-	itemtype_t type;
-
-	const char * name;      // for printing on pickup
-	const char * shortname; // for printing on messages
+	const char * name;
+	const char * shortname;
 	RGB8 color;
 	const char * description;
 	int cost;
 
-	int ammo_tag;          // uses this ammo, for weapons
-
-	// space separated string of stuff to precache that's not mentioned above
 	const char * precache_models;
 	const char * precache_sounds;
 	const char * precache_images;
-} gsitem_t;
+};
 
-const gsitem_t *GS_FindItemByTag( const int tag );
-const gsitem_t *GS_FindItemByName( const char *name );
-const gsitem_t *GS_Cmd_UseItem( player_state_t *playerState, const char *string, int typeMask );
-const gsitem_t *GS_Cmd_NextWeapon_f( player_state_t *playerState, int predictedWeaponSwitch );
-const gsitem_t *GS_Cmd_PrevWeapon_f( player_state_t *playerState, int predictedWeaponSwitch );
-
-//===============================================================
+const Item * GS_FindItemByType( ItemType type );
+const Item * GS_FindItemByName( const char * name );
+const bool GS_CanEquip( const player_state_t * playerState, ItemType type );
 
 //===================
 //	GAMETYPES
@@ -746,27 +631,21 @@ enum {
 	WEAPON_STATE_READY,
 	WEAPON_STATE_ACTIVATING,
 	WEAPON_STATE_DROPPING,
-	WEAPON_STATE_POWERING,
-	WEAPON_STATE_COOLDOWN,
 	WEAPON_STATE_FIRING,
 	WEAPON_STATE_NOAMMOCLICK,
 	WEAPON_STATE_REFIRE,        // projectile loading
 };
 
-typedef struct firedef_s {
-	//ammo def
-	int ammo_id;
+struct WeaponDefinition {
 	int usage_count;
 	int projectile_count;
 
-	// timings
 	unsigned int weaponup_time;
 	unsigned int weapondown_time;
 	unsigned int reload_time;
 	unsigned int timeout;
 	bool smooth_refire;
 
-	// damages
 	float damage;
 	float selfdamage;
 	int knockback;
@@ -774,24 +653,29 @@ typedef struct firedef_s {
 	int mindamage;
 	int minknockback;
 
-	// projectile def
 	int speed;
-	int spread;     // horizontal spread
-	int v_spread;   // vertical spread
-} firedef_t;
+	int spread;
+};
 
-typedef struct {
-	const char *name;
-	int weapon_id;
+struct Weapon {
+	const char * name;
+	const char * shortname;
 
-	firedef_t firedef;
-} gs_weapon_definition_t;
+	RGB8 color;
+	const char * description;
+	int cost;
+
+	const char * precache_models;
+	const char * precache_sounds;
+	const char * precache_images;
+
+	WeaponDefinition stats;
+};
 
 void GS_InitModule( int module, int maxClients, gs_module_api_t *api );
 gs_weapon_definition_t *GS_GetWeaponDef( int weapon );
 int GS_SelectBestWeapon( player_state_t *playerState );
 bool GS_CheckAmmoInWeapon( player_state_t *playerState, int checkweapon );
-firedef_t *GS_FiredefForPlayerState( player_state_t *playerState, int checkweapon );
 int GS_ThinkPlayerWeapon( player_state_t *playerState, int buttons, int msecs, int timeDelta );
 trace_t *GS_TraceBullet( trace_t *trace, vec3_t start, vec3_t dir, vec3_t right, vec3_t up, float r, float u, int range, int ignore, int timeDelta );
 void GS_TraceLaserBeam( trace_t *trace, vec3_t origin, vec3_t angles, float range, int ignore, int timeDelta, void ( *impact )( trace_t *tr, vec3_t dir ) );

@@ -30,38 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define WEAPONDOWN_FRAMETIME 50
 #define WEAPONUP_FRAMETIME 50
 
-gs_weapon_definition_t gs_weaponDefs[] =
-{
-	{
-		"no weapon",
-		WEAP_NONE,
-		{
-			AMMO_NONE,                      // ammo tag
-			0,                              // ammo usage per shot
-			0,                              // projectiles fired each shot
-
-			//timings (in msecs)
-			WEAPONUP_FRAMETIME,             // weapon up frametime
-			WEAPONDOWN_FRAMETIME,           // weapon down frametime
-			0,                              // reload frametime
-			0,                              // projectile timeout
-			false,                          // smooth refire
-
-			//damages
-			0,                              // damage
-			0,                              // selfdamage ratio
-			0,                              // knockback
-			0,                              // splash radius
-			0,                              // splash minimum damage
-			0,                              // splash minimum knockback
-
-			//projectile def
-			0,                              // speed
-			0,                              // spread
-			0,                              // v_spread
-		},
-	},
-
+Weapon gs_weaponDefs[] = {
 	{
 		"Gunblade",
 		WEAP_GUNBLADE,
@@ -88,7 +57,6 @@ gs_weapon_definition_t gs_weaponDefs[] =
 			//projectile def
 			INSTANT,                        // speed
 			0,                              // spread
-			0,                              // v_spread
 		},
 	},
 
@@ -118,7 +86,6 @@ gs_weapon_definition_t gs_weaponDefs[] =
 			//projectile def
 			INSTANT,                        // speed
 			0,                              // spread
-			0,                              // v_spread
 		},
 	},
 
@@ -148,7 +115,6 @@ gs_weapon_definition_t gs_weaponDefs[] =
 			//projectile def
 			INSTANT,                        // speed
 			80,                             // spread
-			80,                             // v_spread
 		},
 	},
 
@@ -178,7 +144,6 @@ gs_weapon_definition_t gs_weaponDefs[] =
 			//projectile def
 			1000,                           // speed
 			0,                              // spread
-			0,                              // v_spread
 		},
 	},
 
@@ -208,7 +173,6 @@ gs_weapon_definition_t gs_weaponDefs[] =
 			//projectile def
 			1250,                           // speed
 			0,                              // spread
-			0,                              // v_spread
 		},
 	},
 
@@ -238,7 +202,6 @@ gs_weapon_definition_t gs_weaponDefs[] =
 			//projectile def
 			2500,                           // speed
 			0,                              // spread
-			0,                              // v_spread
 		},
 	},
 
@@ -268,7 +231,6 @@ gs_weapon_definition_t gs_weaponDefs[] =
 			//projectile def
 			INSTANT,                        // speed
 			0,                              // spread
-			0,                              // v_spread
 		},
 	},
 
@@ -298,12 +260,11 @@ gs_weapon_definition_t gs_weaponDefs[] =
 			//projectile def
 			INSTANT,                        // speed
 			0,                              // spread
-			0,                              // v_spread
 		},
 	},
 };
 
-STATIC_ASSERT( ARRAY_COUNT( gs_weaponDefs ) == WEAP_TOTAL );
+STATIC_ASSERT( ARRAY_COUNT( gs_weaponDefs ) == Item_WeaponCount );
 
 gs_weapon_definition_t * GS_GetWeaponDef( int weapon ) {
 	assert( weapon >= 0 && weapon < WEAP_TOTAL );
