@@ -469,34 +469,6 @@ static void CL_Rcon_f( void ) {
 }
 
 /*
-* CL_GetClipboardData
-*/
-char *CL_GetClipboardData( void ) {
-	return Sys_GetClipboardData();
-}
-
-/*
-* CL_SetClipboardData
-*/
-void CL_SetClipboardData( const char *data ) {
-	Sys_SetClipboardData( data );
-}
-
-/*
-* CL_FreeClipboardData
-*/
-void CL_FreeClipboardData( char *data ) {
-	Sys_FreeClipboardData( data );
-}
-
-/*
-* CL_GetKeyDest
-*/
-keydest_t CL_GetKeyDest( void ) {
-	return cls.key_dest;
-}
-
-/*
 * CL_SetKeyDest
 */
 void CL_SetKeyDest( keydest_t key_dest ) {
@@ -663,11 +635,6 @@ void CL_Disconnect( const char *message ) {
 	} else {
 		CL_Disconnect_SendCommand(); // send a disconnect message to the server
 	}
-	FS_RemovePurePaks();
-
-	Com_FreePureList( &cls.purelist );
-
-	cls.sv_pure = false;
 
 	// udp is kept open all the time, for connectionless messages
 	if( cls.socket && cls.socket->type != SOCKET_UDP ) {
@@ -1158,7 +1125,6 @@ static void CL_Userinfo_f( void ) {
 static int precache_check; // for autodownload of precache items
 static int precache_spawncount;
 static int precache_tex;
-static int precache_pure;
 
 #define PLAYER_MULT 5
 
@@ -1203,61 +1169,9 @@ static unsigned int CL_LoadMap( const char *name ) {
 
 void CL_RequestNextDownload( void ) {
 	char tempname[MAX_CONFIGSTRING_CHARS + 4];
-	purelist_t *purefile;
-	int i;
 
 	if( cls.state != CA_CONNECTED ) {
 		return;
-	}
-
-	// pure list
-	if( cls.sv_pure ) {
-		// skip
-		if( !cl_downloads->integer ) {
-			precache_pure = -1;
-		}
-
-		// try downloading
-		if( precache_pure != -1 ) {
-			i = 0;
-			purefile = cls.purelist;
-			while( i < precache_pure && purefile ) {
-				purefile = purefile->next;
-				i++;
-			}
-
-			while( purefile ) {
-				precache_pure++;
-				if( !CL_CheckOrDownloadFile( purefile->filename ) ) {
-					return;
-				}
-				purefile = purefile->next;
-			}
-			precache_pure = -1;
-		}
-
-		if( precache_pure == -1 ) {
-			bool failed = false;
-			char message[MAX_STRING_CHARS];
-
-			Q_snprintfz( message, sizeof( message ), "Pure check failed:" );
-
-			purefile = cls.purelist;
-			while( purefile ) {
-				Com_DPrintf( "Adding pure file: %s\n", purefile->filename );
-				if( !FS_AddPurePak( purefile->checksum ) ) {
-					failed = true;
-					Q_strncatz( message, " ", sizeof( message ) );
-					Q_strncatz( message, purefile->filename, sizeof( message ) );
-				}
-				purefile = purefile->next;
-			}
-
-			if( failed ) {
-				Com_Error( ERR_DROP, "%s", message );
-				return;
-			}
-		}
 	}
 
 	// skip if download not allowed
@@ -1296,16 +1210,10 @@ void CL_RequestNextDownload( void ) {
 		while( precache_check < CS_SOUNDS + MAX_SOUNDS && cl.configstrings[precache_check][0] ) {
 			Q_strncpyz( tempname, cl.configstrings[precache_check++], sizeof( tempname ) );
 			if( !COM_FileExtension( tempname ) ) {
-				if( !FS_FirstExtension( tempname, SOUND_EXTENSIONS, NUM_SOUND_EXTENSIONS ) ) {
-					COM_DefaultExtension( tempname, ".wav", sizeof( tempname ) );
-					if( !CL_CheckOrDownloadFile( tempname ) ) {
-						return; // started a download
-					}
-				}
-			} else {
-				if( !CL_CheckOrDownloadFile( tempname ) ) {
-					return; // started a download
-				}
+				Q_strncatz( tempname, ".ogg", sizeof( tempname ) );
+			}
+			if( !CL_CheckOrDownloadFile( tempname ) ) {
+				return; // started a download
 			}
 		}
 		precache_check = CS_IMAGES;
@@ -1354,8 +1262,6 @@ void CL_RequestNextDownload( void ) {
 * before allowing the client into the server
 */
 void CL_Precache_f( void ) {
-	FS_RemovePurePaks();
-
 	if( cls.demo.playing ) {
 		if( !cls.demo.play_jump ) {
 			CL_LoadMap( cl.configstrings[CS_WORLDMODEL] );
@@ -1371,7 +1277,6 @@ void CL_Precache_f( void ) {
 		return;
 	}
 
-	precache_pure = 0;
 	precache_check = CS_WORLDMODEL;
 	precache_spawncount = atoi( Cmd_Argv( 1 ) );
 
@@ -1472,20 +1377,6 @@ void CL_SetClientState( connstate_t state ) {
 }
 
 /*
-* CL_GetClientState
-*/
-connstate_t CL_GetClientState( void ) {
-	return cls.state;
-}
-
-/*
-* CL_ShowIP_f - wsw : jal : taken from Q3 (it only shows the ip when server was started)
-*/
-static void CL_ShowIP_f( void ) {
-	NET_ShowIP();
-}
-
-/*
 * CL_ShowServerIP_f - wsw : pb : show the ip:port of the server the client is connected to
 */
 static void CL_ShowServerIP_f( void ) {
@@ -1571,7 +1462,6 @@ static void CL_InitLocal( void ) {
 	Cmd_AddCommand( "reconnect", CL_Reconnect_f );
 	Cmd_AddCommand( "rcon", CL_Rcon_f );
 	Cmd_AddCommand( "writeconfig", CL_WriteConfig_f );
-	Cmd_AddCommand( "showip", CL_ShowIP_f ); // jal : wsw : print our ip
 	Cmd_AddCommand( "demo", CL_PlayDemo_f );
 	Cmd_AddCommand( "next", CL_SetNext_f );
 	Cmd_AddCommand( "pingserver", CL_PingServer_f );
@@ -1604,7 +1494,6 @@ static void CL_ShutdownLocal( void ) {
 	Cmd_RemoveCommand( "reconnect" );
 	Cmd_RemoveCommand( "rcon" );
 	Cmd_RemoveCommand( "writeconfig" );
-	Cmd_RemoveCommand( "showip" );
 	Cmd_RemoveCommand( "demo" );
 	Cmd_RemoveCommand( "next" );
 	Cmd_RemoveCommand( "pingserver" );
@@ -2014,7 +1903,7 @@ void CL_Frame( int realMsec, int gameMsec ) {
 
 	// update audio
 	if( cls.state != CA_ACTIVE ) {
-		S_Update( vec3_origin, vec3_origin, axis_identity );
+		S_Update( Vec3( 0 ), Vec3( 0 ), axis_identity );
 	}
 
 	allRealMsec = 0;
@@ -2120,6 +2009,10 @@ void CL_Init( void ) {
 	constexpr size_t frame_arena_size = 1024 * 1024;
 	void * frame_arena_memory = ALLOC_SIZE( sys_allocator, frame_arena_size, 16 );
 	cls.frame_arena = ArenaAllocator( frame_arena_memory, frame_arena_size );
+
+	u64 entropy[ 2 ];
+	CSPRNG_Bytes( entropy, sizeof( entropy ) );
+	cls.rng = new_rng( entropy[ 0 ], entropy[ 1 ] );
 
 	srand( time( NULL ) );
 

@@ -110,7 +110,7 @@ void CG_ConfigString( int i, const char *s ) {
 	} else if( i >= CS_MODELS && i < CS_MODELS + MAX_MODELS ) {
 		cgs.modelDraw[i - CS_MODELS] = FindModel( cgs.configStrings[i] );
 	} else if( i >= CS_SOUNDS && i < CS_SOUNDS + MAX_SOUNDS ) {
-		cgs.soundPrecache[i - CS_SOUNDS] = S_RegisterSound( cgs.configStrings[i] );
+		cgs.soundPrecache[i - CS_SOUNDS] = FindSoundEffect( cgs.configStrings[i] );
 	} else if( i >= CS_IMAGES && i < CS_IMAGES + MAX_IMAGES ) {
 		cgs.imagePrecache[i - CS_IMAGES] = FindMaterial( cgs.configStrings[i] );
 	} else if( i >= CS_PLAYERINFOS && i < CS_PLAYERINFOS + MAX_CLIENTS ) {
@@ -135,7 +135,7 @@ static void CG_SC_PlayerStats() {
 	const char * s = trap_Cmd_Argv( 1 );
 
 	int playerNum = CG_ParseValue( &s );
-	if( playerNum < 0 || playerNum >= gs.maxclients ) {
+	if( playerNum < 0 || playerNum >= client_gs.maxclients ) {
 		return;
 	}
 
@@ -154,7 +154,7 @@ static void CG_SC_PlayerStats() {
 		int hits = CG_ParseValue( &s );
 
 		// name
-		CG_Printf( "%s%2s" S_COLOR_WHITE ": ", ImGuiColorToken( item->color ), item->shortname );
+		CG_Printf( "%s%2s" S_COLOR_WHITE ": ", ImGuiColorToken( item->color ).token, item->shortname );
 
 #define STATS_PERCENT( hit, total ) ( ( total ) == 0 ? 0 : ( ( hit ) == ( total ) ? 100 : (float)( hit ) * 100.0f / (float)( total ) ) )
 
@@ -327,7 +327,7 @@ static void CG_SC_DemoGet( void ) {
 		return;
 	}
 
-	trap_DownloadRequest( filename, false );
+	trap_DownloadRequest( filename );
 }
 
 static void CG_SC_ChangeLoadout() {
@@ -358,7 +358,7 @@ void CG_AddAward( const char * str ) {
 	}
 
 	Q_strncpyz( cg.award_lines[cg.award_head % MAX_AWARD_LINES], str, MAX_CONFIGSTRING_CHARS );
-	cg.award_times[cg.award_head % MAX_AWARD_LINES] = cg.time;
+	cg.award_times[cg.award_head % MAX_AWARD_LINES] = cl.serverTime;
 	cg.award_head++;
 }
 
@@ -421,7 +421,7 @@ void CG_UseItem( const char *name ) {
 		return;
 	}
 
-	item = GS_Cmd_UseItem( &cg.frame.playerState, name, 0 );
+	item = GS_Cmd_UseItem( &client_gs, &cg.frame.playerState, name, 0 );
 	if( item ) {
 		if( item->type & IT_WEAPON ) {
 			CG_Predict_ChangeWeapon( item->tag );
@@ -444,7 +444,7 @@ static void CG_Cmd_UseItem_f( void ) {
 	CG_UseItem( trap_Cmd_Args() );
 }
 
-static const Item * CG_UseWeaponStep( player_state_t * playerState, bool next, ItemType predicted_equipped_item ) {
+static const Item * CG_UseWeaponStep( const player_state_t * playerState, bool next, ItemType predicted_equipped_item ) {
 	if( predicted_equipped_item < Item_FirstWeapon || predicted_equipped_item > Item_LastWeapon ) {
 		return GS_FindItemByType( cg.lastWeapon );
 	}
@@ -527,7 +527,7 @@ static void CG_Cmd_LastWeapon_f( void ) {
 	}
 
 	if( cg.lastWeapon != WEAP_NONE && cg.lastWeapon != cg.predictedPlayerState.stats[STAT_PENDING_WEAPON] ) {
-		item = GS_Cmd_UseItem( &cg.frame.playerState, va( "%i", cg.lastWeapon ), IT_WEAPON );
+		item = GS_Cmd_UseItem( &client_gs, &cg.frame.playerState, va( "%i", cg.lastWeapon ), IT_WEAPON );
 		if( item ) {
 			if( item->type & IT_WEAPON ) {
 				CG_Predict_ChangeWeapon( item->tag );
@@ -578,8 +578,8 @@ static char **CG_PlayerNamesCompletionExt_f( const char *partial, bool teamOnly 
 	if( partial ) {
 		size_t partial_len = strlen( partial );
 
-		matches = (char **) CG_Malloc( sizeof( char * ) * ( gs.maxclients + 1 ) );
-		for( i = 0; i < gs.maxclients; i++ ) {
+		matches = (char **) CG_Malloc( sizeof( char * ) * ( client_gs.maxclients + 1 ) );
+		for( i = 0; i < client_gs.maxclients; i++ ) {
 			cg_clientInfo_t *info = cgs.clientInfo + i;
 			if( !info->name[0] ) {
 				continue;

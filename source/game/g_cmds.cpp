@@ -151,7 +151,7 @@ static void Cmd_Use_f( edict_t *ent ) {
 
 	assert( ent && ent->r.client );
 
-	it = GS_Cmd_UseItem( &ent->r.client->ps, trap_Cmd_Args(), 0 );
+	it = GS_Cmd_UseItem( &server_gs, &ent->r.client->ps, trap_Cmd_Args(), 0 );
 	if( !it ) {
 		return;
 	}
@@ -204,17 +204,17 @@ static void Cmd_Score_f( edict_t *ent ) {
 static void Cmd_Position_f( edict_t *ent ) {
 	char *action;
 
-	if( !sv_cheats->integer && GS_MatchState() > MATCH_STATE_WARMUP &&
+	if( !sv_cheats->integer && GS_MatchState( &server_gs ) > MATCH_STATE_WARMUP &&
 		ent->r.client->ps.pmove.pm_type != PM_SPECTATOR ) {
 		G_PrintMsg( ent, "Position command is only available in warmup and in spectator mode.\n" );
 		return;
 	}
 
 	// flood protect
-	if( ent->r.client->teamstate.position_lastcmd + 500 > game.realtime ) {
+	if( ent->r.client->teamstate.position_lastcmd + 500 > svs.realtime ) {
 		return;
 	}
-	ent->r.client->teamstate.position_lastcmd = game.realtime;
+	ent->r.client->teamstate.position_lastcmd = svs.realtime;
 
 	action = trap_Cmd_Argv( 1 );
 
@@ -280,13 +280,13 @@ static void Cmd_PlayersExt_f( edict_t *ent, bool onlyspecs ) {
 	char msg[1024];
 
 	if( trap_Cmd_Argc() > 1 ) {
-		start = Clamp( 0, atoi( trap_Cmd_Argv( 1 ) ), gs.maxclients - 1 );
+		start = Clamp( 0, atoi( trap_Cmd_Argv( 1 ) ), server_gs.maxclients - 1 );
 	}
 
 	// print information
 	msg[0] = 0;
 
-	for( i = start; i < gs.maxclients; i++ ) {
+	for( i = start; i < server_gs.maxclients; i++ ) {
 		if( trap_GetClientState( i ) >= CS_SPAWNED ) {
 			edict_t *clientEnt = &game.edicts[i + 1];
 			gclient_t *cl;
@@ -321,7 +321,7 @@ static void Cmd_PlayersExt_f( edict_t *ent, bool onlyspecs ) {
 	Q_strncatz( msg, va( "%3i %s\n", count, trap_Cmd_Argv( 0 ) ), sizeof( msg ) );
 	G_PrintMsg( ent, "%s", msg );
 
-	if( i < gs.maxclients ) {
+	if( i < server_gs.maxclients ) {
 		G_PrintMsg( ent, "Type '%s %i' for more %s\n", trap_Cmd_Argv( 0 ), i, trap_Cmd_Argv( 0 ) );
 	}
 }
@@ -385,9 +385,9 @@ bool CheckFlood( edict_t *ent, bool teamonly ) {
 
 	// old protection still active
 	if( !teamonly || g_floodprotection_team->integer ) {
-		if( game.realtime < client->level.flood_locktill ) {
+		if( svs.realtime < client->level.flood_locktill ) {
 			G_PrintMsg( ent, "You can't talk for %d more seconds\n",
-						(int)( ( client->level.flood_locktill - game.realtime ) / 1000.0f ) + 1 );
+						(int)( ( client->level.flood_locktill - svs.realtime ) / 1000.0f ) + 1 );
 			return true;
 		}
 	}
@@ -400,16 +400,16 @@ bool CheckFlood( edict_t *ent, bool teamonly ) {
 				i = MAX_FLOOD_MESSAGES + i;
 			}
 
-			if( client->level.flood_team_when[i] && client->level.flood_team_when[i] <= game.realtime &&
-				( game.realtime < client->level.flood_team_when[i] + g_floodprotection_seconds->integer * 1000 ) ) {
-				client->level.flood_locktill = game.realtime + g_floodprotection_penalty->value * 1000;
+			if( client->level.flood_team_when[i] && client->level.flood_team_when[i] <= svs.realtime &&
+				( svs.realtime < client->level.flood_team_when[i] + g_floodprotection_seconds->integer * 1000 ) ) {
+				client->level.flood_locktill = svs.realtime + g_floodprotection_penalty->value * 1000;
 				G_PrintMsg( ent, "Flood protection: You can't talk for %d seconds.\n", g_floodprotection_penalty->integer );
 				return true;
 			}
 		}
 
 		client->level.flood_team_whenhead = ( client->level.flood_team_whenhead + 1 ) % MAX_FLOOD_MESSAGES;
-		client->level.flood_team_when[client->level.flood_team_whenhead] = game.realtime;
+		client->level.flood_team_when[client->level.flood_team_whenhead] = svs.realtime;
 	} else {
 		if( g_floodprotection_messages->integer && g_floodprotection_penalty->value > 0 ) {
 			i = client->level.flood_whenhead - g_floodprotection_messages->integer + 1;
@@ -417,16 +417,16 @@ bool CheckFlood( edict_t *ent, bool teamonly ) {
 				i = MAX_FLOOD_MESSAGES + i;
 			}
 
-			if( client->level.flood_when[i] && client->level.flood_when[i] <= game.realtime &&
-				( game.realtime < client->level.flood_when[i] + g_floodprotection_seconds->integer * 1000 ) ) {
-				client->level.flood_locktill = game.realtime + g_floodprotection_penalty->value * 1000;
+			if( client->level.flood_when[i] && client->level.flood_when[i] <= svs.realtime &&
+				( svs.realtime < client->level.flood_when[i] + g_floodprotection_seconds->integer * 1000 ) ) {
+				client->level.flood_locktill = svs.realtime + g_floodprotection_penalty->value * 1000;
 				G_PrintMsg( ent, "Flood protection: You can't talk for %d seconds.\n", g_floodprotection_penalty->integer );
 				return true;
 			}
 		}
 
 		client->level.flood_whenhead = ( client->level.flood_whenhead + 1 ) % MAX_FLOOD_MESSAGES;
-		client->level.flood_when[client->level.flood_whenhead] = game.realtime;
+		client->level.flood_when[client->level.flood_whenhead] = svs.realtime;
 	}
 
 	return false;
@@ -437,7 +437,7 @@ static void Cmd_CoinToss_f( edict_t *ent ) {
 	char *s;
 	char upper[MAX_STRING_CHARS];
 
-	if( GS_MatchState() > MATCH_STATE_WARMUP && !GS_MatchPaused() ) {
+	if( GS_MatchState( &server_gs ) > MATCH_STATE_WARMUP && !GS_MatchPaused( &server_gs ) ) {
 		G_PrintMsg( ent, "You can only toss coins during warmup or timeouts\n" );
 		return;
 	}
@@ -575,19 +575,19 @@ static void G_vsay_f( edict_t *ent, bool team ) {
 		return;
 	}
 
-	if( G_ISGHOSTING( ent ) && GS_MatchState() < MATCH_STATE_POSTMATCH ) {
+	if( G_ISGHOSTING( ent ) && GS_MatchState( &server_gs ) < MATCH_STATE_POSTMATCH ) {
 		return;
 	}
 
-	if( ( !GS_TeamBasedGametype() || GS_InvidualGameType() ) && ent->s.team != TEAM_SPECTATOR ) {
+	if( ( !GS_TeamBasedGametype( &server_gs ) || GS_IndividualGameType( &server_gs ) ) && ent->s.team != TEAM_SPECTATOR ) {
 		team = false;
 	}
 
 	if( !( ent->r.svflags & SVF_FAKECLIENT ) ) { // ignore flood checks on bots
-		if( ent->r.client->level.last_vsay > game.realtime - 500 ) {
+		if( ent->r.client->level.last_vsay > svs.realtime - 500 ) {
 			return; // ignore silently vsays in that come in rapid succession
 		}
-		ent->r.client->level.last_vsay = game.realtime;
+		ent->r.client->level.last_vsay = svs.realtime;
 
 		if( CheckFlood( ent, false ) ) {
 			return;
@@ -662,17 +662,17 @@ static void Cmd_Join_f( edict_t *ent ) {
 static void Cmd_Timeout_f( edict_t *ent ) {
 	int num;
 
-	if( ent->s.team == TEAM_SPECTATOR || GS_MatchState() != MATCH_STATE_PLAYTIME ) {
+	if( ent->s.team == TEAM_SPECTATOR || GS_MatchState( &server_gs ) != MATCH_STATE_PLAYTIME ) {
 		return;
 	}
 
-	if( GS_TeamBasedGametype() ) {
+	if( GS_TeamBasedGametype( &server_gs ) ) {
 		num = ent->s.team;
 	} else {
 		num = ENTNUM( ent ) - 1;
 	}
 
-	if( GS_MatchPaused() && ( level.timeout.endtime - level.timeout.time ) >= 2 * TIMEIN_TIME ) {
+	if( GS_MatchPaused( &server_gs ) && ( level.timeout.endtime - level.timeout.time ) >= 2 * TIMEIN_TIME ) {
 		G_PrintMsg( ent, "Timeout already in progress\n" );
 		return;
 	}
@@ -680,7 +680,7 @@ static void Cmd_Timeout_f( edict_t *ent ) {
 	if( g_maxtimeouts->integer != -1 && level.timeout.used[num] >= g_maxtimeouts->integer ) {
 		if( g_maxtimeouts->integer == 0 ) {
 			G_PrintMsg( ent, "Timeouts are not allowed on this server\n" );
-		} else if( GS_TeamBasedGametype() ) {
+		} else if( GS_TeamBasedGametype( &server_gs ) ) {
 			G_PrintMsg( ent, "Your team doesn't have any timeouts left\n" );
 		} else {
 			G_PrintMsg( ent, "You don't have any timeouts left\n" );
@@ -690,12 +690,12 @@ static void Cmd_Timeout_f( edict_t *ent ) {
 
 	G_PrintMsg( NULL, "%s%s called a timeout\n", ent->r.client->netname, S_COLOR_WHITE );
 
-	if( !GS_MatchPaused() ) {
+	if( !GS_MatchPaused( &server_gs ) ) {
 		G_AnnouncerSound( NULL, trap_SoundIndex( va( S_ANNOUNCER_TIMEOUT_TIMEOUT_1_to_2, ( rand() & 1 ) + 1 ) ), GS_MAX_TEAMS, true, NULL );
 	}
 
 	level.timeout.used[num]++;
-	GS_GamestatSetFlag( GAMESTAT_FLAG_PAUSED, true );
+	G_GamestatSetFlag( GAMESTAT_FLAG_PAUSED, true );
 	level.timeout.caller = num;
 	level.timeout.endtime = level.timeout.time + TIMEOUT_TIME + FRAMETIME;
 }
@@ -710,7 +710,7 @@ static void Cmd_Timein_f( edict_t *ent ) {
 		return;
 	}
 
-	if( !GS_MatchPaused() ) {
+	if( !GS_MatchPaused( &server_gs ) ) {
 		G_PrintMsg( ent, "No timeout in progress.\n" );
 		return;
 	}
@@ -720,14 +720,14 @@ static void Cmd_Timein_f( edict_t *ent ) {
 		return;
 	}
 
-	if( GS_TeamBasedGametype() ) {
+	if( GS_TeamBasedGametype( &server_gs ) ) {
 		num = ent->s.team;
 	} else {
 		num = ENTNUM( ent ) - 1;
 	}
 
 	if( level.timeout.caller != num ) {
-		if( GS_TeamBasedGametype() ) {
+		if( GS_TeamBasedGametype( &server_gs ) ) {
 			G_PrintMsg( ent, "Your team didn't call this timeout.\n" );
 		} else {
 			G_PrintMsg( ent, "You didn't call this timeout.\n" );

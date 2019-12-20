@@ -29,8 +29,6 @@ struct poly_s;
 struct cmodel_s;
 struct qfontface_s;
 
-typedef void ( *cg_fdrawchar_t )( int x, int y, int w, int h, float s1, float t1, float s2, float t2, const vec4_t color, const struct shader_s *shader );
-
 // cg_public.h -- client game dll information visible to engine
 
 //
@@ -98,24 +96,13 @@ typedef struct {
 	void ( *Cmd_SetCompletionFunc )( const char *cmd_name, char **( *completion_func )( const char *partial ) );
 
 	// files will be memory mapped read only
-	// the returned buffer may be part of a larger pak file,
-	// or a discrete file from anywhere in the quake search path
 	// a -1 return means the file does not exist
 	// NULL can be passed for buf to just determine existance
 	int ( *FS_FOpenFile )( const char *filename, int *filenum, int mode );
 	int ( *FS_Read )( void *buffer, size_t len, int file );
 	int ( *FS_Write )( const void *buffer, size_t len, int file );
 	int ( *FS_Print )( int file, const char *msg );
-	int ( *FS_Tell )( int file );
-	int ( *FS_Seek )( int file, int offset, int whence );
-	int ( *FS_Eof )( int file );
-	int ( *FS_Flush )( int file );
 	void ( *FS_FCloseFile )( int file );
-	bool ( *FS_RemoveFile )( const char *filename );
-	int ( *FS_GetFileList )( const char *dir, const char *extension, char *buf, size_t bufsize, int start, int end );
-	bool ( *FS_IsPureFile )( const char *filename );
-	bool ( *FS_MoveFile )( const char *src, const char *dst );
-	bool ( *FS_RemoveDirectory )( const char *dirname );
 
 	// key bindings
 	const char *( *Key_GetBindingBuf )( int binding );
@@ -123,7 +110,7 @@ typedef struct {
 
 	void ( *GetConfigString )( int i, char *str, int size );
 	int64_t ( *Milliseconds )( void );
-	bool ( *DownloadRequest )( const char *filename, bool requestpak );
+	bool ( *DownloadRequest )( const char *filename );
 
 	void ( *NET_GetUserCmd )( int frame, usercmd_t *cmd );
 	int ( *NET_GetCurrentUserCmdNum )( void );
@@ -141,35 +128,15 @@ typedef struct {
 	int ( *CM_TransformedPointContents )( const vec3_t p, struct cmodel_s *cmodel, const vec3_t origin, const vec3_t angles );
 	void ( *CM_InlineModelBounds )( const struct cmodel_s *cmodel, vec3_t mins, vec3_t maxs );
 	bool ( *CM_InPVS )( const vec3_t p1, const vec3_t p2 );
-
-	// fonts
-	struct qfontface_s *( *SCR_RegisterFont )( const char *family, int style, unsigned int size );
-	struct qfontface_s *( *SCR_RegisterSpecialFont )( const char *family, int style, unsigned int size );
-	int ( *SCR_DrawString )( int x, int y, int align, const char *str, struct qfontface_s *font, const vec4_t color );
-	size_t ( *SCR_DrawStringWidth )( int x, int y, int align, const char *str, size_t maxwidth, struct qfontface_s *font, const vec4_t color );
-	void ( *SCR_DrawClampString )( int x, int y, const char *str, int xmin, int ymin, int xmax, int ymax, struct qfontface_s *font, const vec4_t color );
-	int ( *SCR_DrawMultilineString )( int x, int y, const char *str, int halign, int maxwidth, int maxlines, struct qfontface_s *font, const vec4_t color );
-	void ( *SCR_DrawRawChar )( int x, int y, wchar_t num, struct qfontface_s *font, const vec4_t color );
-	void ( *SCR_DrawClampChar )( int x, int y, wchar_t num, int xmin, int ymin, int xmax, int ymax, struct qfontface_s *font, const vec4_t color );
-	size_t ( *SCR_FontSize )( struct qfontface_s *font );
-	size_t ( *SCR_FontHeight )( struct qfontface_s *font );
-	int ( *SCR_FontUnderline )( struct qfontface_s *font, int *thickness );
-	size_t ( *SCR_strWidth )( const char *str, struct qfontface_s *font, size_t maxlen );
-	size_t ( *SCR_StrlenForWidth )( const char *str, struct qfontface_s *font, size_t maxwidth );
-	cg_fdrawchar_t ( *SCR_SetDrawCharIntercept )( cg_fdrawchar_t intercept );
-	void ( *SCR_DrawChat )( int x, int y, int width, struct qfontface_s *font );
 } cgame_import_t;
 
 //
 // functions exported by the client game subsystem
 //
 typedef struct {
-	// if API is different, the dll cannot be used
-	int ( *API )( void );
-
 	// the init function will be called at each restart
 	void ( *Init )( const char *serverName, unsigned int playerNum,
-					bool demoplaying, const char *demoName, bool pure, unsigned int snapFrameTime );
+					bool demoplaying, const char *demoName, unsigned int snapFrameTime );
 
 	// "soft restarts" at demo jumps
 	void ( *Reset )( void );
@@ -184,7 +151,7 @@ typedef struct {
 
 	void ( *Trace )( trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passent, int contentmask );
 
-	void ( *RenderView )( int frameTime, int realFrameTime, int64_t monotonicTime, int64_t realTime, int64_t serverTime, unsigned extrapolationTime );
+	void ( *RenderView )( unsigned extrapolationTime );
 
 	bool ( *NewFrameSnapshot )( snapshot_t *newSnapshot, snapshot_t *currentSnapshot );
 
@@ -227,3 +194,5 @@ typedef struct {
 	 */
 	void ( *AddMovement )( vec3_t movement );
 } cgame_export_t;
+
+cgame_export_t *GetCGameAPI( cgame_import_t * import );

@@ -71,7 +71,7 @@ static void G_Client_UnlinkBodies( edict_t *ent ) {
 	int i;
 
 	// find bodies linked to us
-	body = &game.edicts[gs.maxclients + 1];
+	body = &game.edicts[server_gs.maxclients + 1];
 	for( i = 0; i < BODY_QUEUE_SIZE; body++, i++ ) {
 		if( !body->r.inuse ) {
 			continue;
@@ -129,7 +129,7 @@ static edict_t *CopyToBodyQue( edict_t *ent, edict_t *attacker, int damage ) {
 	edict_t *body;
 	int contents;
 
-	if( GS_RaceGametype() ) {
+	if( GS_RaceGametype( &server_gs ) ) {
 		return NULL;
 	}
 
@@ -141,7 +141,7 @@ static edict_t *CopyToBodyQue( edict_t *ent, edict_t *attacker, int damage ) {
 	G_Client_UnlinkBodies( ent );
 
 	// grab a body que and cycle to the next one
-	body = &game.edicts[gs.maxclients + level.body_que + 1];
+	body = &game.edicts[server_gs.maxclients + level.body_que + 1];
 	level.body_que = ( level.body_que + 1 ) % BODY_QUEUE_SIZE;
 
 	// send an effect on the removed body
@@ -220,7 +220,7 @@ static edict_t *CopyToBodyQue( edict_t *ent, edict_t *attacker, int damage ) {
 
 		// bit of a hack, if we're not in warmup, leave the body with no think. think self destructs
 		// after a timeout, but if we leave, next bomb round will call G_ResetLevel() cleaning up
-		if( GS_MatchState() == MATCH_STATE_WARMUP ) {
+		if( GS_MatchState( &server_gs ) == MATCH_STATE_WARMUP ) {
 			body->nextThink = level.time + 3500;
 		}
 		else {
@@ -314,7 +314,7 @@ void G_Client_InactivityRemove( gclient_t *client ) {
 		return;
 	}
 
-	if( ( GS_MatchState() != MATCH_STATE_PLAYTIME ) || !level.gametype.removeInactivePlayers ) {
+	if( ( GS_MatchState( &server_gs ) != MATCH_STATE_PLAYTIME ) || !level.gametype.removeInactivePlayers ) {
 		return;
 	}
 
@@ -434,7 +434,6 @@ void G_ClientRespawn( edict_t *self, bool ghost ) {
 	memset( &self->snap, 0, sizeof( self->snap ) );
 	memset( &self->s, 0, sizeof( self->s ) );
 	memset( &self->olds, 0, sizeof( self->olds ) );
-	memset( &self->invpak, 0, sizeof( self->invpak ) );
 
 	self->s.number = self->olds.number = ENTNUM( self );
 
@@ -646,7 +645,7 @@ void ClientBegin( edict_t *ent ) {
 	client->connecting = false;
 
 	// schedule the next scoreboard update
-	client->level.scoreboard_time = game.realtime + scoreboardInterval - ( game.realtime % scoreboardInterval );
+	client->level.scoreboard_time = svs.realtime + scoreboardInterval - ( svs.realtime % scoreboardInterval );
 
 	G_ClientEndSnapFrame( ent ); // make sure all view stuff is valid
 
@@ -728,7 +727,7 @@ static void G_SetName( edict_t *ent, const char *original_name ) {
 
 	trynum = 1;
 	do {
-		for( i = 0; i < gs.maxclients; i++ ) {
+		for( i = 0; i < server_gs.maxclients; i++ ) {
 			other = game.edicts + 1 + i;
 			if( !other->r.inuse || !other->r.client || other == ent ) {
 				continue;
@@ -754,7 +753,7 @@ static void G_SetName( edict_t *ent, const char *original_name ) {
 				break;
 			}
 		}
-	} while( i != gs.maxclients && trynum <= MAX_CLIENTS );
+	} while( i != server_gs.maxclients && trynum <= MAX_CLIENTS );
 
 	Q_strncpyz( ent->r.client->netname, name, sizeof( ent->r.client->netname ) );
 }
@@ -766,7 +765,7 @@ static void G_UpdatePlayerInfoString( int playerNum ) {
 	char playerString[MAX_INFO_STRING];
 	gclient_t *client;
 
-	assert( playerNum >= 0 && playerNum < gs.maxclients );
+	assert( playerNum >= 0 && playerNum < server_gs.maxclients );
 	client = &game.clients[playerNum];
 
 	// update client information in cgame
@@ -1143,7 +1142,7 @@ void ClientThink( edict_t *ent, usercmd_t *ucmd, int timeDelta ) {
 
 	client->ps.pmove.gravity = level.gravity;
 
-	if( GS_MatchState() >= MATCH_STATE_POSTMATCH || GS_MatchPaused()
+	if( GS_MatchState( &server_gs ) >= MATCH_STATE_POSTMATCH || GS_MatchPaused( &server_gs )
 		|| ( ent->movetype != MOVETYPE_PLAYER && ent->movetype != MOVETYPE_NOCLIP ) ) {
 		client->ps.pmove.pm_type = PM_FREEZE;
 	} else if( ent->s.type == ET_GIB ) {
@@ -1160,7 +1159,7 @@ void ClientThink( edict_t *ent, usercmd_t *ucmd, int timeDelta ) {
 	pm.cmd = *ucmd;
 
 	// perform a pmove
-	Pmove( &pm );
+	Pmove( &server_gs, &pm );
 
 	// save results of pmove
 	client->old_pmove = client->ps.pmove;
@@ -1205,7 +1204,7 @@ void ClientThink( edict_t *ent, usercmd_t *ucmd, int timeDelta ) {
 		}
 	}
 
-	ent->s.weapon = GS_ThinkPlayerWeapon( &client->ps, ucmd->buttons, ucmd->msec, client->timeDelta );
+	ent->s.weapon = GS_ThinkPlayerWeapon( &server_gs, &client->ps, ucmd->buttons, ucmd->msec, client->timeDelta );
 
 	if( G_IsDead( ent ) ) {
 		if( ent->deathTimeStamp + g_respawn_delay_min->integer <= level.time ) {
@@ -1235,7 +1234,6 @@ void G_ClientThink( edict_t *ent ) {
 	ent->r.client->ps.POVnum = ENTNUM( ent ); // set self
 
 	// run bots thinking with the rest of clients
-	// if( ( ent->r.svflags & SVF_FAKECLIENT ) && ent->think == NULL ) { TODO
 	if( ent->r.svflags & SVF_FAKECLIENT ) {
 		AI_Think( ent );
 	}
@@ -1251,7 +1249,7 @@ void G_CheckClientRespawnClick( edict_t *ent ) {
 		return;
 	}
 
-	if( GS_MatchState() >= MATCH_STATE_POSTMATCH ) {
+	if( GS_MatchState( &server_gs ) >= MATCH_STATE_POSTMATCH ) {
 		return;
 	}
 

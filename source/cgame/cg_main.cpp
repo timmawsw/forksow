@@ -188,35 +188,31 @@ static const char *CG_GS_GetConfigString( int index ) {
 */
 static void CG_InitGameShared( void ) {
 	char cstring[MAX_CONFIGSTRING_CHARS];
-	int maxclients;
-	gs_module_api_t api;
-
 	trap_GetConfigString( CS_MAXCLIENTS, cstring, MAX_CONFIGSTRING_CHARS );
-	maxclients = atoi( cstring );
+	int maxclients = atoi( cstring );
 	if( maxclients < 1 || maxclients > MAX_CLIENTS ) {
 		maxclients = MAX_CLIENTS;
 	}
 
-	memset( &api, 0, sizeof( api ) );
-	api.PredictedEvent = CG_PredictedEvent;
-	api.Error = CG_Error;
-	api.Printf = CG_Printf;
-	api.Trace = CG_GS_Trace;
-	api.GetEntityState = CG_GS_GetEntityState;
-	api.PointContents = CG_GS_PointContents;
-	api.PMoveTouchTriggers = CG_Predict_TouchTriggers;
-	api.GetConfigString = CG_GS_GetConfigString;
+	client_gs = { };
+	client_gs.module = GS_MODULE_CGAME;
+	client_gs.maxclients = maxclients;
 
-	GS_InitModule( GS_MODULE_CGAME, maxclients, &api );
+	client_gs.api.PredictedEvent = CG_PredictedEvent;
+	client_gs.api.Error = CG_Error;
+	client_gs.api.Printf = CG_Printf;
+	client_gs.api.Trace = CG_GS_Trace;
+	client_gs.api.GetEntityState = CG_GS_GetEntityState;
+	client_gs.api.PointContents = CG_GS_PointContents;
+	client_gs.api.PMoveTouchTriggers = CG_Predict_TouchTriggers;
+	client_gs.api.GetConfigString = CG_GS_GetConfigString;
 }
 
 /*
 * CG_CopyString
 */
 char *_CG_CopyString( const char *in, const char *filename, int fileline ) {
-	char *out;
-
-	out = ( char * )CG_Malloc( strlen( in ) + 1 );
+	char * out = ( char * )_Mem_AllocExt( cg_mempool, strlen( in ) + 1, 16, 1, 0, 0, filename, fileline );
 	strcpy( out, in );
 	return out;
 }
@@ -333,7 +329,7 @@ static void CG_RegisterSounds( void ) {
 		if( !CG_LoadingItemName( name ) ) {
 			return;
 		}
-		cgs.soundPrecache[i] = S_RegisterSound( name );
+		cgs.soundPrecache[i] = FindSoundEffect( name );
 	}
 
 	if( cgs.precacheSoundsStart != MAX_SOUNDS ) {
@@ -648,9 +644,6 @@ void CG_Reset( void ) {
 
 	CG_ClearAwards();
 
-	cg.time = 0;
-	cg.realTime = 0;
-
 	chaseCam.key_pressed = false;
 
 	// reset prediction optimization
@@ -663,7 +656,7 @@ void CG_Reset( void ) {
 * CG_Init
 */
 void CG_Init( const char *serverName, unsigned int playerNum,
-			  bool demoplaying, const char *demoName, bool pure,
+			  bool demoplaying, const char *demoName,
 			  unsigned snapFrameTime ) {
 	cg_mempool = _Mem_AllocPool( NULL, "CGame", MEMPOOL_CLIENTGAME, __FILE__, __LINE__ );
 
@@ -673,9 +666,6 @@ void CG_Init( const char *serverName, unsigned int playerNum,
 	memset( &cgs, 0, sizeof( cg_static_t ) );
 
 	memset( cg_entities, 0, sizeof( cg_entities ) );
-#ifdef PURE_CHEAT
-	CG_Printf( S_COLOR_MAGENTA "Hi, I'm an unpure bitch 7\n" );
-#endif
 
 	srand( time( NULL ) );
 
@@ -688,9 +678,6 @@ void CG_Init( const char *serverName, unsigned int playerNum,
 	// demo
 	cgs.demoPlaying = demoplaying;
 	cgs.demoName = demoName;
-
-	// whether to only allow pure files
-	cgs.pure = pure;
 
 	cgs.snapFrameTime = snapFrameTime;
 

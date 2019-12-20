@@ -18,22 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-// cg_screen.c -- master status bar, crosshairs, hud, etc
-
-/*
-
-full screen console
-put up loading plaque
-blanked background with loading plaque
-blanked background with menu
-full screen image for quit and victory
-
-end of unit intermissions
-
-*/
-
 #include "cg_local.h"
-#include "client/client.h"
 
 cvar_t *cg_centerTime;
 cvar_t *cg_showFPS;
@@ -159,7 +144,7 @@ void CG_DrawNet( int x, int y, int w, int h, Alignment alignment, Vec4 color ) {
 * CG_DrawCrosshair
 */
 void CG_ScreenCrosshairDamageUpdate( void ) {
-	scr_damagetime = cg.monotonicTime;
+	scr_damagetime = cls.monotonicTime;
 }
 
 static void CG_FillRect( int x, int y, int w, int h, Vec4 color ) {
@@ -196,7 +181,7 @@ void CG_DrawCrosshair() {
 		}
 	}
 
-	Vec4 color = cg.monotonicTime - scr_damagetime <= 300 ? crosshair_damage_color : crosshair_color;
+	Vec4 color = cls.monotonicTime - scr_damagetime <= 300 ? crosshair_damage_color : crosshair_color;
 
 	int w = frame_static.viewport_width;
 	int h = frame_static.viewport_height;
@@ -248,11 +233,11 @@ void CG_DrawClock( int x, int y, Alignment alignment, const Font * font, float f
 	int64_t clocktime, startTime, duration, curtime;
 	char string[12];
 
-	if( GS_MatchState() > MATCH_STATE_PLAYTIME ) {
+	if( GS_MatchState( &client_gs ) > MATCH_STATE_PLAYTIME ) {
 		return;
 	}
 
-	if( GS_RaceGametype() ) {
+	if( GS_RaceGametype( &client_gs ) ) {
 		if( cg.predictedPlayerState.stats[STAT_TIME_SELF] != STAT_NOTSET ) {
 			clocktime = cg.predictedPlayerState.stats[STAT_TIME_SELF] * 100;
 		}
@@ -260,15 +245,15 @@ void CG_DrawClock( int x, int y, Alignment alignment, const Font * font, float f
 			clocktime = 0;
 		}
 	}
-	else if( GS_MatchClockOverride() ) {
-		clocktime = GS_MatchClockOverride();
+	else if( GS_MatchClockOverride( &client_gs ) ) {
+		clocktime = GS_MatchClockOverride( &client_gs );
 		if( clocktime < 0 )
 			return;
 	}
 	else {
-		curtime = ( GS_MatchWaiting() || GS_MatchPaused() ) ? cg.frame.serverTime : cg.time;
-		duration = GS_MatchDuration();
-		startTime = GS_MatchStartTime();
+		curtime = ( GS_MatchWaiting( &client_gs ) || GS_MatchPaused( &client_gs ) ) ? cg.frame.serverTime : cl.serverTime;
+		duration = GS_MatchDuration( &client_gs );
+		startTime = GS_MatchStartTime( &client_gs );
 
 		// count downwards when having a duration
 		if( duration ) {
@@ -293,7 +278,7 @@ void CG_DrawClock( int x, int y, Alignment alignment, const Font * font, float f
 
 	// fixme?: this could have its own HUD drawing, I guess.
 
-	if( GS_RaceGametype() ) {
+	if( GS_RaceGametype( &client_gs ) ) {
 		Q_snprintfz( string, sizeof( string ), "%i:%02i.%i",
 					 minutes, ( int )seconds, ( int )( seconds * 10.0 ) % 10 );
 	}
@@ -329,11 +314,11 @@ static void CG_UpdatePointedNum( void ) {
 
 	if( cg.predictedPlayerState.stats[STAT_POINTED_PLAYER] ) {
 		cg.pointedNum = cg.predictedPlayerState.stats[STAT_POINTED_PLAYER];
-		cg.pointRemoveTime = cg.time + 150;
+		cg.pointRemoveTime = cl.serverTime + 150;
 		cg.pointedHealth = cg.predictedPlayerState.stats[STAT_POINTED_TEAMPLAYER];
 	}
 
-	if( cg.pointRemoveTime <= cg.time ) {
+	if( cg.pointRemoveTime <= cl.serverTime ) {
 		CG_ClearPointedNum();
 	}
 
@@ -359,7 +344,7 @@ void CG_DrawPlayerNames( const Font * font, float font_size, Vec4 color, bool bo
 
 	CG_UpdatePointedNum();
 
-	for( int i = 0; i < gs.maxclients; i++ ) {
+	for( int i = 0; i < client_gs.maxclients; i++ ) {
 		if( !cgs.clientInfo[i].name[0] || ISVIEWERENTITY( i + 1 ) ) {
 			continue;
 		}
@@ -402,7 +387,7 @@ void CG_DrawPlayerNames( const Font * font, float font_size, Vec4 color, bool bo
 
 			tmpcolor.w = cg_showPlayerNames_alpha->value * color.w * fadeFrac;
 		} else {
-			fadeFrac = Clamp01( ( cg.pointRemoveTime - cg.time ) / 150.0f );
+			fadeFrac = Clamp01( ( cg.pointRemoveTime - cl.serverTime ) / 150.0f );
 
 			tmpcolor.w = color.w * fadeFrac;
 		}
@@ -499,7 +484,7 @@ void CG_AddDamageNumber( entity_state_t * ent ) {
 
 	DamageNumber * dn = &damage_numbers[ damage_numbers_head ];
 
-	dn->t = cg.time;
+	dn->t = cl.serverTime;
 	dn->damage = ent->damage;
 	dn->drift = random_float11( &cls.rng );
 	dn->obituary = random_select( &cls.rng, mini_obituaries );
@@ -519,7 +504,7 @@ void CG_DrawDamageNumbers() {
 			continue;
 
 		float lifetime = Lerp( 750.0f, Clamp01( Unlerp( 0, dn.damage, MINI_OBITUARY_DAMAGE ) ), 2000.0f );
-		float frac = ( cg.time - dn.t ) / lifetime;
+		float frac = ( cl.serverTime - dn.t ) / lifetime;
 		if( frac > 1 )
 			continue;
 
@@ -605,7 +590,7 @@ void CG_AddBombHudEntity( centity_t * cent ) {
 }
 
 void CG_DrawBombHUD() {
-	if( GS_MatchState() != MATCH_STATE_PLAYTIME )
+	if( GS_MatchState( &client_gs ) != MATCH_STATE_PLAYTIME )
 		return;
 
 	int my_team = cg.predictedPlayerState.stats[ STAT_REALTEAM ];
@@ -743,11 +728,11 @@ static void CG_CalcColorBlend( float *color ) {
 
 	// Add colorblends from sfx
 	for( i = 0; i < MAX_COLORBLENDS; i++ ) {
-		if( cg.time > cg.colorblends[i].timestamp + cg.colorblends[i].blendtime ) {
+		if( cl.serverTime > cg.colorblends[i].timestamp + cg.colorblends[i].blendtime ) {
 			continue;
 		}
 
-		time = (float)( ( cg.colorblends[i].timestamp + cg.colorblends[i].blendtime ) - cg.time );
+		time = (float)( ( cg.colorblends[i].timestamp + cg.colorblends[i].blendtime ) - cl.serverTime );
 		uptime = ( (float)cg.colorblends[i].blendtime ) * 0.5f;
 		delta = 1.0f - ( fabs( time - uptime ) / uptime );
 		if( delta <= 0.0f ) {
@@ -809,7 +794,7 @@ void CG_Draw2DView( void ) {
 
 	CG_SCRDrawViewBlend();
 
-	scr_centertime_off -= cg.frameTime;
+	scr_centertime_off -= cls.frametime;
 	if( CG_ScoreboardShown() ) {
 		CG_DrawScoreboard();
 	}

@@ -196,14 +196,6 @@ static const asEnumVal_t asPMoveFeaturesVals[] =
 	ASLIB_ENUM_VAL_NULL
 };
 
-static const asEnumVal_t asItemTypeEnumVals[] =
-{
-	ASLIB_ENUM_VAL( IT_WEAPON ),
-	ASLIB_ENUM_VAL( IT_AMMO ),
-
-	ASLIB_ENUM_VAL_NULL
-};
-
 static const asEnumVal_t asWeaponTagEnumVals[] =
 {
 	ASLIB_ENUM_VAL( WEAP_NONE ),
@@ -250,12 +242,7 @@ static const asEnumVal_t asClientStateEnumVals[] =
 static const asEnumVal_t asSoundChannelEnumVals[] =
 {
 	ASLIB_ENUM_VAL( CHAN_AUTO ),
-	ASLIB_ENUM_VAL( CHAN_PAIN ),
-	ASLIB_ENUM_VAL( CHAN_VOICE ),
-	ASLIB_ENUM_VAL( CHAN_ITEM ),
 	ASLIB_ENUM_VAL( CHAN_BODY ),
-	ASLIB_ENUM_VAL( CHAN_MUZZLEFLASH ),
-	ASLIB_ENUM_VAL( CHAN_FIXED ),
 
 	ASLIB_ENUM_VAL_NULL
 };
@@ -508,19 +495,19 @@ static bool objectMatch_timeLimitHit( match_t *self ) {
 }
 
 static bool objectMatch_isPaused( match_t *self ) {
-	return GS_MatchPaused();
+	return GS_MatchPaused( &server_gs );
 }
 
 static int64_t objectMatch_startTime( match_t *self ) {
-	return GS_MatchStartTime();
+	return GS_MatchStartTime( &server_gs );
 }
 
 static int64_t objectMatch_endTime( match_t *self ) {
-	return GS_MatchEndTime();
+	return GS_MatchEndTime( &server_gs );
 }
 
 static int objectMatch_getState( match_t *self ) {
-	return GS_MatchState();
+	return GS_MatchState( &server_gs );
 }
 
 static asstring_t *objectMatch_getScore( match_t *self ) {
@@ -534,7 +521,7 @@ static void objectMatch_setScore( asstring_t *name, match_t *self ) {
 }
 
 static void objectMatch_setClockOverride( int64_t time, match_t *self ) {
-	gs.gameState.stats[GAMESTAT_CLOCKOVERRIDE] = time;
+	server_gs.gameState.stats[GAMESTAT_CLOCKOVERRIDE] = time;
 }
 
 static const asFuncdef_t match_Funcdefs[] =
@@ -591,8 +578,8 @@ static void objectGametypeDescriptor_SetTeamSpawnsystem( int team, int spawnsyst
 	G_SpawnQueue_SetTeamSpawnsystem( team, spawnsystem, wave_time, wave_maxcount, spectate_team );
 }
 
-static bool objectGametypeDescriptor_isInvidualGameType( gametype_descriptor_t *self ) {
-	return GS_InvidualGameType();
+static bool objectGametypeDescriptor_isIndividualGameType( gametype_descriptor_t *self ) {
+	return GS_IndividualGameType( &server_gs );
 }
 
 static const asFuncdef_t gametypedescr_Funcdefs[] =
@@ -608,7 +595,7 @@ static const asBehavior_t gametypedescr_ObjectBehaviors[] =
 static const asMethod_t gametypedescr_Methods[] =
 {
 	{ ASLIB_FUNCTION_DECL( void, setTeamSpawnsystem, ( int team, int spawnsystem, int wave_time, int wave_maxcount, bool deadcam ) ), asFUNCTION( objectGametypeDescriptor_SetTeamSpawnsystem ), asCALL_CDECL_OBJLAST },
-	{ ASLIB_FUNCTION_DECL( bool, get_isInvidualGameType, ( ) const ), asFUNCTION( objectGametypeDescriptor_isInvidualGameType ), asCALL_CDECL_OBJLAST },
+	{ ASLIB_FUNCTION_DECL( bool, get_isIndividualGameType, ( ) const ), asFUNCTION( objectGametypeDescriptor_isIndividualGameType ), asCALL_CDECL_OBJLAST },
 
 	ASLIB_METHOD_NULL
 };
@@ -656,7 +643,7 @@ static edict_t *objectTeamlist_GetPlayerEntity( int index, g_teamlist_t *obj ) {
 		return NULL;
 	}
 
-	if( obj->playerIndices[index] < 1 || obj->playerIndices[index] > gs.maxclients ) {
+	if( obj->playerIndices[index] < 1 || obj->playerIndices[index] > server_gs.maxclients ) {
 		return NULL;
 	}
 
@@ -838,7 +825,7 @@ static bool objectGameClient_isReady( gclient_t *self ) {
 		return false;
 	}
 
-	return ( level.ready[self - game.clients] || GS_MatchState() == MATCH_STATE_PLAYTIME ) ? true : false;
+	return ( level.ready[self - game.clients] || GS_MatchState( &server_gs ) == MATCH_STATE_PLAYTIME ) ? true : false;
 }
 
 static bool objectGameClient_isBot( gclient_t *self ) {
@@ -846,7 +833,7 @@ static bool objectGameClient_isBot( gclient_t *self ) {
 	const edict_t *ent;
 
 	playerNum = objectGameClient_PlayerNum( self );
-	if( playerNum < 0 && playerNum >= gs.maxclients ) {
+	if( playerNum < 0 && playerNum >= server_gs.maxclients ) {
 		return false;
 	}
 
@@ -879,7 +866,7 @@ static void objectGameClient_Respawn( bool ghost, gclient_t *self ) {
 
 	playerNum = objectGameClient_PlayerNum( self );
 
-	if( playerNum >= 0 && playerNum < gs.maxclients ) {
+	if( playerNum >= 0 && playerNum < server_gs.maxclients ) {
 		G_ClientRespawn( &game.edicts[playerNum + 1], ghost );
 	}
 }
@@ -888,7 +875,7 @@ static edict_t *objectGameClient_GetEntity( gclient_t *self ) {
 	int playerNum;
 
 	playerNum = objectGameClient_PlayerNum( self );
-	if( playerNum < 0 || playerNum >= gs.maxclients ) {
+	if( playerNum < 0 || playerNum >= server_gs.maxclients ) {
 		return NULL;
 	}
 
@@ -938,11 +925,11 @@ static void objectGameClient_InventoryGiveItemExt( int index, int count, gclient
 	}
 
 	int playerNum = objectGameClient_PlayerNum( self );
-	if( playerNum < 0 || playerNum >= gs.maxclients ) {
+	if( playerNum < 0 || playerNum >= server_gs.maxclients ) {
 		return;
 	}
 
-	G_PickupItem( PLAYERENT( playerNum ), it, 0, count, NULL );
+	G_PickupItem( PLAYERENT( playerNum ), it, 0, count );
 }
 
 static void objectGameClient_InventoryGiveItem( int index, gclient_t *self ) {
@@ -983,7 +970,7 @@ static void objectGameClient_addAward( asstring_t *msg, gclient_t *self ) {
 	}
 
 	playerNum = objectGameClient_PlayerNum( self );
-	if( playerNum < 0 || playerNum >= gs.maxclients ) {
+	if( playerNum < 0 || playerNum >= server_gs.maxclients ) {
 		return;
 	}
 
@@ -998,7 +985,7 @@ static void objectGameClient_execGameCommand( asstring_t *msg, gclient_t *self )
 	}
 
 	playerNum = objectGameClient_PlayerNum( self );
-	if( playerNum < 0 || playerNum >= gs.maxclients ) {
+	if( playerNum < 0 || playerNum >= server_gs.maxclients ) {
 		return;
 	}
 
@@ -1098,7 +1085,7 @@ static void objectGameClient_printMessage( asstring_t *str, gclient_t *self ) {
 	}
 
 	playerNum = objectGameClient_PlayerNum( self );
-	if( playerNum < 0 || playerNum >= gs.maxclients ) {
+	if( playerNum < 0 || playerNum >= server_gs.maxclients ) {
 		return;
 	}
 
@@ -1109,7 +1096,7 @@ static void objectGameClient_ChaseCam( asstring_t *str, bool teamonly, gclient_t
 	int playerNum;
 
 	playerNum = objectGameClient_PlayerNum( self );
-	if( playerNum < 0 || playerNum >= gs.maxclients ) {
+	if( playerNum < 0 || playerNum >= server_gs.maxclients ) {
 		return;
 	}
 
@@ -1120,7 +1107,7 @@ static void objectGameClient_SetChaseActive( bool active, gclient_t *self ) {
 	int playerNum;
 
 	playerNum = objectGameClient_PlayerNum( self );
-	if( playerNum < 0 || playerNum >= gs.maxclients ) {
+	if( playerNum < 0 || playerNum >= server_gs.maxclients ) {
 		return;
 	}
 
@@ -1632,11 +1619,11 @@ void objectTrace_CopyConstructor( astrace_t *other, astrace_t *self ) {
 
 static bool objectTrace_doTrace4D( asvec3_t *start, asvec3_t *mins, asvec3_t *maxs, asvec3_t *end, int ignore, int contentMask, int timeDelta, astrace_t *self ) {
 	if( !start || !end ) { // should never happen unless the coder explicitly feeds null
-		gs.api.Printf( "* WARNING: gametype plug-in script attempted to call method 'trace.doTrace' with a null vector pointer\n* Tracing skept" );
+		server_gs.api.Printf( "* WARNING: gametype plug-in script attempted to call method 'trace.doTrace' with a null vector pointer\n* Tracing skept" );
 		return false;
 	}
 
-	gs.api.Trace( &self->trace, start->v, mins ? mins->v : vec3_origin, maxs ? maxs->v : vec3_origin, end->v, ignore, contentMask, 0 );
+	server_gs.api.Trace( &self->trace, start->v, mins ? mins->v : vec3_origin, maxs ? maxs->v : vec3_origin, end->v, ignore, contentMask, 0 );
 
 	if( self->trace.startsolid || self->trace.allsolid ) {
 		return true;
@@ -1816,7 +1803,7 @@ static edict_t *asFunc_GetEntity( int entNum ) {
 }
 
 static gclient_t *asFunc_GetClient( int clientNum ) {
-	if( clientNum < 0 || clientNum >= gs.maxclients ) {
+	if( clientNum < 0 || clientNum >= server_gs.maxclients ) {
 		return NULL;
 	}
 
@@ -2014,42 +2001,20 @@ static int asFunc_ImageIndex( asstring_t *str ) {
 	return trap_ImageIndex( str->buffer );
 }
 
-static int asFunc_ModelIndexExt( asstring_t *str, bool pure ) {
-	int index;
-
-	if( !str || !str->buffer ) {
-		return 0;
-	}
-
-	index = trap_ModelIndex( str->buffer );
-	if( index && pure ) {
-		G_PureModel( str->buffer );
-	}
-
-	return index;
-}
-
 static int asFunc_ModelIndex( asstring_t *str ) {
-	return asFunc_ModelIndexExt( str, false );
-}
-
-static int asFunc_SoundIndexExt( asstring_t *str, bool pure ) {
-	int index;
-
 	if( !str || !str->buffer ) {
 		return 0;
 	}
 
-	index = trap_SoundIndex( str->buffer );
-	if( index && pure ) {
-		G_PureSound( str->buffer );
-	}
-
-	return index;
+	return trap_ModelIndex( str->buffer );
 }
 
 static int asFunc_SoundIndex( asstring_t *str ) {
-	return asFunc_SoundIndexExt( str, false );
+	if( !str || !str->buffer ) {
+		return 0;
+	}
+
+	return trap_SoundIndex( str->buffer );
 }
 
 static void asFunc_RegisterCommand( asstring_t *str ) {
@@ -2146,7 +2111,7 @@ static void asFunc_G_LocalSound( gclient_t *target, int channel, int soundindex 
 	if( target && !target->asFactored ) {
 		int playerNum = target - game.clients;
 
-		if( playerNum < 0 || playerNum >= gs.maxclients ) {
+		if( playerNum < 0 || playerNum >= server_gs.maxclients ) {
 			return;
 		}
 
@@ -2165,7 +2130,7 @@ static void asFunc_G_AnnouncerSound( gclient_t *target, int soundindex, int team
 	if( target && !target->asFactored ) {
 		playerNum = target - game.clients;
 
-		if( playerNum < 0 || playerNum >= gs.maxclients ) {
+		if( playerNum < 0 || playerNum >= server_gs.maxclients ) {
 			return;
 		}
 
@@ -2175,7 +2140,7 @@ static void asFunc_G_AnnouncerSound( gclient_t *target, int soundindex, int team
 	if( ignore && !ignore->asFactored ) {
 		playerNum = ignore - game.clients;
 
-		if( playerNum >= 0 && playerNum < gs.maxclients ) {
+		if( playerNum >= 0 && playerNum < server_gs.maxclients ) {
 			passent = game.edicts + playerNum + 1;
 		}
 	}
@@ -2271,8 +2236,6 @@ static const asglobfuncs_t asGameGlobFuncs[] =
 	{ "int G_ImageIndex( const String &in )", asFUNCTION( asFunc_ImageIndex ), NULL },
 	{ "int G_ModelIndex( const String &in )", asFUNCTION( asFunc_ModelIndex ), NULL },
 	{ "int G_SoundIndex( const String &in )", asFUNCTION( asFunc_SoundIndex ), NULL },
-	{ "int G_ModelIndex( const String &in, bool pure )", asFUNCTION( asFunc_ModelIndexExt ), NULL },
-	{ "int G_SoundIndex( const String &in, bool pure )", asFUNCTION( asFunc_SoundIndexExt ), NULL },
 	{ "void G_RegisterCommand( const String &in )", asFUNCTION( asFunc_RegisterCommand ), NULL },
 	{ "void G_RegisterCallvote( const String &in, const String &in, const String &in, const String &in )", asFUNCTION( asFunc_RegisterCallvote ), NULL },
 	{ "const String @G_ConfigString( int index )", asFUNCTION( asFunc_GetConfigString ), NULL },
@@ -2298,12 +2261,11 @@ static const asglobproperties_t asGlobProps[] =
 {
 	{ "const int64 levelTime", &level.time },
 	{ "const uint frameTime", &game.frametime },
-	{ "const int64 realTime", &game.realtime },
+	{ "const int64 realTime", &svs.realtime },
 
-	//{ "const uint serverTime", &game.serverTime }, // I think this one isn't script business
 	{ "const int maxEntities", &game.maxentities },
 	{ "const int numEntities", &game.numentities },
-	{ "const int maxClients", &gs.maxclients },
+	{ "const int maxClients", &server_gs.maxclients },
 	{ "GametypeDesc gametype", &level.gametype },
 	{ "Match match", &level.gametype.match },
 
@@ -2825,8 +2787,6 @@ static void G_asRegisterGlobalProperties( asIScriptEngine *asEngine,
 * G_InitializeGameModuleSyntax
 */
 static void G_InitializeGameModuleSyntax( asIScriptEngine *asEngine ) {
-	G_Printf( "* Initializing Game module syntax\n" );
-
 	// register global enums
 	G_asRegisterEnums( asEngine, asGameEnums, NULL );
 
@@ -2853,7 +2813,6 @@ void G_asInitGameModuleEngine( void ) {
 	G_ResetGameModuleScriptData();
 
 	// initialize the engine
-	Com_Printf( "Initializing Angel Script\n" );
 	game.asExport = QAS_GetAngelExport();
 
 	asEngine = game.asExport->asCreateEngine( &asGeneric );
@@ -2904,20 +2863,20 @@ void G_asGarbageCollect( bool force ) {
 		return;
 	}
 
-	if( lastTime > game.serverTime ) {
+	if( lastTime > svs.gametime ) {
 		force = true;
 	}
 
-	if( force || lastTime + g_asGC_interval->value * 1000 < game.serverTime ) {
+	if( force || lastTime + g_asGC_interval->value * 1000 < svs.gametime ) {
 		asEngine->GetGCStatistics( &currentSize, &totalDestroyed, &totalDetected );
 
 		if( g_asGC_stats->integer ) {
-			G_Printf( "GC: t=%" PRIi64 " size=%u destroyed=%u detected=%u\n", game.serverTime, currentSize, totalDestroyed, totalDetected );
+			G_Printf( "GC: t=%" PRIi64 " size=%u destroyed=%u detected=%u\n", svs.gametime, currentSize, totalDestroyed, totalDetected );
 		}
 
 		asEngine->GarbageCollect();
 
-		lastTime = game.serverTime;
+		lastTime = svs.gametime;
 	}
 }
 

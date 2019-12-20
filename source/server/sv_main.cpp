@@ -18,8 +18,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "server.h"
+#include "server/server.h"
 #include "qcommon/version.h"
+#include "qcommon/csprng.h"
 
 static bool sv_initialized = false;
 
@@ -42,9 +43,6 @@ cvar_t *sv_uploads_http;
 cvar_t *sv_uploads_baseurl;
 cvar_t *sv_uploads_demos;
 cvar_t *sv_uploads_demos_baseurl;
-
-cvar_t *sv_pure;
-cvar_t *sv_pure_forcemodulepk3;
 
 cvar_t *sv_maxclients;
 
@@ -419,7 +417,7 @@ static bool SV_RunGameFrame( int msec ) {
 			time_before_game = Sys_Milliseconds();
 		}
 
-		ge->RunFrame( moduleTime, svs.gametime );
+		ge->RunFrame( moduleTime );
 
 		if( host_speeds->integer ) {
 			time_after_game = Sys_Milliseconds();
@@ -462,38 +460,14 @@ static void SV_CheckDefaultMap( void ) {
 }
 
 /*
-* SV_UpdateActivity
-*/
-void SV_UpdateActivity( void ) {
-	svc.lastActivity = Sys_Milliseconds();
-}
-
-/*
-* SV_CheckPostUpdateRestart
-*/
-static void SV_CheckPostUpdateRestart( void ) {
-	// do not if there has been any activity in last 5 minutes
-	if( ( svc.lastActivity + 300000 ) > Sys_Milliseconds() ) {
-		return;
-	}
-
-	// if there are any new filesystem entries, restart
-	if( FS_GetNotifications() & FS_NOTIFY_NEWPAKS ) {
-		if( sv.state != ss_dead ) {
-			// restart the current map, SV_Map also rescans the filesystem
-			Com_Printf( "The server will now restart...\n\n" );
-
-			// start the default map if current map isn't available
-			Cbuf_ExecuteText( EXEC_APPEND, va( "map %s\n", svs.mapcmd[0] ? svs.mapcmd : sv_defaultmap->string ) );
-		}
-	}
-}
-
-/*
 * SV_Frame
 */
 void SV_Frame( unsigned realmsec, unsigned gamemsec ) {
 	ZoneScoped;
+
+	u64 entropy[ 2 ];
+	CSPRNG_Bytes( entropy, sizeof( entropy ) );
+	sv.rng = new_rng( entropy[ 0 ], entropy[ 1 ] );
 
 	time_before_game = time_after_game = 0;
 
@@ -529,8 +503,6 @@ void SV_Frame( unsigned realmsec, unsigned gamemsec ) {
 		// clear teleport flags, etc for next frame
 		ge->ClearSnap();
 	}
-
-	SV_CheckPostUpdateRestart();
 }
 
 //============================================================================
@@ -582,8 +554,6 @@ void SV_UserinfoChanged( client_t *client ) {
 
 /*
 * SV_Init
-*
-* Only called at plat.exe startup, not for each game
 */
 void SV_Init( void ) {
 	cvar_t *sv_pps;
@@ -630,21 +600,16 @@ void SV_Init( void ) {
 	sv_uploads_demos =      Cvar_Get( "sv_uploads_demos", "1", CVAR_ARCHIVE );
 	sv_uploads_demos_baseurl =  Cvar_Get( "sv_uploads_demos_baseurl", "", CVAR_ARCHIVE );
 	if( is_dedicated_server ) {
-		sv_pure =       Cvar_Get( "sv_pure", "1", CVAR_ARCHIVE | CVAR_LATCH | CVAR_SERVERINFO );
-
 #ifdef PUBLIC_BUILD
 		sv_public =     Cvar_Get( "sv_public", "1", CVAR_LATCH );
 #else
 		sv_public =     Cvar_Get( "sv_public", "0", CVAR_LATCH );
 #endif
 	} else {
-		sv_pure =       Cvar_Get( "sv_pure", "0", CVAR_ARCHIVE | CVAR_LATCH | CVAR_SERVERINFO );
 		sv_public =     Cvar_Get( "sv_public", "0", CVAR_LATCH );
 	}
 
 	sv_iplimit = Cvar_Get( "sv_iplimit", "3", CVAR_ARCHIVE );
-
-	sv_pure_forcemodulepk3 =    Cvar_Get( "sv_pure_forcemodulepk3", "", CVAR_LATCH );
 
 	sv_defaultmap =         Cvar_Get( "sv_defaultmap", "dust", CVAR_ARCHIVE );
 	sv_reconnectlimit =     Cvar_Get( "sv_reconnectlimit", "3", CVAR_ARCHIVE );
@@ -701,8 +666,6 @@ void SV_Init( void ) {
 		svc.gameFrameTime = svc.snapFrameTime;
 		Cvar_ForceSet( "sv_fps", sv_pps->dvalue );
 	}
-
-	Com_Printf( "Game running at %i fps. Server transmit at %i pps\n", sv_fps->integer, sv_pps->integer );
 
 	//init the master servers list
 	SV_InitMaster();

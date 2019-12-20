@@ -17,12 +17,13 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
  */
-// client.h -- primary header for client
+#pragma once
 
 #include "qcommon/qcommon.h"
 #include "qcommon/types.h"
 #include "qcommon/rng.h"
 #include "cgame/cg_public.h"
+#include "gameshared/gs_public.h"
 
 #include "client/renderer/renderer.h"
 #include "vid.h"
@@ -106,7 +107,6 @@ typedef struct {
 	// for request
 	char *requestname;              // file we requested from the server (NULL if none requested)
 	bool requestnext;           // whether to request next download after this, for precaching
-	bool requestpak;            // whether to only allow .pk3/.pak or only allow normal file
 	int64_t timeout;
 	int64_t timestart;
 
@@ -119,7 +119,7 @@ typedef struct {
 
 	double percent;
 	int successCount;               // so we know to restart media
-	download_list_t *list;          // list of all tried downloads, so we don't request same pk3 twice
+	download_list_t *list;          // list of all tried downloads, so we don't request same file twice
 
 	// server download
 	int filenum;
@@ -129,8 +129,6 @@ typedef struct {
 
 	// web download
 	bool web;
-	bool web_official;
-	bool web_official_only;
 	char *web_url;                  // download URL, passed by the server
 	bool web_local_http;
 
@@ -164,8 +162,6 @@ typedef struct {
 	char meta_data[SNAP_MAX_DEMO_META_DATA_SIZE];
 	size_t meta_data_realsize;
 } cl_demo_t;
-
-typedef cl_demo_t demorec_t;
 
 typedef struct {
 	ArenaAllocator frame_arena;
@@ -219,7 +215,7 @@ typedef struct {
 	// demo recording info must be here, so it isn't cleared on level change
 	cl_demo_t demo;
 
-	Texture whiteTexture;
+	const Material * whiteTexture;
 
 	// system font
 	qfontface_t *consoleFont;
@@ -242,12 +238,6 @@ typedef struct {
 	int64_t lastPacketSentTime;
 	int64_t lastPacketReceivedTime;
 
-	// pure list
-	bool sv_pure;
-	bool pure_restart;
-
-	purelist_t *purelist;
-
 	char session[MAX_INFO_VALUE];
 
 	ImFont * huge_font;
@@ -258,6 +248,7 @@ typedef struct {
 } client_static_t;
 
 extern client_static_t cls;
+extern gs_state_t client_gs;
 
 //=============================================================================
 
@@ -297,15 +288,10 @@ void CL_SendMessagesToServer( bool sendNow );
 void CL_RestartTimeDeltas( int newTimeDelta );
 void CL_AdjustServerTime( unsigned int gamemsec );
 
-char *CL_GetClipboardData( void );
-void CL_SetClipboardData( const char *data );
-void CL_FreeClipboardData( char *data );
-keydest_t CL_GetKeyDest( void );              // wsw : aiwa : we need this information for graphical plugins (e.g. IRC)
 void CL_SetKeyDest( keydest_t key_dest );
 void CL_SetOldKeyDest( keydest_t key_dest );
 void CL_ResetServerCount( void );
 void CL_SetClientState( connstate_t state );
-connstate_t CL_GetClientState( void );  // wsw : aiwa : we need this information for graphical plugins (e.g. IRC)
 void CL_ClearState( void );
 void CL_ReadPackets( void );
 void CL_Disconnect_f( void );
@@ -391,7 +377,7 @@ void CL_ParseServerMessage( msg_t *msg );
 void CL_FreeDownloadList( void );
 bool CL_CheckOrDownloadFile( const char *filename );
 
-bool CL_DownloadRequest( const char *filename, bool requestpak );
+bool CL_DownloadRequest( const char *filename );
 void CL_DownloadStatus_f( void );
 void CL_DownloadCancel_f( void );
 void CL_DownloadDone( void );

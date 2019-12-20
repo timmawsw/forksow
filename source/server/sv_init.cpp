@@ -18,9 +18,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "server.h"
-
-#include "../qcommon/sys_library.h"
+#include "server/server.h"
+#include "qcommon/csprng.h"
 
 server_constant_t svc;              // constant server info (trully persistant since sv_init)
 server_static_t svs;                // persistant server info
@@ -108,101 +107,6 @@ static void SV_CreateBaseline( void ) {
 }
 
 /*
-* SV_PureList_f
-*/
-void SV_PureList_f( void ) {
-	purelist_t *purefile;
-
-	Com_Printf( "Pure files:\n" );
-	purefile = svs.purelist;
-	while( purefile ) {
-		Com_Printf( "- %s (%u)\n", purefile->filename, purefile->checksum );
-		purefile = purefile->next;
-	}
-}
-
-/*
-* SV_AddPurePak
-*/
-static void SV_AddPurePak( const char *pakname ) {
-	if( !Com_FindPakInPureList( svs.purelist, pakname ) ) {
-		Com_AddPakToPureList( &svs.purelist, pakname, FS_ChecksumBaseFile( pakname, false ), NULL );
-	}
-}
-
-/*
-* SV_AddPureFile
-*/
-void SV_AddPureFile( const char *filename ) {
-	const char *pakname;
-
-	if( !filename || !strlen( filename ) ) {
-		return;
-	}
-
-	pakname = FS_PakNameForFile( filename );
-
-	if( pakname ) {
-		Com_DPrintf( "Pure file: %s (%s)\n", pakname, filename );
-		SV_AddPurePak( pakname );
-	}
-}
-
-/*
-* SV_ReloadPureList
-*/
-static void SV_ReloadPureList( void ) {
-	char **paks;
-	int i, numpaks;
-
-	Com_FreePureList( &svs.purelist );
-
-	// game modules
-	if( sv_pure_forcemodulepk3->string[0] ) {
-		if( Q_strnicmp( COM_FileBase( sv_pure_forcemodulepk3->string ), "modules", strlen( "modules" ) ) ||
-			!FS_IsPakValid( sv_pure_forcemodulepk3->string, NULL ) ) {
-			Com_Printf( "Warning: Invalid value for sv_pure_forcemodulepk3, disabling\n" );
-			Cvar_ForceSet( "sv_pure_forcemodulepk3", "" );
-		} else {
-			SV_AddPurePak( sv_pure_forcemodulepk3->string );
-		}
-	}
-
-	if( !sv_pure_forcemodulepk3->string[0] ) {
-		char *libname;
-		int libname_size;
-
-		libname_size = strlen( LIB_PREFIX ) + strlen( "game" ) + strlen( LIB_SUFFIX ) + 1;
-		libname = ( char * ) Mem_TempMalloc( libname_size );
-		Q_snprintfz( libname, libname_size, LIB_PREFIX "game" LIB_SUFFIX );
-
-		if( !FS_PakNameForFile( libname ) ) {
-			if( sv_pure->integer ) {
-				Com_Printf( "Warning: Game module not in pk3, disabling pure mode\n" );
-				Com_Printf( "sv_pure_forcemodulepk3 can be used to force the pure system to use a different module\n" );
-				Cvar_ForceSet( "sv_pure", "0" );
-			}
-		} else {
-			SV_AddPureFile( libname );
-		}
-
-		Mem_TempFree( libname );
-		libname = NULL;
-	}
-
-	// *pure.(pk3|pak)
-	paks = NULL;
-	numpaks = FS_GetExplicitPurePakList( &paks );
-	if( numpaks ) {
-		for( i = 0; i < numpaks; i++ ) {
-			SV_AddPurePak( paks[i] );
-			Mem_ZoneFree( paks[i] );
-		}
-		Mem_ZoneFree( paks );
-	}
-}
-
-/*
 * SV_SetServerConfigStrings
 */
 void SV_SetServerConfigStrings( void ) {
@@ -223,7 +127,6 @@ static void SV_SpawnServer( const char *server, bool devmap ) {
 	}
 	Cvar_FixCheatVars();
 
-	Com_Printf( "------- Server Initialization -------\n" );
 	Com_Printf( "SpawnServer: %s\n", server );
 
 	svs.spawncount++;   // any partially connected client will be restarted
@@ -232,10 +135,14 @@ static void SV_SpawnServer( const char *server, bool devmap ) {
 
 	// wipe the entire per-level structure
 	memset( &sv, 0, sizeof( sv ) );
+
+	u64 entropy[ 2 ];
+	CSPRNG_Bytes( entropy, sizeof( entropy ) );
+	sv.rng = new_rng( entropy[ 0 ], entropy[ 1 ] );
+
 	SV_ResetClientFrameCounters();
 	svs.realtime = 0;
 	svs.gametime = 0;
-	SV_UpdateActivity();
 
 	Q_strncpyz( sv.mapname, server, sizeof( sv.mapname ) );
 
@@ -264,15 +171,12 @@ static void SV_SpawnServer( const char *server, bool devmap ) {
 	sv.state = ss_loading;
 	Com_SetServerState( sv.state );
 
-	// set purelist
-	SV_ReloadPureList();
-
 	// load and spawn all other entities
-	ge->InitLevel( sv.mapname, CM_EntityString( svs.cms ), CM_EntityStringLen( svs.cms ), 0, svs.gametime, svs.realtime );
+	ge->InitLevel( sv.mapname, CM_EntityString( svs.cms ), CM_EntityStringLen( svs.cms ), 0 );
 
 	// run two frames to allow everything to settle
-	ge->RunFrame( svc.snapFrameTime, svs.gametime );
-	ge->RunFrame( svc.snapFrameTime, svs.gametime );
+	ge->RunFrame( svc.snapFrameTime );
+	ge->RunFrame( svc.snapFrameTime );
 
 	SV_CreateBaseline(); // create a baseline for more efficient communications
 
@@ -281,8 +185,6 @@ static void SV_SpawnServer( const char *server, bool devmap ) {
 	// all precaches are complete
 	sv.state = ss_game;
 	Com_SetServerState( sv.state );
-
-	Com_Printf( "-------------------------------------\n" );
 }
 
 /*
@@ -464,7 +366,9 @@ void SV_ShutdownGame( const char *finalmsg, bool reconnect ) {
 	memset( &sv, 0, sizeof( sv ) );
 	Com_SetServerState( sv.state );
 
-	Com_FreePureList( &svs.purelist );
+	u64 entropy[ 2 ];
+	CSPRNG_Bytes( entropy, sizeof( entropy ) );
+	sv.rng = new_rng( entropy[ 0 ], entropy[ 1 ] );
 
 	if( sv_mempool ) {
 		Mem_EmptyPool( sv_mempool );

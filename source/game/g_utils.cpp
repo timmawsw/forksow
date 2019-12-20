@@ -263,13 +263,6 @@ char *_G_LevelCopyString( const char *in, const char *filename, int fileline ) {
 	return out;
 }
 
-/*
-* G_LevelGarbageCollect
-*/
-void G_LevelGarbageCollect( void ) {
-	//G_Z_Print( levelzone );
-}
-
 //==============================================================================
 
 #define STRINGPOOL_SIZE         1024 * 1024
@@ -357,15 +350,6 @@ const char *_G_RegisterLevelString( const char *string, const char *filename, in
 
 	return ps->buf;
 }
-
-//==============================================================================
-
-void G_ProjectSource( vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t result ) {
-	result[0] = point[0] + forward[0] * distance[0] + right[0] * distance[1];
-	result[1] = point[1] + forward[1] * distance[0] + right[1] * distance[1];
-	result[2] = point[2] + forward[2] * distance[0] + right[2] * distance[1] + distance[2];
-}
-
 
 /*
 * G_Find
@@ -554,9 +538,7 @@ void G_SetMovedir( vec3_t angles, vec3_t movedir ) {
 }
 
 char *_G_CopyString( const char *in, const char *filename, int fileline ) {
-	char *out;
-
-	out = ( char * )trap_MemAlloc( strlen( in ) + 1, filename, fileline );
+	char * out = ( char * )_Mem_AllocExt( gamepool, strlen( in ) + 1, 16, 1, 0, 0, filename, fileline );
 	strcpy( out, in );
 	return out;
 }
@@ -579,8 +561,8 @@ void G_FreeEdict( edict_t *ed ) {
 	ed->r.svflags = SVF_NOCLIENT;
 	ed->scriptSpawned = false;
 
-	if( !evt && ( level.spawnedTimeStamp != game.realtime ) ) {
-		ed->freetime = game.realtime; // ET_EVENT or ET_SOUND don't need to wait to be reused
+	if( !evt && ( level.spawnedTimeStamp != svs.realtime ) ) {
+		ed->freetime = svs.realtime; // ET_EVENT or ET_SOUND don't need to wait to be reused
 	}
 }
 
@@ -608,9 +590,6 @@ void G_InitEdict( edict_t *e ) {
 	// clear the old state data
 	memset( &e->olds, 0, sizeof( e->olds ) );
 	memset( &e->snap, 0, sizeof( e->snap ) );
-
-	//wsw clean up the backpack counts
-	memset( e->invpak, 0, sizeof( e->invpak ) );
 }
 
 /*
@@ -631,15 +610,15 @@ edict_t *G_Spawn( void ) {
 	}
 
 	freed = NULL;
-	e = &game.edicts[gs.maxclients + 1];
-	for( i = gs.maxclients + 1; i < game.numentities; i++, e++ ) {
+	e = &game.edicts[server_gs.maxclients + 1];
+	for( i = server_gs.maxclients + 1; i < game.numentities; i++, e++ ) {
 		if( e->r.inuse ) {
 			continue;
 		}
 
 		// the first couple seconds of server time can involve a lot of
 		// freeing and allocating, so relax the replacement policy
-		if( e->freetime < level.spawnedTimeStamp + 2000 || game.realtime > e->freetime + 500 ) {
+		if( e->freetime < level.spawnedTimeStamp + 2000 || svs.realtime > e->freetime + 500 ) {
 			G_InitEdict( e );
 			return e;
 		}
@@ -735,11 +714,9 @@ void G_InitMover( edict_t *ent ) {
 	ent->r.svflags &= ~SVF_NOCLIENT;
 
 	GClip_SetBrushModel( ent, ent->model );
-	G_PureModel( ent->model );
 
 	if( ent->model2 ) {
 		ent->s.modelindex2 = trap_ModelIndex( ent->model2 );
-		G_PureModel( ent->model2 );
 	}
 
 	if( ent->light || !VectorCompare( ent->color, vec3_origin ) ) {
@@ -922,7 +899,7 @@ void G_ChatMsg( edict_t *ent, edict_t *who, bool teamonly, const char *format, .
 		if( who && teamonly ) {
 			int i;
 
-			for( i = 0; i < gs.maxclients; i++ ) {
+			for( i = 0; i < server_gs.maxclients; i++ ) {
 				ent = game.edicts + 1 + i;
 
 				if( ent->r.inuse && ent->r.client && trap_GetClientState( i ) >= CS_CONNECTED ) {
@@ -969,7 +946,7 @@ void G_CenterPrintMsg( edict_t *ent, const char *format, ... ) {
 
 	if( ent != NULL ) {
 		// add it to every player who's chasing this player
-		for( other = game.edicts + 1; PLAYERNUM( other ) < gs.maxclients; other++ ) {
+		for( other = game.edicts + 1; PLAYERNUM( other ) < server_gs.maxclients; other++ ) {
 			if( !other->r.client || !other->r.inuse || !other->r.client->resp.chase.active ) {
 				continue;
 			}
@@ -1411,7 +1388,7 @@ edict_t *G_PlayerForText( const char *text ) {
 
 	int pnum = atoi( text );
 
-	if( !Q_stricmp( text, va( "%i", pnum ) ) && pnum >= 0 && pnum < gs.maxclients && game.edicts[pnum + 1].r.inuse ) {
+	if( !Q_stricmp( text, va( "%i", pnum ) ) && pnum >= 0 && pnum < server_gs.maxclients && game.edicts[pnum + 1].r.inuse ) {
 		return &game.edicts[atoi( text ) + 1];
 	}
 
@@ -1419,7 +1396,7 @@ edict_t *G_PlayerForText( const char *text ) {
 	edict_t *e;
 
 	// check if it's a known player name
-	for( i = 0, e = game.edicts + 1; i < gs.maxclients; i++, e++ ) {
+	for( i = 0, e = game.edicts + 1; i < server_gs.maxclients; i++, e++ ) {
 		if( !e->r.inuse ) {
 			continue;
 		}
@@ -1453,7 +1430,7 @@ void G_AnnouncerSound( edict_t *targ, int soundindex, int team, bool queued, edi
 	} else {   // add it to all players
 		edict_t *ent;
 
-		for( ent = game.edicts + 1; PLAYERNUM( ent ) < gs.maxclients; ent++ ) {
+		for( ent = game.edicts + 1; PLAYERNUM( ent ) < server_gs.maxclients; ent++ ) {
 			if( !ent->r.inuse || trap_GetClientState( PLAYERNUM( ent ) ) < CS_SPAWNED ) {
 				continue;
 			}
@@ -1480,24 +1457,6 @@ void G_AnnouncerSound( edict_t *targ, int soundindex, int team, bool queued, edi
 			G_AddPlayerStateEvent( ent->r.client, psev, soundindex );
 		}
 	}
-}
-
-/*
-* G_PureSound
-*/
-void G_PureSound( const char *sound ) {
-	assert( sound && sound[0] && strlen( sound ) < MAX_CONFIGSTRING_CHARS );
-
-	trap_PureSound( sound );
-}
-
-/*
-* G_PureModel
-*/
-void G_PureModel( const char *model ) {
-	assert( model && model[0] && strlen( model ) < MAX_CONFIGSTRING_CHARS );
-
-	trap_PureModel( model );
 }
 
 /*

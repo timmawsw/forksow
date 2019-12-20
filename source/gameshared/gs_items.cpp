@@ -10,6 +10,8 @@ const Item itemdefs[] = {
 		RGB8( 255, 100, 255 ),
 		"Hello",
 		100,
+		30,
+		4,
 
 		NULL, NULL, NULL
 	},
@@ -36,7 +38,7 @@ const Item * GS_FindItemByName( const char * name ) {
 	return NULL;
 }
 
-const bool GS_CanEquip( const player_state_t * playerState, ItemType type ) {
+bool GS_CanEquip( const player_state_t * playerState, ItemType type ) {
 	if( !playerState->inventory[ type ] ) {
 		return false;
 	}

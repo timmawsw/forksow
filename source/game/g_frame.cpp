@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 * G_Timeout_Reset
 */
 void G_Timeout_Reset( void ) {
-	GS_GamestatSetFlag( GAMESTAT_FLAG_PAUSED, false );
+	G_GamestatSetFlag( GAMESTAT_FLAG_PAUSED, false );
 	level.timeout = { };
 }
 
@@ -39,7 +39,7 @@ static void G_Timeout_Update( unsigned int msec ) {
 	static int timeout_last_endtime = 0;
 	static int countdown_set = 1;
 
-	if( !GS_MatchPaused() ) {
+	if( !GS_MatchPaused( &server_gs ) ) {
 		return;
 	}
 
@@ -54,7 +54,7 @@ static void G_Timeout_Update( unsigned int msec ) {
 	if( level.timeout.endtime && level.timeout.time >= level.timeout.endtime ) {
 		level.timeout.time = 0;
 		level.timeout.caller = -1;
-		GS_GamestatSetFlag( GAMESTAT_FLAG_PAUSED, false );
+		G_GamestatSetFlag( GAMESTAT_FLAG_PAUSED, false );
 
 		timeout_printtime = 0;
 		timeout_last_endtime = -1;
@@ -88,22 +88,22 @@ static void G_Timeout_Update( unsigned int msec ) {
 */
 static void G_UpdateServerInfo( void ) {
 	// g_match_time
-	if( GS_MatchState() <= MATCH_STATE_WARMUP ) {
+	if( GS_MatchState( &server_gs ) <= MATCH_STATE_WARMUP ) {
 		trap_Cvar_ForceSet( "g_match_time", "Warmup" );
-	} else if( GS_MatchState() == MATCH_STATE_COUNTDOWN ) {
+	} else if( GS_MatchState( &server_gs ) == MATCH_STATE_COUNTDOWN ) {
 		trap_Cvar_ForceSet( "g_match_time", "Countdown" );
-	} else if( GS_MatchState() == MATCH_STATE_PLAYTIME ) {
+	} else if( GS_MatchState( &server_gs ) == MATCH_STATE_PLAYTIME ) {
 		// partly from G_GetMatchState
 		char extra[MAX_INFO_VALUE];
 		int clocktime, timelimit, mins, secs;
 
-		if( GS_MatchDuration() ) {
-			timelimit = ( ( GS_MatchDuration() ) * 0.001 ) / 60;
+		if( GS_MatchDuration( &server_gs ) ) {
+			timelimit = ( ( GS_MatchDuration( &server_gs ) ) * 0.001 ) / 60;
 		} else {
 			timelimit = 0;
 		}
 
-		clocktime = (float)( game.serverTime - GS_MatchStartTime() ) * 0.001f;
+		clocktime = (float)( svs.gametime - GS_MatchStartTime( &server_gs ) ) * 0.001f;
 
 		if( clocktime <= 0 ) {
 			mins = 0;
@@ -114,7 +114,7 @@ static void G_UpdateServerInfo( void ) {
 		}
 
 		extra[0] = 0;
-		if( GS_MatchPaused() ) {
+		if( GS_MatchPaused( &server_gs ) ) {
 			Q_strncatz( extra, " (in timeout)", sizeof( extra ) );
 		}
 
@@ -128,7 +128,7 @@ static void G_UpdateServerInfo( void ) {
 	}
 
 	// g_match_score
-	if( GS_MatchState() >= MATCH_STATE_PLAYTIME && GS_TeamBasedGametype() ) {
+	if( GS_MatchState( &server_gs ) >= MATCH_STATE_PLAYTIME && GS_TeamBasedGametype( &server_gs ) ) {
 		char score[MAX_INFO_STRING];
 
 		score[0] = 0;
@@ -179,8 +179,8 @@ void G_CheckCvars( void ) {
 
 	if( g_warmup_timelimit->modified ) {
 		// if we are inside timelimit period, update the endtime
-		if( GS_MatchState() == MATCH_STATE_WARMUP ) {
-			gs.gameState.stats[GAMESTAT_MATCHDURATION] = (int64_t)fabs( 60.0f * 1000 * g_warmup_timelimit->integer );
+		if( GS_MatchState( &server_gs ) == MATCH_STATE_WARMUP ) {
+			server_gs.gameState.stats[GAMESTAT_MATCHDURATION] = (int64_t)fabs( 60.0f * 1000 * g_warmup_timelimit->integer );
 		}
 		g_warmup_timelimit->modified = false;
 	}
@@ -188,17 +188,17 @@ void G_CheckCvars( void ) {
 	// update gameshared server settings
 
 	// FIXME: This should be restructured so gameshared settings are the master settings
-	GS_GamestatSetFlag( GAMESTAT_FLAG_HASCHALLENGERS, level.gametype.hasChallengersQueue );
+	G_GamestatSetFlag( GAMESTAT_FLAG_HASCHALLENGERS, level.gametype.hasChallengersQueue );
 
-	GS_GamestatSetFlag( GAMESTAT_FLAG_ISTEAMBASED, level.gametype.isTeamBased );
-	GS_GamestatSetFlag( GAMESTAT_FLAG_ISRACE, level.gametype.isRace );
+	G_GamestatSetFlag( GAMESTAT_FLAG_ISTEAMBASED, level.gametype.isTeamBased );
+	G_GamestatSetFlag( GAMESTAT_FLAG_ISRACE, level.gametype.isRace );
 
-	GS_GamestatSetFlag( GAMESTAT_FLAG_COUNTDOWN, level.gametype.countdownEnabled );
-	GS_GamestatSetFlag( GAMESTAT_FLAG_INHIBITSHOOTING, level.gametype.shootingDisabled );
-	GS_GamestatSetFlag( GAMESTAT_FLAG_INFINITEAMMO, level.gametype.infiniteAmmo );
-	GS_GamestatSetFlag( GAMESTAT_FLAG_CANFORCEMODELS, level.gametype.canForceModels );
+	G_GamestatSetFlag( GAMESTAT_FLAG_COUNTDOWN, level.gametype.countdownEnabled );
+	G_GamestatSetFlag( GAMESTAT_FLAG_INHIBITSHOOTING, level.gametype.shootingDisabled );
+	G_GamestatSetFlag( GAMESTAT_FLAG_INFINITEAMMO, level.gametype.infiniteAmmo );
+	G_GamestatSetFlag( GAMESTAT_FLAG_CANFORCEMODELS, level.gametype.canForceModels );
 
-	gs.gameState.stats[GAMESTAT_MAXPLAYERSINTEAM] = Clamp( 0, level.gametype.maxPlayersPerTeam, 255 );
+	server_gs.gameState.stats[GAMESTAT_MAXPLAYERSINTEAM] = Clamp( 0, level.gametype.maxPlayersPerTeam, 255 );
 
 }
 
@@ -216,7 +216,7 @@ void G_SnapClients( void ) {
 	edict_t *ent;
 
 	// calc the player views now that all pushing and damage has been added
-	for( i = 0; i < gs.maxclients; i++ ) {
+	for( i = 0; i < server_gs.maxclients; i++ ) {
 		ent = game.edicts + 1 + i;
 		if( !ent->r.inuse || !ent->r.client ) {
 			continue;
@@ -320,10 +320,10 @@ static int entity_sound_backup[MAX_EDICTS];
 void G_ClearSnap( void ) {
 	edict_t *ent;
 
-	game.realtime = trap_Milliseconds(); // level.time etc. might not be real time
+	svs.realtime = trap_Milliseconds(); // level.time etc. might not be real time
 
 	// clear gametype's clock override
-	gs.gameState.stats[GAMESTAT_CLOCKOVERRIDE] = 0;
+	server_gs.gameState.stats[GAMESTAT_CLOCKOVERRIDE] = 0;
 
 	// clear all events in the snap
 	for( ent = &game.edicts[0]; ENTNUM( ent ) < game.numentities; ent++ ) {
@@ -342,12 +342,12 @@ void G_ClearSnap( void ) {
 
 	// recover some info, let players respawn and finally clear the snap structures
 	for( ent = &game.edicts[0]; ENTNUM( ent ) < game.numentities; ent++ ) {
-		if( !GS_MatchPaused() ) {
+		if( !GS_MatchPaused( &server_gs ) ) {
 			// copy origin to old origin ( this old_origin is for snaps )
 			G_CheckClientRespawnClick( ent );
 		}
 
-		if( GS_MatchPaused() ) {
+		if( GS_MatchPaused( &server_gs ) ) {
 			ent->s.sound = entity_sound_backup[ENTNUM( ent )];
 		}
 
@@ -374,7 +374,7 @@ void G_ClearSnap( void ) {
 */
 void G_SnapFrame( void ) {
 	edict_t *ent;
-	game.realtime = trap_Milliseconds(); // level.time etc. might not be real time
+	svs.realtime = trap_Milliseconds(); // level.time etc. might not be real time
 
 	//others
 	G_UpdateServerInfo();
@@ -423,7 +423,7 @@ void G_SnapFrame( void ) {
 			ent->s.effects |= EF_TAKEDAMAGE;
 		}
 
-		if( GS_MatchPaused() ) {
+		if( GS_MatchPaused( &server_gs ) ) {
 			// when in timeout, we don't send entity sounds
 			entity_sound_backup[ENTNUM( ent )] = ent->s.sound;
 			ent->s.sound = 0;
@@ -434,15 +434,6 @@ void G_SnapFrame( void ) {
 //===================================================================
 //		WORLD FRAMES
 //===================================================================
-
-/*
-* G_UpdateFrameTime
-*/
-static void G_UpdateFrameTime( unsigned int msec ) {
-	game.frametime = msec;
-	G_Timeout_Update( msec );
-	game.realtime = trap_Milliseconds(); // level.time etc. might not be real time
-}
 
 /*
 * G_RunEntities
@@ -486,7 +477,7 @@ static void G_RunEntities( void ) {
 * G_RunClients
 */
 static void G_RunClients( void ) {
-	for( int i = 0; i < gs.maxclients; i++ ) {
+	for( int i = 0; i < server_gs.maxclients; i++ ) {
 		edict_t *ent = game.edicts + 1 + i;
 		if( !ent->r.inuse ) {
 			continue;
@@ -506,13 +497,11 @@ static void G_RunClients( void ) {
 * G_RunFrame
 * Advances the world
 */
-void G_RunFrame( unsigned int msec, int64_t serverTime ) {
+void G_RunFrame( unsigned int msec ) {
 	G_CheckCvars();
 
-	game.prevServerTime = game.serverTime;
-	game.serverTime = serverTime;
-
-	G_UpdateFrameTime( msec );
+	game.frametime = msec;
+	G_Timeout_Update( msec );
 
 	if( !g_snapStarted ) {
 		G_StartFrameSnap();
@@ -520,11 +509,11 @@ void G_RunFrame( unsigned int msec, int64_t serverTime ) {
 
 	G_CallVotes_Think();
 
-	if( GS_MatchPaused() ) {
-		unsigned int serverTimeDelta = serverTime - game.serverTime;
+	if( GS_MatchPaused( &server_gs ) ) {
+		unsigned int serverTimeDelta = svs.gametime - game.prevServerTime;
 		// freeze match clock and linear projectiles
-		gs.gameState.stats[GAMESTAT_MATCHSTART] += serverTimeDelta;
-		for( edict_t *ent = game.edicts + gs.maxclients; ENTNUM( ent ) < game.numentities; ent++ ) {
+		server_gs.gameState.stats[GAMESTAT_MATCHSTART] += serverTimeDelta;
+		for( edict_t *ent = game.edicts + server_gs.maxclients; ENTNUM( ent ) < game.numentities; ent++ ) {
 			if( ent->s.linearMovement ) {
 				ent->s.linearMovementTimeStamp += serverTimeDelta;
 			}
@@ -532,13 +521,12 @@ void G_RunFrame( unsigned int msec, int64_t serverTime ) {
 
 		G_RunClients();
 		G_RunGametype();
-		G_LevelGarbageCollect();
 		return;
 	}
 
 	// reset warmup clock if not enough players
-	if( GS_MatchWaiting() ) {
-		gs.gameState.stats[GAMESTAT_MATCHSTART] = game.serverTime;
+	if( GS_MatchWaiting( &server_gs ) ) {
+		server_gs.gameState.stats[GAMESTAT_MATCHSTART] = svs.gametime;
 	}
 
 	level.framenum++;
@@ -551,6 +539,4 @@ void G_RunFrame( unsigned int msec, int64_t serverTime ) {
 	G_RunEntities();
 	G_RunGametype();
 	GClip_BackUpCollisionFrame();
-
-	G_LevelGarbageCollect();
 }

@@ -37,7 +37,7 @@ bool CG_ChaseStep( int step ) {
 		// find the playerState containing our current POV, then cycle playerStates
 		index = -1;
 		for( i = 0; i < cg.frame.numplayers; i++ ) {
-			if( cg.frame.playerStates[i].playerNum < (unsigned)gs.maxclients && cg.frame.playerStates[i].playerNum == cg.multiviewPlayerNum ) {
+			if( cg.frame.playerStates[i].playerNum < (unsigned)client_gs.maxclients && cg.frame.playerStates[i].playerNum == cg.multiviewPlayerNum ) {
 				index = i;
 				break;
 			}
@@ -86,26 +86,26 @@ static void CG_AddLocalSounds( void ) {
 	static unsigned lastSecond = 0;
 
 	// add local announces
-	if( GS_Countdown() ) {
-		if( GS_MatchDuration() ) {
+	if( GS_Countdown( &client_gs ) ) {
+		if( GS_MatchDuration( &client_gs ) ) {
 			int64_t duration, curtime;
 			unsigned remainingSeconds;
 			float seconds;
 
-			curtime = GS_MatchPaused() ? cg.frame.serverTime : cg.time;
-			duration = GS_MatchDuration();
+			curtime = GS_MatchPaused( &client_gs ) ? cg.frame.serverTime : cl.serverTime;
+			duration = GS_MatchDuration( &client_gs );
 
-			if( duration + GS_MatchStartTime() < curtime ) {
-				duration = curtime - GS_MatchStartTime(); // avoid negative results
+			if( duration + GS_MatchStartTime( &client_gs ) < curtime ) {
+				duration = curtime - GS_MatchStartTime( &client_gs ); // avoid negative results
 
 			}
-			seconds = (float)( GS_MatchStartTime() + duration - curtime ) * 0.001f;
+			seconds = (float)( GS_MatchStartTime( &client_gs ) + duration - curtime ) * 0.001f;
 			remainingSeconds = (unsigned int)seconds;
 
 			if( remainingSeconds != lastSecond ) {
 				if( 1 + remainingSeconds < 4 ) {
-					const SoundAsset *sound = S_RegisterSound( va( S_ANNOUNCER_COUNTDOWN_COUNT_1_to_3_SET_1_to_2, 1 + remainingSeconds, 1 ) );
-					CG_AddAnnouncerEvent( sound, false );
+					const SoundEffect * sfx = FindSoundEffect( va( S_ANNOUNCER_COUNTDOWN_COUNT_1_to_3_SET_1_to_2, 1 + remainingSeconds, 1 ) );
+					CG_AddAnnouncerEvent( sfx, false );
 					CG_CenterPrint( va( "%i", remainingSeconds + 1 ) );
 				}
 
@@ -132,7 +132,7 @@ static void CG_FlashGameWindow( void ) {
 	static bool scoresSet = false;
 
 	// notify player of important match states
-	int newState = GS_MatchState();
+	int newState = GS_MatchState( &client_gs );
 	if( oldState != newState ) {
 		switch( newState ) {
 			case MATCH_STATE_COUNTDOWN:
@@ -153,7 +153,7 @@ static void CG_FlashGameWindow( void ) {
 		oldAlphaScore = cg.predictedPlayerState.stats[STAT_TEAM_ALPHA_SCORE];
 		oldBetaScore = cg.predictedPlayerState.stats[STAT_TEAM_BETA_SCORE];
 
-		flash = scoresSet && GS_TeamBasedGametype() && !GS_InvidualGameType();
+		flash = scoresSet && GS_TeamBasedGametype( &client_gs ) && !GS_IndividualGameType( &client_gs );
 		scoresSet = true;
 	}
 
@@ -172,11 +172,11 @@ void CG_AddKickAngles( vec3_t viewangles ) {
 	int i;
 
 	for( i = 0; i < MAX_ANGLES_KICKS; i++ ) {
-		if( cg.time > cg.kickangles[i].timestamp + cg.kickangles[i].kicktime ) {
+		if( cl.serverTime > cg.kickangles[i].timestamp + cg.kickangles[i].kicktime ) {
 			continue;
 		}
 
-		time = (float)( ( cg.kickangles[i].timestamp + cg.kickangles[i].kicktime ) - cg.time );
+		time = (float)( ( cg.kickangles[i].timestamp + cg.kickangles[i].kicktime ) - cl.serverTime );
 		uptime = ( (float)cg.kickangles[i].kicktime ) * 0.5f;
 		delta = 1.0f - ( fabs( time - uptime ) / uptime );
 
@@ -238,7 +238,7 @@ static void CG_CalcViewBob( void ) {
 			trace_t trace;
 
 			cent = &cg_entities[cg.view.POVent];
-			GS_BBoxForEntityState( &cent->current, mins, maxs );
+			CG_BBoxForEntityState( &cent->current, mins, maxs );
 			maxs[2] = mins[2];
 			mins[2] -= ( 1.6f * STEPSIZE );
 
@@ -253,7 +253,7 @@ static void CG_CalcViewBob( void ) {
 		}
 	}
 
-	bobMove = cg.frameTime * bobScale * 0.001f;
+	bobMove = cls.frametime * bobScale * 0.001f;
 	bobTime = ( cg.oldBobTime += bobMove );
 
 	cg.bobCycle = (int)bobTime;
@@ -315,7 +315,7 @@ void CG_StartKickAnglesEffect( vec3_t source, float knockback, float radius, int
 	if( kick ) { // kick of 0 means no view adjust at all
 		//find first free kick spot, or the one closer to be finished
 		for( i = 0; i < MAX_ANGLES_KICKS; i++ ) {
-			if( cg.time > cg.kickangles[i].timestamp + cg.kickangles[i].kicktime ) {
+			if( cl.serverTime > cg.kickangles[i].timestamp + cg.kickangles[i].kicktime ) {
 				kicknum = i;
 				break;
 			}
@@ -324,10 +324,10 @@ void CG_StartKickAnglesEffect( vec3_t source, float knockback, float radius, int
 		// all in use. Choose the closer to be finished
 		if( kicknum == -1 ) {
 			int remaintime;
-			int best = ( cg.kickangles[0].timestamp + cg.kickangles[0].kicktime ) - cg.time;
+			int best = ( cg.kickangles[0].timestamp + cg.kickangles[0].kicktime ) - cl.serverTime;
 			kicknum = 0;
 			for( i = 1; i < MAX_ANGLES_KICKS; i++ ) {
-				remaintime = ( cg.kickangles[i].timestamp + cg.kickangles[i].kicktime ) - cg.time;
+				remaintime = ( cg.kickangles[i].timestamp + cg.kickangles[i].kicktime ) - cl.serverTime;
 				if( remaintime < best ) {
 					best = remaintime;
 					kicknum = i;
@@ -347,7 +347,7 @@ void CG_StartKickAnglesEffect( vec3_t source, float knockback, float radius, int
 		side = -DotProduct( v, forward );
 		cg.kickangles[kicknum].v_pitch = Clamp( -20.0f, kick * side * 0.3f, 20.0f );
 
-		cg.kickangles[kicknum].timestamp = cg.time;
+		cg.kickangles[kicknum].timestamp = cl.serverTime;
 		ftime = (float)time * delta;
 		if( ftime < 100 ) {
 			ftime = 100;
@@ -360,17 +360,17 @@ void CG_StartKickAnglesEffect( vec3_t source, float knockback, float radius, int
 * CG_StartFallKickEffect
 */
 void CG_StartFallKickEffect( int bounceTime ) {
-	if( cg.fallEffectTime > cg.time ) {
+	if( cg.fallEffectTime > cl.serverTime ) {
 		cg.fallEffectRebounceTime = 0;
 	}
 
 	bounceTime = Min2( 400, bounceTime + 200 );
 
-	cg.fallEffectTime = cg.time + bounceTime;
+	cg.fallEffectTime = cl.serverTime + bounceTime;
 	if( cg.fallEffectRebounceTime ) {
-		cg.fallEffectRebounceTime = cg.time - ( ( cg.time - cg.fallEffectRebounceTime ) * 0.5 );
+		cg.fallEffectRebounceTime = cl.serverTime - ( ( cl.serverTime - cg.fallEffectRebounceTime ) * 0.5 );
 	} else {
-		cg.fallEffectRebounceTime = cg.time;
+		cg.fallEffectRebounceTime = cl.serverTime;
 	}
 }
 
@@ -418,7 +418,7 @@ static int CG_RenderFlags( void ) {
 		}
 	}
 
-	if( GS_MatchState() >= MATCH_STATE_POSTMATCH ) {
+	if( GS_MatchState( &client_gs ) >= MATCH_STATE_POSTMATCH ) {
 		rdflags |= RDF_BLURRED;
 	}
 
@@ -521,7 +521,7 @@ void CG_ViewSmoothPredictedSteps( vec3_t vieworg ) {
 	int timeDelta;
 
 	// smooth out stair climbing
-	timeDelta = cg.realTime - cg.predictedStepTime;
+	timeDelta = cls.realtime - cg.predictedStepTime;
 	if( timeDelta < PREDICTED_STEP_TIME ) {
 		vieworg[2] -= cg.predictedStep * ( PREDICTED_STEP_TIME - timeDelta ) / PREDICTED_STEP_TIME;
 	}
@@ -532,8 +532,8 @@ void CG_ViewSmoothPredictedSteps( vec3_t vieworg ) {
 */
 float CG_ViewSmoothFallKick( void ) {
 	// fallkick offset
-	if( cg.fallEffectTime > cg.time ) {
-		float fallfrac = (float)( cg.time - cg.fallEffectRebounceTime ) / (float)( cg.fallEffectTime - cg.fallEffectRebounceTime );
+	if( cg.fallEffectTime > cl.serverTime ) {
+		float fallfrac = (float)( cl.serverTime - cg.fallEffectRebounceTime ) / (float)( cg.fallEffectTime - cg.fallEffectRebounceTime );
 		float fallkick = -1.0f * sin( DEG2RAD( fallfrac * 180 ) ) * ( ( cg.fallEffectTime - cg.fallEffectRebounceTime ) * 0.01f );
 		return fallkick;
 	} else {
@@ -636,7 +636,7 @@ static void CG_SetupRefDef( cg_viewdef_t *view, refdef_t *rd ) {
 	rd->fov_x = view->fov_x;
 	rd->fov_y = view->fov_y;
 
-	rd->time = cg.time;
+	rd->time = cl.serverTime;
 	rd->areabits = cg.frame.areabits;
 
 	rd->minLight = 0.3f;
@@ -691,7 +691,7 @@ static void CG_SetupViewDef( cg_viewdef_t *view, int type ) {
 		}
 
 		// check for drawing gun
-		if( !view->thirdperson && view->POVent > 0 && view->POVent <= gs.maxclients ) {
+		if( !view->thirdperson && view->POVent > 0 && view->POVent <= client_gs.maxclients ) {
 			if( ( cg_entities[view->POVent].serverFrame == cg.frame.serverFrame ) &&
 				( cg_entities[view->POVent].current.weapon != 0 ) ) {
 				view->drawWeapon = cg_gun->integer != 0;
@@ -732,7 +732,7 @@ static void CG_SetupViewDef( cg_viewdef_t *view, int type ) {
 
 			CG_ViewSmoothPredictedSteps( view->origin ); // smooth out stair climbing
 		} else {
-			cg.predictingTimeStamp = cg.time;
+			cg.predictingTimeStamp = cl.serverTime;
 			cg.predictFrom = 0;
 
 			// we don't run prediction, but we still set cg.predictedPlayerState with the interpolation
@@ -803,8 +803,8 @@ static void DrawWorld() {
 		pipeline.shader = msaa ? &shaders.postprocess_world_gbuffer_msaa : &shaders.postprocess_world_gbuffer;
 
 		const Framebuffer & fb = frame_static.world_gbuffer;
-		pipeline.set_texture( "u_DepthTexture", fb.depth_texture );
-		pipeline.set_texture( "u_NormalTexture", fb.normal_texture );
+		pipeline.set_texture( "u_DepthTexture", &fb.depth_texture );
+		pipeline.set_texture( "u_NormalTexture", &fb.normal_texture );
 		pipeline.set_uniform( "u_View", frame_static.view_uniforms );
 
 		DrawFullscreenMesh( pipeline );
@@ -818,7 +818,7 @@ static void DrawWorld() {
 		pipeline.write_depth = false;
 
 		const Framebuffer & fb = frame_static.world_outlines_fb;
-		pipeline.set_texture( "u_BaseTexture", fb.albedo_texture );
+		pipeline.set_texture( "u_BaseTexture", &fb.albedo_texture );
 		pipeline.set_uniform( "u_View", frame_static.ortho_view_uniforms );
 		pipeline.set_uniform( "u_Model", frame_static.identity_model_uniforms );
 		pipeline.set_uniform( "u_Material", frame_static.identity_material_uniforms );
@@ -868,7 +868,7 @@ static void DrawSilhouettes() {
 		pipeline.shader = &shaders.postprocess_silhouette_gbuffer;
 
 		const Framebuffer & fb = frame_static.silhouette_gbuffer;
-		pipeline.set_texture( "u_SilhouetteTexture", fb.albedo_texture );
+		pipeline.set_texture( "u_SilhouetteTexture", &fb.albedo_texture );
 		pipeline.set_uniform( "u_View", frame_static.view_uniforms );
 
 		DrawFullscreenMesh( pipeline );
@@ -883,7 +883,7 @@ static void DrawSilhouettes() {
 		pipeline.write_depth = false;
 
 		const Framebuffer & fb = frame_static.silhouette_silhouettes_fb;
-		pipeline.set_texture( "u_BaseTexture", fb.albedo_texture );
+		pipeline.set_texture( "u_BaseTexture", &fb.albedo_texture );
 		pipeline.set_uniform( "u_View", frame_static.ortho_view_uniforms );
 		pipeline.set_uniform( "u_Model", frame_static.identity_model_uniforms );
 		pipeline.set_uniform( "u_Material", frame_static.identity_material_uniforms );
@@ -926,18 +926,12 @@ static void DrawSilhouettes() {
 /*
 * CG_RenderView
 */
-void CG_RenderView( int frameTime, int realFrameTime, int64_t monotonicTime, int64_t realTime, int64_t serverTime, unsigned extrapolationTime ) {
+void CG_RenderView( unsigned extrapolationTime ) {
 	ZoneScoped;
 
 	refdef_t *rd = &cg.view.refdef;
 
-	// update time
-	cg.monotonicTime = monotonicTime;
-	cg.realTime = realTime;
-	cg.frameTime = frameTime;
-	cg.realFrameTime = realFrameTime;
 	cg.frameCount++;
-	cg.time = serverTime;
 
 	if( !cgs.precacheDone || !cg.frame.valid ) {
 		CG_Precache();
@@ -953,17 +947,17 @@ void CG_RenderView( int frameTime, int realFrameTime, int64_t monotonicTime, int
 			cg.lerpfrac = 1.0f;
 		} else {
 			int snapTime = cg.frame.serverTime - cg.oldFrame.serverTime;
-			cg.lerpfrac = ( (double)( cg.time - cgs.extrapolationTime ) - (double)cg.oldFrame.serverTime ) / (double)snapTime;
+			cg.lerpfrac = ( (double)( cl.serverTime - cgs.extrapolationTime ) - (double)cg.oldFrame.serverTime ) / (double)snapTime;
 		}
 
 		if( cgs.extrapolationTime ) {
-			cg.xerpTime = 0.001f * ( (double)cg.time - (double)cg.frame.serverTime );
-			cg.oldXerpTime = 0.001f * ( (double)cg.time - (double)cg.oldFrame.serverTime );
+			cg.xerpTime = 0.001f * ( (double)cl.serverTime - (double)cg.frame.serverTime );
+			cg.oldXerpTime = 0.001f * ( (double)cl.serverTime - (double)cg.oldFrame.serverTime );
 
-			if( cg.time >= cg.frame.serverTime ) {
-				cg.xerpSmoothFrac = Clamp01( double( cg.time - cg.frame.serverTime ) / double( cgs.extrapolationTime ) );
+			if( cl.serverTime >= cg.frame.serverTime ) {
+				cg.xerpSmoothFrac = Clamp01( double( cl.serverTime - cg.frame.serverTime ) / double( cgs.extrapolationTime ) );
 			} else {
-				cg.xerpSmoothFrac = Clamp( -1.0, double( cg.frame.serverTime - cg.time ) / double( cgs.extrapolationTime ), 0.0 );
+				cg.xerpSmoothFrac = Clamp( -1.0, double( cg.frame.serverTime - cl.serverTime ) / double( cgs.extrapolationTime ), 0.0 );
 				cg.xerpSmoothFrac = 1.0f - cg.xerpSmoothFrac;
 			}
 
@@ -989,13 +983,9 @@ void CG_RenderView( int frameTime, int realFrameTime, int64_t monotonicTime, int
 
 		// trap_R_DrawStretchPic( 0, 0, frame_static.viewport_width, frame_static.viewport_height, 0, 0, 1, 1, colorBlack, cgs.shaderWhite );
 
-		S_Update( vec3_origin, vec3_origin, axis_identity );
+		S_Update( Vec3( 0 ), Vec3( 0 ), axis_identity );
 
 		return;
-	}
-
-	if( !cg.viewFrameCount ) {
-		cg.firstViewRealTime = cg.realTime;
 	}
 
 	if( cg_fov->modified ) {
@@ -1060,9 +1050,7 @@ void CG_RenderView( int frameTime, int realFrameTime, int64_t monotonicTime, int
 
 	cg.oldAreabits = true;
 
-	S_Update( cg.view.origin, cg.view.velocity, cg.view.axis );
+	S_Update( FromQF3( cg.view.origin ), FromQF3( cg.view.velocity ), cg.view.axis );
 
 	CG_Draw2D();
-
-	cg.viewFrameCount++;
 }

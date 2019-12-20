@@ -106,9 +106,6 @@ static void LoadShaders() {
 	BuildShaderSrcs( "glsl/blur.glsl", NULL, &srcs, &lengths );
 	ReplaceShader( &shaders.blur, srcs.span(), lengths.span() );
 
-	BuildShaderSrcs( "glsl/tonemap.glsl", NULL, &srcs, &lengths );
-	ReplaceShader( &shaders.tonemap, srcs.span(), lengths.span() );
-
 	BuildShaderSrcs( "glsl/outline.glsl", NULL, &srcs, &lengths );
 	ReplaceShader( &shaders.outline, srcs.span(), lengths.span() );
 
@@ -140,11 +137,9 @@ void HotloadShaders() {
 		}
 	}
 
-	if( !need_hotload )
-		return;
-
-	Com_Printf( "Reloading shaders\n" );
-	LoadShaders();
+	if( need_hotload ) {
+		LoadShaders();
+	}
 }
 
 void ShutdownShaders() {

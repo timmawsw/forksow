@@ -18,12 +18,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "cg_local.h"
+#include "cgame/cg_local.h"
 
-int cg_numSolids;
+static int cg_numSolids;
 static entity_state_t *cg_solidList[MAX_PARSE_ENTITIES];
 
-int cg_numTriggers;
+static int cg_numTriggers;
 static entity_state_t *cg_triggersList[MAX_PARSE_ENTITIES];
 static bool cg_triggersListTriggered[MAX_PARSE_ENTITIES];
 
@@ -208,7 +208,7 @@ void CG_Predict_TouchTriggers( pmove_t *pm, vec3_t previous_origin ) {
 		if( state->type == ET_PUSH_TRIGGER ) {
 			if( !cg_triggersListTriggered[i] ) {
 				if( CG_ClipEntityContact( pm->playerState->pmove.origin, pm->mins, pm->maxs, state->number ) ) {
-					GS_TouchPushTrigger( pm->playerState, state );
+					GS_TouchPushTrigger( &client_gs, pm->playerState, state );
 					cg_triggersListTriggered[i] = true;
 				}
 			}
@@ -346,7 +346,7 @@ static void CG_PredictAddStep( int virtualtime, int predictiontime, float stepSi
 	int delta;
 
 	// check for stepping up before a previous step is completed
-	delta = cg.realTime - cg.predictedStepTime;
+	delta = cls.realtime - cg.predictedStepTime;
 	if( delta < PREDICTED_STEP_TIME ) {
 		oldStep = cg.predictedStep * ( (float)( PREDICTED_STEP_TIME - delta ) / (float)PREDICTED_STEP_TIME );
 	} else {
@@ -354,7 +354,7 @@ static void CG_PredictAddStep( int virtualtime, int predictiontime, float stepSi
 	}
 
 	cg.predictedStep = oldStep + stepSize;
-	cg.predictedStepTime = cg.realTime - ( predictiontime - virtualtime );
+	cg.predictedStepTime = cls.realtime - ( predictiontime - virtualtime );
 }
 
 /*
@@ -431,7 +431,7 @@ void CG_PredictMovement( void ) {
 			CG_Printf( "exceeded CMD_BACKUP\n" );
 		}
 
-		cg.predictingTimeStamp = cg.time;
+		cg.predictingTimeStamp = cl.serverTime;
 		return;
 	}
 
@@ -452,13 +452,13 @@ void CG_PredictMovement( void ) {
 			cg.predictingTimeStamp = pm.cmd.serverTimeStamp;
 		}
 
-		Pmove( &pm );
+		Pmove( &client_gs, &pm );
 
 		// copy for stair smoothing
 		predictedSteps[frame] = pm.step;
 
 		if( ucmdReady ) { // hmm fixme: the wip command may not be run enough time to get proper key presses
-			cg_entities[cg.predictedPlayerState.POVnum].current.weapon = GS_ThinkPlayerWeapon( &cg.predictedPlayerState, pm.cmd.buttons, pm.cmd.msec, 0 );
+			cg_entities[cg.predictedPlayerState.POVnum].current.weapon = GS_ThinkPlayerWeapon( &client_gs, &cg.predictedPlayerState, pm.cmd.buttons, pm.cmd.msec, 0 );
 		}
 
 		// save for debug checking
@@ -485,7 +485,7 @@ void CG_PredictMovement( void ) {
 				vec3_t move;
 				int64_t serverTime;
 
-				serverTime = GS_MatchPaused() ? cg.frame.serverTime : cg.time + cgs.extrapolationTime;
+				serverTime = GS_MatchPaused( &client_gs ) ? cg.frame.serverTime : cl.serverTime + cgs.extrapolationTime;
 				GS_LinearMovementDelta( ent, cg.frame.serverTime, serverTime, move );
 				VectorAdd( cg.predictedPlayerState.pmove.origin, move, cg.predictedPlayerState.pmove.origin );
 			}

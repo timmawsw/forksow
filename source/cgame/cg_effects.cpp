@@ -21,7 +21,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // cg_effects.c -- entity effects parsing and management
 
 #include "cgame/cg_local.h"
-#include "client/client.h"
 
 /*
 ==============================================================
@@ -426,7 +425,7 @@ static void CG_ClearParticles( void ) {
 
 #define CG_InitParticle( p, s, a, r, g, b, h ) \
 	( \
-		( p )->time = cg.time, \
+		( p )->time = cl.serverTime, \
 		( p )->scale = ( s ), \
 		( p )->alpha = ( a ), \
 		( p )->color[0] = ( r ), \
@@ -500,55 +499,63 @@ void CG_ParticleEffect2( const vec3_t org, const vec3_t dir, float r, float g, f
 /*
 * CG_ParticleExplosionEffect
 */
-void CG_ParticleExplosionEffect( const vec3_t org, const vec3_t dir, float r, float g, float b, int count ) {
+void CG_ParticleExplosionEffect( Vec3 origin, Vec3 normal, Vec3 team_color ) {
 	{
 		ParticleEmitter emitter = { };
-		emitter.position = FromQF3( org );
+		emitter.position = origin;
 
-		// TODO: normal
-		emitter.velocity_cone.radius = 400.0f;
-		emitter.velocity_cone.theta = float( M_PI );
+		emitter.use_cone_direction = true;
+		emitter.direction_cone.normal = normal;
+		emitter.direction_cone.theta = 90.0f;
 
-		emitter.color = Vec4( 0.25f, 0.25f, 0.25f, 0.5f );
+		emitter.start_speed = 100.0f;
+		emitter.end_speed = 100.0f;
+
+		emitter.start_color = Vec4( 1.0f, 0.9, 0.0f, 0.5f );
+		emitter.end_color = Vec3( 0.2f, 0.1f, 0.0f );
 		emitter.alpha_distribution.type = RandomDistributionType_Uniform;
 		emitter.alpha_distribution.uniform = 0.1f;
 
-		emitter.size = 16.0f;
+		emitter.start_size = 32.0f;
+		emitter.end_size = 32.0f;
 		emitter.size_distribution.type = RandomDistributionType_Uniform;
-		emitter.size_distribution.uniform = 2.0f;
+		emitter.size_distribution.uniform = 16.0f;
 
-		emitter.lifetime = 0.9f;
+		emitter.lifetime = 0.8f;
 		emitter.lifetime_distribution.type = RandomDistributionType_Uniform;
 		emitter.lifetime_distribution.uniform = 0.3f;
 
-		emitter.n = 64;
+		emitter.n = 32;
 
 		EmitParticles( &cgs.smoke, emitter );
 	}
 
-	int j;
-	cparticle_t *p;
-	float d;
+	{
+		ParticleEmitter emitter = { };
+		emitter.position = origin;
 
-	if( !cg_particles->integer ) {
-		return;
-	}
+		emitter.use_cone_direction = true;
+		emitter.direction_cone.normal = normal;
+		emitter.direction_cone.theta = 90.0f;
 
-	if( cg_numparticles + count > MAX_PARTICLES ) {
-		count = MAX_PARTICLES - cg_numparticles;
-	}
-	for( p = &particles[cg_numparticles], cg_numparticles += count; count > 0; count--, p++ ) {
-		CG_InitParticle( p, 0.75, 1, r + random() * 0.1, g + random() * 0.1, b + random() * 0.1, NULL );
+		emitter.start_speed = 400.0f;
+		emitter.end_speed = 0.0f;
 
-		d = rand() & 31;
-		for( j = 0; j < 3; j++ ) {
-			p->org[j] = org[j] + ( ( rand() & 7 ) - 4 ) + d * dir[j];
-			p->vel[j] = crandom() * 400;
-		}
+		emitter.start_color = Vec4( team_color, 1.0f );
+		emitter.end_color = team_color;
 
-		//p->accel[0] = p->accel[1] = 0;
-		p->accel[2] = -PARTICLE_GRAVITY;
-		p->alphavel = -1.0 / ( 0.7 + random() * 0.25 );
+		emitter.start_size = 16.0f;
+		emitter.end_size = 32.0f;
+		emitter.size_distribution.type = RandomDistributionType_Uniform;
+		emitter.size_distribution.uniform = 4.0f;
+
+		emitter.lifetime = 0.25f;
+		emitter.lifetime_distribution.type = RandomDistributionType_Uniform;
+		emitter.lifetime_distribution.uniform = 0.1f;
+
+		emitter.n = 128;
+
+		EmitParticles( &cgs.ions, emitter );
 	}
 }
 
@@ -620,10 +627,11 @@ void CG_EBIonsTrail( Vec3 start, Vec3 end, Vec4 color ) {
 	emitter.position_distribution.type = RandomDistribution3DType_Line;
 	emitter.position_distribution.line.end = end;
 
-	emitter.velocity_cone.radius = 4.0f;
-	emitter.velocity_cone.theta = 2.0f * float( M_PI );
+	emitter.start_speed = 4.0f;
+	emitter.end_speed = 0.0f;
 
-	emitter.color = color;
+	emitter.start_color = color;
+	emitter.end_color = color.xyz();
 
 	RandomDistribution color_dist;
 	color_dist.type = RandomDistributionType_Uniform;
@@ -633,7 +641,8 @@ void CG_EBIonsTrail( Vec3 start, Vec3 end, Vec4 color ) {
 	emitter.blue_distribution = color_dist;
 	emitter.alpha_distribution = color_dist;
 
-	emitter.size = 1.0f;
+	emitter.start_size = 1.0f;
+	emitter.end_size = 1.0f;
 	emitter.size_distribution.type = RandomDistributionType_Uniform;
 	emitter.size_distribution.uniform = 0.1f;
 
@@ -645,106 +654,10 @@ void CG_EBIonsTrail( Vec3 start, Vec3 end, Vec4 color ) {
 	float distance_between_particles = 4.0f;
 
 	float len = Length( end - start );
-	Vec3 dir = Normalize( end - start );
 
 	emitter.n = Min2( len / distance_between_particles + 1.0f, float( max_ions ) );
 
 	EmitParticles( &cgs.ions, emitter );
-}
-
-#define BEAMLENGTH      16
-
-/*
-* CG_FlyParticles
-*/
-static void CG_FlyParticles( const vec3_t origin, int count ) {
-	int i, j;
-	float angle, sp, sy, cp, cy;
-	vec3_t forward, dir;
-	float dist, ltime;
-	cparticle_t *p;
-
-	if( !cg_particles->integer ) {
-		return;
-	}
-
-	if( count > NUMVERTEXNORMALS ) {
-		count = NUMVERTEXNORMALS;
-	}
-
-	if( !avelocities[0][0] ) {
-		for( i = 0; i < NUMVERTEXNORMALS; i++ )
-			for( j = 0; j < 3; j++ )
-				avelocities[i][j] = ( rand() & 255 ) * 0.01;
-	}
-
-	i = 0;
-	ltime = (float)cg.time / 1000.0;
-
-	count /= 2;
-	if( cg_numparticles + count > MAX_PARTICLES ) {
-		count = MAX_PARTICLES - cg_numparticles;
-	}
-	for( p = &particles[cg_numparticles], cg_numparticles += count; count > 0; count--, p++ ) {
-		CG_InitParticle( p, 1, 1, 0, 0, 0, NULL );
-
-		angle = ltime * avelocities[i][0];
-		sy = sin( angle );
-		cy = cos( angle );
-		angle = ltime * avelocities[i][1];
-		sp = sin( angle );
-		cp = cos( angle );
-
-		forward[0] = cp * cy;
-		forward[1] = cp * sy;
-		forward[2] = -sp;
-
-		dist = sin( ltime + i ) * 64;
-		ByteToDir( i, dir );
-		p->org[0] = origin[0] + dir[0] * dist + forward[0] * BEAMLENGTH;
-		p->org[1] = origin[1] + dir[1] * dist + forward[1] * BEAMLENGTH;
-		p->org[2] = origin[2] + dir[2] * dist + forward[2] * BEAMLENGTH;
-
-		VectorClear( p->vel );
-		VectorClear( p->accel );
-		p->alphavel = -100;
-
-		i += 2;
-	}
-}
-
-/*
-* CG_FlyEffect
-*/
-void CG_FlyEffect( centity_t *ent, const vec3_t origin ) {
-	int n;
-	int count;
-	int starttime;
-
-	if( !cg_particles->integer ) {
-		return;
-	}
-
-	if( ent->fly_stoptime < cg.time ) {
-		starttime = cg.time;
-		ent->fly_stoptime = cg.time + 60000;
-	} else {
-		starttime = ent->fly_stoptime - 60000;
-	}
-
-	n = cg.time - starttime;
-	if( n < 20000 ) {
-		count = n * 162 / 20000.0;
-	} else {
-		n = ent->fly_stoptime - cg.time;
-		if( n < 20000 ) {
-			count = n * 162 / 20000.0;
-		} else {
-			count = 162;
-		}
-	}
-
-	CG_FlyParticles( origin, count );
 }
 
 /*
@@ -770,7 +683,7 @@ void CG_AddParticles( void ) {
 	activeparticles = 0;
 
 	for( i = 0, p = particles; i < cg_numparticles; i++, p++ ) {
-		time = ( cg.time - p->time ) * 0.001f;
+		time = ( cl.serverTime - p->time ) * 0.001f;
 		alpha = alphaValues[i] = p->alpha + time * p->alphavel;
 
 		if( alpha <= 0 ) { // faded out
@@ -840,6 +753,9 @@ void CG_ClearEffects( void ) {
 }
 
 void DrawBeam( Vec3 start, Vec3 end, float width, Vec4 color, const Material * material ) {
+	if( material == NULL )
+		return;
+
 	Vec3 dir = Normalize( end - start );
 	Vec3 forward = Normalize( start - frame_static.position );
 
@@ -855,12 +771,11 @@ void DrawBeam( Vec3 start, Vec3 end, float width, Vec4 color, const Material * m
 		end - width * beam_across * 0.5f,
 	};
 
-	Texture texture = material->textures[ 0 ].texture;
-	float texture_aspect_ratio = float( texture.width ) / float( texture.height );
+	float texture_aspect_ratio = float( material->texture->width ) / float( material->texture->height );
 	float beam_aspect_ratio = Length( end - start ) / width;
 	float repetitions = beam_aspect_ratio / texture_aspect_ratio;
 
-	Vec2 half_pixel = 0.5f / Vec2( texture.width, texture.height );
+	Vec2 half_pixel = 0.5f / Vec2( material->texture->width, material->texture->height );
 	Vec2 uvs[] = {
 		Vec2( half_pixel.x, half_pixel.y ),
 		Vec2( half_pixel.x, 1.0f - half_pixel.y ),
@@ -877,6 +792,7 @@ void DrawBeam( Vec3 start, Vec3 end, float width, Vec4 color, const Material * m
 	}
 
 	PipelineState pipeline = MaterialToPipelineState( material, color );
+	pipeline.blend_func = BlendFunc_Add;
 	pipeline.set_uniform( "u_View", frame_static.view_uniforms );
 	pipeline.set_uniform( "u_Model", frame_static.identity_model_uniforms );
 
@@ -922,7 +838,7 @@ void AddPersistentBeam( Vec3 start, Vec3 end, float width, Vec4 color, const Mat
 	beam.width = width;
 	beam.color = color;
 	beam.material = material;
-	beam.spawn_time = cg.time;
+	beam.spawn_time = cl.serverTime;
 	beam.duration = duration;
 	beam.start_fade_time = duration - fade_time;
 }
@@ -932,7 +848,7 @@ void DrawPersistentBeams() {
 
 	for( size_t i = 0; i < num_persistent_beams; i++ ) {
 		PersistentBeam & beam = persistent_beams[ i ];
-		float t = ( cg.time - beam.spawn_time ) / 1000.0f;
+		float t = ( cl.serverTime - beam.spawn_time ) / 1000.0f;
 		float alpha;
 		if( beam.start_fade_time != beam.duration )
 			alpha = 1.0f - Clamp01( Unlerp( beam.start_fade_time, t, beam.duration ) );

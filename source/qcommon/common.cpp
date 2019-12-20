@@ -472,71 +472,6 @@ void Info_Print( char *s ) {
 
 //============================================================================
 
-/*
-* Com_AddPurePakFile
-*/
-void Com_AddPakToPureList( purelist_t **purelist, const char *pakname, const unsigned checksum, mempool_t *mempool ) {
-	purelist_t *purefile;
-	const size_t len = strlen( pakname ) + 1;
-
-	purefile = ( purelist_t* )Mem_Alloc( mempool ? mempool : zoneMemPool, sizeof( purelist_t ) + len );
-	purefile->filename = ( char * )( ( uint8_t * )purefile + sizeof( *purefile ) );
-	memcpy( purefile->filename, pakname, len );
-	purefile->checksum = checksum;
-	purefile->next = *purelist;
-	*purelist = purefile;
-}
-
-/*
-* Com_CountPureListFiles
-*/
-unsigned Com_CountPureListFiles( purelist_t *purelist ) {
-	unsigned numpure;
-	purelist_t *iter;
-
-	numpure = 0;
-	iter = purelist;
-	while( iter ) {
-		numpure++;
-		iter = iter->next;
-	}
-
-	return numpure;
-}
-
-/*
-* Com_FindPakInPureList
-*/
-purelist_t *Com_FindPakInPureList( purelist_t *purelist, const char *pakname ) {
-	purelist_t *purefile = purelist;
-
-	while( purefile ) {
-		if( !strcmp( purefile->filename, pakname ) ) {
-			break;
-		}
-		purefile = purefile->next;
-	}
-
-	return purefile;
-}
-
-/*
-* Com_FreePureList
-*/
-void Com_FreePureList( purelist_t **purelist ) {
-	purelist_t *purefile = *purelist;
-
-	while( purefile ) {
-		purelist_t *next = purefile->next;
-		Mem_Free( purefile );
-		purefile = next;
-	}
-
-	*purelist = NULL;
-}
-
-//============================================================================
-
 void Key_Init( void );
 void Key_Shutdown( void );
 
@@ -673,7 +608,7 @@ void Qcommon_Init( int argc, char **argv ) {
 	host_speeds =       Cvar_Get( "host_speeds", "0", 0 );
 	timescale =     Cvar_Get( "timescale", "1.0", CVAR_CHEAT );
 	if( is_dedicated_server ) {
-		logconsole =        Cvar_Get( "logconsole", "wswconsole.log", CVAR_ARCHIVE );
+		logconsole =        Cvar_Get( "logconsole", "server.log", CVAR_ARCHIVE );
 	} else {
 		logconsole =        Cvar_Get( "logconsole", "", CVAR_ARCHIVE );
 	}
@@ -696,15 +631,7 @@ void Qcommon_Init( int argc, char **argv ) {
 	SV_Init();
 	CL_Init();
 
-	if( !is_dedicated_server ) {
-		Cbuf_AddText( "exec autoexec_postinit.cfg\n" );
-	} else {
-		Cbuf_AddText( "exec dedicated_autoexec_postinit.cfg\n" );
-	}
-
 	Cbuf_AddLateCommands();
-
-	Com_Printf( "\n====== %s Initialized ======\n", APPLICATION );
 
 	Cbuf_Execute();
 }

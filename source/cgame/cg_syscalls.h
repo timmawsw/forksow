@@ -115,40 +115,8 @@ static inline int trap_FS_Print( int file, const char *msg ) {
 	return CGAME_IMPORT.FS_Print( file, msg );
 }
 
-static inline int trap_FS_Tell( int file ) {
-	return CGAME_IMPORT.FS_Tell( file );
-}
-
-static inline int trap_FS_Seek( int file, int offset, int whence ) {
-	return CGAME_IMPORT.FS_Seek( file, offset, whence );
-}
-
-static inline int trap_FS_Eof( int file ) {
-	return CGAME_IMPORT.FS_Eof( file );
-}
-
-static inline int trap_FS_Flush( int file ) {
-	return CGAME_IMPORT.FS_Flush( file );
-}
-
 static inline void trap_FS_FCloseFile( int file ) {
 	CGAME_IMPORT.FS_FCloseFile( file );
-}
-
-static inline void trap_FS_RemoveFile( const char *filename ) {
-	CGAME_IMPORT.FS_RemoveFile( filename );
-}
-
-static inline int trap_FS_GetFileList( const char *dir, const char *extension, char *buf, size_t bufsize, int start, int end ) {
-	return CGAME_IMPORT.FS_GetFileList( dir, extension, buf, bufsize, start, end );
-}
-
-static inline bool trap_FS_IsPureFile( const char *filename ) {
-	return CGAME_IMPORT.FS_IsPureFile( filename ) == true;
-}
-
-static inline bool trap_FS_MoveFile( const char *src, const char *dst ) {
-	return CGAME_IMPORT.FS_MoveFile( src, dst ) == true;
 }
 
 static inline const char *trap_Key_GetBindingBuf( int binding ) {
@@ -167,8 +135,8 @@ static inline int64_t trap_Milliseconds( void ) {
 	return CGAME_IMPORT.Milliseconds();
 }
 
-static inline bool trap_DownloadRequest( const char *filename, bool requestpak ) {
-	return CGAME_IMPORT.DownloadRequest( filename, requestpak == true ? true : false ) == true;
+static inline bool trap_DownloadRequest( const char *filename ) {
+	return CGAME_IMPORT.DownloadRequest( filename );
 }
 
 static inline void trap_NET_GetUserCmd( int frame, usercmd_t *cmd ) {

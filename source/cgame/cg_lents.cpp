@@ -19,7 +19,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "cgame/cg_local.h"
-#include "client/client.h"
 #include "client/renderer/renderer.h"
 
 #define MAX_LOCAL_ENTITIES  512
@@ -92,7 +91,7 @@ static LocalEntity *CG_AllocLocalEntity( LocalEntityType type, float r, float g,
 
 	memset( le, 0, sizeof( *le ) );
 	le->type = type;
-	le->start = cg.time;
+	le->start = cl.serverTime;
 	le->color[0] = r;
 	le->color[1] = g;
 	le->color[2] = b;
@@ -169,7 +168,7 @@ static LocalEntity *CG_AllocModel( LocalEntityType type, const vec3_t origin, co
 
 	le->ent.model = model;
 	le->ent.override_material = material;
-	le->ent.shaderTime = cg.time;
+	le->ent.shaderTime = cl.serverTime;
 	le->ent.scale = 1.0f;
 
 	VectorCopy( angles, le->angles );
@@ -193,7 +192,7 @@ static LocalEntity *CG_AllocSprite( LocalEntityType type, const vec3_t origin, f
 
 	le->ent.radius = radius;
 	le->ent.override_material = material;
-	le->ent.shaderTime = cg.time;
+	le->ent.shaderTime = cl.serverTime;
 	le->ent.scale = 1.0f;
 
 	Matrix3_Identity( le->ent.axis );
@@ -387,7 +386,7 @@ void CG_EBImpact( const vec3_t pos, const vec3_t dir, int surfFlags, int team ) 
 
 	CG_ImpactPuffParticles( pos, dir, 15, 0.75f, color[0], color[1], color[2], color[3], NULL );
 
-	S_StartFixedSound( cgs.media.sfxElectroboltHit, pos, CHAN_AUTO, cg_volume_effects->value, ATTN_STATIC );
+	S_StartFixedSound( cgs.media.sfxElectroboltHit, FromQF3( pos ), CHAN_AUTO, cg_volume_effects->value, ATTN_STATIC );
 }
 
 /*
@@ -434,9 +433,9 @@ void CG_RocketExplosionMode( const vec3_t pos, const vec3_t dir, float radius, i
 	}
 
 	// Explosion particles
-	CG_ParticleExplosionEffect( pos, dir, 1, 0.5, 0, 32 );
+	CG_ParticleExplosionEffect( FromQF3( pos ), FromQF3( dir ), FromQF3( color ) );
 
-	S_StartFixedSound( cgs.media.sfxRocketLauncherHit, pos, CHAN_AUTO, cg_volume_effects->value, ATTN_DISTANT );
+	S_StartFixedSound( cgs.media.sfxRocketLauncherHit, FromQF3( pos ), CHAN_AUTO, cg_volume_effects->value, ATTN_DISTANT );
 }
 
 /*
@@ -470,14 +469,14 @@ void CG_BladeImpact( const vec3_t pos, const vec3_t dir ) {
 		le->ent.rotation = rand() % 360;
 		le->ent.scale = 1.0f;
 
-		S_StartFixedSound( cgs.media.sfxBladeFleshHit[(int)( random() * 3 )], pos, CHAN_AUTO,
+		S_StartFixedSound( cgs.media.sfxBladeFleshHit, FromQF3( pos ), CHAN_AUTO,
 								cg_volume_effects->value, ATTN_NORM );
 	} else if( trace.surfFlags & SURF_DUST ) {
 		// throw particles on dust
 		CG_ParticleEffect( trace.endpos, trace.plane.normal, 0.30f, 0.30f, 0.25f, 30 );
 
 		//fixme? would need a dust sound
-		S_StartFixedSound( cgs.media.sfxBladeWallHit[(int)( random() * 2 )], pos, CHAN_AUTO,
+		S_StartFixedSound( cgs.media.sfxBladeWallHit, FromQF3( pos ), CHAN_AUTO,
 								cg_volume_effects->value, ATTN_NORM );
 	} else {
 		le = CG_AllocModel( LE_ALPHA_FADE, pos, angles, 3, //3 frames for weak
@@ -489,7 +488,7 @@ void CG_BladeImpact( const vec3_t pos, const vec3_t dir ) {
 
 		CG_ParticleEffect( trace.endpos, trace.plane.normal, 0.30f, 0.30f, 0.25f, 15 );
 
-		S_StartFixedSound( cgs.media.sfxBladeWallHit[(int)( random() * 2 )], pos, CHAN_AUTO,
+		S_StartFixedSound( cgs.media.sfxBladeWallHit, FromQF3( pos ), CHAN_AUTO,
 								cg_volume_effects->value, ATTN_NORM );
 		if( !( trace.surfFlags & SURF_NOMARKS ) ) {
 			CG_SpawnDecal( pos, dir, random() * 45, 8, 1, 1, 1, 1, 10, 1, false, cgs.media.shaderBladeMark );
@@ -545,8 +544,8 @@ void CG_ProjectileTrail( centity_t *cent ) {
 
 	// we don't add more than one sprite each frame. If frame
 	// ratio is too slow, people will prefer having less sprites on screen
-	if( cent->localEffects[LOCALEFFECT_ROCKETFIRE_LAST_DROP] + trailTime < cg.time ) {
-		cent->localEffects[LOCALEFFECT_ROCKETFIRE_LAST_DROP] = cg.time;
+	if( cent->localEffects[LOCALEFFECT_ROCKETFIRE_LAST_DROP] + trailTime < cl.serverTime ) {
+		cent->localEffects[LOCALEFFECT_ROCKETFIRE_LAST_DROP] = cl.serverTime;
 
 		vec4_t color;
 		CG_TeamColor( cent->current.team, color );
@@ -591,8 +590,8 @@ void CG_NewBloodTrail( centity_t *cent ) {
 
 	// we don't add more than one sprite each frame. If frame
 	// ratio is too slow, people will prefer having less sprites on screen
-	if( cent->localEffects[LOCALEFFECT_BLOODTRAIL_LAST_DROP] + trailTime < cg.time ) {
-		cent->localEffects[LOCALEFFECT_BLOODTRAIL_LAST_DROP] = cg.time;
+	if( cent->localEffects[LOCALEFFECT_BLOODTRAIL_LAST_DROP] + trailTime < cl.serverTime ) {
+		cent->localEffects[LOCALEFFECT_BLOODTRAIL_LAST_DROP] = cl.serverTime;
 
 		int contents = ( CG_PointContents( cent->trailOrigin ) & CG_PointContents( cent->ent.origin ) );
 		if( contents & MASK_WATER ) {
@@ -746,9 +745,9 @@ void CG_GrenadeExplosionMode( const vec3_t pos, const vec3_t dir, float radius, 
 	}
 
 	// Explosion particles
-	CG_ParticleExplosionEffect( pos, dir, 1, 0.5, 0, 32 );
+	CG_ParticleExplosionEffect( FromQF3( pos ), FromQF3( dir ), FromQF3( color ) );
 
-	S_StartFixedSound( cgs.media.sfxGrenadeExplosion, pos, CHAN_AUTO, cg_volume_effects->value, ATTN_DISTANT );
+	S_StartFixedSound( cgs.media.sfxGrenadeExplosion, FromQF3( pos ), CHAN_AUTO, cg_volume_effects->value, ATTN_DISTANT );
 }
 
 /*
@@ -782,7 +781,7 @@ void CG_GenericExplosion( const vec3_t pos, const vec3_t dir, float radius ) {
 	le->ent.rotation = rand() % 360;
 
 	// use the rocket explosion sounds
-	S_StartFixedSound( cgs.media.sfxRocketLauncherHit, pos, CHAN_AUTO, cg_volume_effects->value, ATTN_DISTANT );
+	S_StartFixedSound( cgs.media.sfxRocketLauncherHit, FromQF3( pos ), CHAN_AUTO, cg_volume_effects->value, ATTN_DISTANT );
 }
 
 void CG_Dash( const entity_state_t *state ) {
@@ -947,13 +946,13 @@ void CG_AddLocalEntities( void ) {
 	float scale, frac, fade, time, scaleIn, fadeIn;
 	vec3_t angles;
 
-	time = (float)cg.frameTime * 0.001f;
+	time = (float)cls.frametime * 0.001f;
 
 	hnode = &cg_localents_headnode;
 	for( le = hnode->next; le != hnode; le = next ) {
 		next = le->next;
 
-		frac = ( cg.time - le->start ) * 0.01f;
+		frac = ( cl.serverTime - le->start ) * 0.01f;
 		f = Max2( 0, int( floorf( frac ) ) );
 
 		// it's time to DIE
@@ -1114,7 +1113,7 @@ void SpawnGibs( Vec3 origin, Vec3 velocity, int damage, int team ) {
 void DrawGibs() {
 	ZoneScoped;
 
-	float dt = cg.frameTime * 0.001f;
+	float dt = cls.frametime * 0.001f;
 
 	const Model * model = cgs.media.modGib;
 	Vec3 gravity = Vec3( 0, 0, -GRAVITY );
@@ -1146,10 +1145,19 @@ void DrawGibs() {
 
 			ParticleEmitter emitter = { };
 			emitter.position = FromQF3( trace.endpos );
-			emitter.velocity_cone.radius = 128;
-			emitter.color = color;
 
-			emitter.size = 4.0f;
+			emitter.use_cone_direction = true;
+			emitter.direction_cone.normal = FromQF3( trace.plane.normal );
+
+			emitter.start_speed = 128.0f;
+			emitter.end_speed = 128.0f;
+
+			emitter.start_color = color;
+			emitter.end_color = color.xyz();
+
+			emitter.start_size = 4.0f;
+			emitter.end_size = 4.0f;
+
 			emitter.lifetime = 1.0f;
 
 			emitter.n = 64;

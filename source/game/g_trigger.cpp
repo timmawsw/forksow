@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 * Returns true if the trigger shouldn't be activated
 */
 static bool G_TriggerWait( edict_t *ent, edict_t *other ) {
-	if( GS_RaceGametype() ) {
+	if( GS_RaceGametype( &server_gs ) ) {
 		if( other->trigger_entity == ent && other->trigger_timeout && other->trigger_timeout >= level.time ) {
 			return true;
 		}
@@ -103,11 +103,9 @@ static void trigger_enable( edict_t *self, edict_t *other, edict_t *activator ) 
 
 void SP_trigger_multiple( edict_t *ent ) {
 	GClip_SetBrushModel( ent, ent->model );
-	G_PureModel( ent->model );
 
 	if( st.noise ) {
 		ent->noise_index = trap_SoundIndex( st.noise );
-		G_PureSound( st.noise );
 	}
 
 	// gameteam field from editor
@@ -206,7 +204,7 @@ static void trigger_push_touch( edict_t *self, edict_t *other, cplane_t *plane, 
 
 	// add an event
 	if( other->r.client ) {
-		GS_TouchPushTrigger( &other->r.client->ps, &self->s );
+		GS_TouchPushTrigger( &server_gs, &other->r.client->ps, &self->s );
 	} else {
 		// pushing of non-clients
 		if( other->movetype != MOVETYPE_BOUNCEGRENADE ) {
@@ -272,7 +270,6 @@ void SP_trigger_push( edict_t *self ) {
 	if( st.noise && Q_stricmp( st.noise, "default" ) ) {
 		if( Q_stricmp( st.noise, "silent" ) ) {
 			self->moveinfo.sound_start = trap_SoundIndex( st.noise );
-			G_PureSound( st.noise );
 		}
 	} else {
 		self->moveinfo.sound_start = trap_SoundIndex( S_JUMPPAD );
@@ -369,7 +366,6 @@ void SP_trigger_hurt( edict_t *self ) {
 		self->noise_index = 0;
 	} else if( st.noise ) {
 		self->noise_index = trap_SoundIndex( st.noise );
-		G_PureSound( st.noise );
 	} else {
 		self->noise_index = 0;
 	}
@@ -495,7 +491,6 @@ void SP_trigger_teleport( edict_t *ent ) {
 
 	if( st.noise ) {
 		ent->noise_index = trap_SoundIndex( st.noise );
-		G_PureSound( st.noise );
 	}
 
 	// gameteam field from editor

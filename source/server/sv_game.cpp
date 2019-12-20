@@ -17,17 +17,11 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-// sv_game.c -- interface to the game dll
 
 #include "server.h"
 #include "qcommon/version.h"
 
 game_export_t *ge;
-
-extern "C" QF_DLL_EXPORT void *GetGameAPI( void * );
-
-mempool_t *sv_gameprogspool;
-static void *module_handle;
 
 //======================================================================
 
@@ -267,118 +261,10 @@ static const char *PF_GetConfigString( int index ) {
 }
 
 /*
-* PF_PureSound
-*/
-static void PF_PureSound( const char *name ) {
-	const char *extension;
-	char tempname[MAX_CONFIGSTRING_CHARS];
-
-	if( sv.state != ss_loading ) {
-		return;
-	}
-
-	if( !name || !name[0] || strlen( name ) >= MAX_CONFIGSTRING_CHARS ) {
-		return;
-	}
-
-	Q_strncpyz( tempname, name, sizeof( tempname ) );
-
-	if( !COM_FileExtension( tempname ) ) {
-		extension = FS_FirstExtension( tempname, SOUND_EXTENSIONS, NUM_SOUND_EXTENSIONS );
-		if( !extension ) {
-			return;
-		}
-
-		COM_ReplaceExtension( tempname, extension, sizeof( tempname ) );
-	}
-
-	SV_AddPureFile( tempname );
-}
-
-/*
-* SV_AddPureShader
-*
-* FIXME: For now we don't parse shaders, but simply assume that it uses the same name .tga or .jpg
-*/
-static void SV_AddPureShader( const char *name ) {
-	const char *extension;
-	char tempname[MAX_CONFIGSTRING_CHARS];
-
-	if( !name || !name[0] ) {
-		return;
-	}
-
-	assert( name && name[0] && strlen( name ) < MAX_CONFIGSTRING_CHARS );
-
-	if( !Q_strnicmp( name, "textures/common/", strlen( "textures/common/" ) ) ) {
-		return;
-	}
-
-	Q_strncpyz( tempname, name, sizeof( tempname ) );
-
-	if( !COM_FileExtension( tempname ) ) {
-		extension = FS_FirstExtension( tempname, IMAGE_EXTENSIONS, NUM_IMAGE_EXTENSIONS );
-		if( !extension ) {
-			return;
-		}
-
-		COM_ReplaceExtension( tempname, extension, sizeof( tempname ) );
-	}
-
-	SV_AddPureFile( tempname );
-}
-
-/*
-* SV_AddPureBSP
-*/
-static void SV_AddPureBSP( void ) {
-	int i;
-	const char *shader;
-
-	SV_AddPureFile( sv.configstrings[CS_WORLDMODEL] );
-	for( i = 0; ( shader = CM_ShaderrefName( svs.cms, i ) ); i++ )
-		SV_AddPureShader( shader );
-}
-
-/*
-* PF_PureModel
-*/
-static void PF_PureModel( const char *name ) {
-	if( sv.state != ss_loading ) {
-		return;
-	}
-	if( !name || !name[0] || strlen( name ) >= MAX_CONFIGSTRING_CHARS ) {
-		return;
-	}
-
-	if( name[0] == '*' ) {  // inline model
-		if( !strcmp( name, "*0" ) ) {
-			SV_AddPureBSP(); // world
-		}
-	} else {
-		SV_AddPureFile( name );
-	}
-}
-
-/*
 * PF_inPVS
 */
 static bool PF_inPVS( const vec3_t p1, const vec3_t p2 ) {
 	return CM_InPVS( svs.cms, p1, p2 );
-}
-
-/*
-* PF_MemAlloc
-*/
-static void *PF_MemAlloc( size_t size, const char *filename, int fileline ) {
-	return _Mem_Alloc( sv_gameprogspool, size, MEMPOOL_GAMEPROGS, 0, filename, fileline );
-}
-
-/*
-* PF_MemFree
-*/
-static void PF_MemFree( void *data, const char *filename, int fileline ) {
-	_Mem_Free( data, MEMPOOL_GAMEPROGS, 0, filename, fileline );
 }
 
 //==============================================
@@ -395,11 +281,6 @@ void SV_ShutdownGameProgs( void ) {
 	}
 
 	ge->Shutdown();
-	// This call might still require the memory pool to be valid
-	// (for example if there are global object destructors calling G_Free()),
-	// that's why it's called before releasing the pool.
-	Com_UnloadGameLibrary( &module_handle );
-	Mem_FreePool( &sv_gameprogspool );
 	ge = NULL;
 }
 
@@ -425,20 +306,12 @@ static void SV_LocateEntities( struct edict_s *edicts, size_t edict_size, int nu
 * Init the game subsystem for a new map
 */
 void SV_InitGameProgs( void ) {
-	int apiversion;
 	game_import_t import;
-	game_export_t *( *builtinAPIfunc )( void * ) = NULL;
-
-#ifdef GAME_HARD_LINKED
-	builtinAPIfunc = GetGameAPI;
-#endif
 
 	// unload anything we have now
 	if( ge ) {
 		SV_ShutdownGameProgs();
 	}
-
-	sv_gameprogspool = _Mem_AllocPool( NULL, "Game Progs", MEMPOOL_GAMEPROGS, __FILE__, __LINE__ );
 
 	// load a new game dll
 	import.Print = PF_dprint;
@@ -469,25 +342,11 @@ void SV_InitGameProgs( void ) {
 
 	import.ConfigString = PF_ConfigString;
 	import.GetConfigString = PF_GetConfigString;
-	import.PureSound = PF_PureSound;
-	import.PureModel = PF_PureModel;
 
 	import.FS_FOpenFile = FS_FOpenFile;
 	import.FS_Read = FS_Read;
 	import.FS_Write = FS_Write;
-	import.FS_Print = FS_Print;
-	import.FS_Tell = FS_Tell;
-	import.FS_Seek = FS_Seek;
-	import.FS_Eof = FS_Eof;
-	import.FS_Flush = FS_Flush;
 	import.FS_FCloseFile = FS_FCloseFile;
-	import.FS_RemoveFile = FS_RemoveFile;
-	import.FS_GetFileList = FS_GetFileList;
-	import.FS_MoveFile = FS_MoveFile;
-	import.FS_RemoveDirectory = FS_RemoveDirectory;
-
-	import.Mem_Alloc = PF_MemAlloc;
-	import.Mem_Free = PF_MemFree;
 
 	import.Cvar_Get = Cvar_Get;
 	import.Cvar_Set = Cvar_Set;
@@ -518,22 +377,7 @@ void SV_InitGameProgs( void ) {
 
 	import.is_dedicated_server = is_dedicated_server;
 
-	if( builtinAPIfunc ) {
-		ge = builtinAPIfunc( &import );
-	} else {
-		ge = (game_export_t *)Com_LoadGameLibrary( "game", "GetGameAPI", &module_handle, &import );
-	}
-	if( !ge ) {
-		Com_Error( ERR_DROP, "Failed to load game DLL" );
-	}
-
-	apiversion = ge->API();
-	if( apiversion != GAME_API_VERSION ) {
-		Com_UnloadGameLibrary( &module_handle );
-		Mem_FreePool( &sv_gameprogspool );
-		ge = NULL;
-		Com_Error( ERR_DROP, "Game is version %i, not %i", apiversion, GAME_API_VERSION );
-	}
+	ge = GetGameAPI( &import );
 
 	SV_SetServerConfigStrings();
 

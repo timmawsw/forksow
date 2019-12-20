@@ -145,19 +145,6 @@ void MSG_ReadDeltaStruct( msg_t *msg, const void *from, void *to, size_t size, c
 
 //============================================================================
 
-typedef struct purelist_s {
-	char *filename;
-	unsigned checksum;
-	struct purelist_s *next;
-} purelist_t;
-
-void Com_AddPakToPureList( purelist_t **purelist, const char *pakname, const unsigned checksum, struct mempool_s *mempool );
-unsigned Com_CountPureListFiles( purelist_t *purelist );
-purelist_t *Com_FindPakInPureList( purelist_t *purelist, const char *pakname );
-void Com_FreePureList( purelist_t **purelist );
-
-//============================================================================
-
 #define SNAP_MAX_DEMO_META_DATA_SIZE    16 * 1024
 
 // define this 0 to disable compression of demo files
@@ -181,7 +168,7 @@ void SNAP_FreeClientFrames( struct client_s *client );
 void SNAP_RecordDemoMessage( int demofile, msg_t *msg, int offset );
 int SNAP_ReadDemoMessage( int demofile, msg_t *msg );
 void SNAP_BeginDemoRecording( int demofile, unsigned int spawncount, unsigned int snapFrameTime,
-							  const char *sv_name, unsigned int sv_bitflags, purelist_t *purelist,
+							  const char *sv_name, unsigned int sv_bitflags,
 							  char *configstrings, entity_state_t *baselines );
 void SNAP_StopDemoRecording( int demofile );
 void SNAP_WriteDemoMetaData( const char *filename, const char *meta_data, size_t meta_data_realsize );
@@ -282,29 +269,14 @@ enum clc_ops_e {
 //==============================================
 
 // serverdata flags
-#define SV_BITFLAGS_PURE            ( 1 << 0 )
-#define SV_BITFLAGS_RELIABLE        ( 1 << 1 )
-#define SV_BITFLAGS_HTTP            ( 1 << 2 )
-#define SV_BITFLAGS_HTTP_BASEURL    ( 1 << 3 )
+#define SV_BITFLAGS_RELIABLE        ( 1 << 0 )
+#define SV_BITFLAGS_HTTP            ( 1 << 1 )
+#define SV_BITFLAGS_HTTP_BASEURL    ( 1 << 2 )
 
 // framesnap flags
 #define FRAMESNAP_FLAG_DELTA        ( 1 << 0 )
 #define FRAMESNAP_FLAG_ALLENTITIES  ( 1 << 1 )
 #define FRAMESNAP_FLAG_MULTIPOV     ( 1 << 2 )
-
-/*
-==============================================================
-
-Library
-
-Dynamic library loading
-
-==============================================================
-*/
-
-// qcommon/library.c
-void *Com_LoadGameLibrary( const char *basename, const char *apifuncname, void **handle, void *parms );
-void Com_UnloadGameLibrary( void **handle );
 
 /*
 ==============================================================
@@ -496,7 +468,6 @@ void NET_SetErrorString( _Printf_format_string_ const char *format, ... );
 #endif
 
 void        NET_SetErrorStringFromLastError( const char *function );
-void        NET_ShowIP( void );
 
 const char *NET_SocketTypeToString( socket_type_t type );
 const char *NET_SocketToString( const socket_t *socket );
@@ -510,7 +481,6 @@ bool    NET_CompareAddress( const netadr_t *a, const netadr_t *b );
 bool    NET_CompareBaseAddress( const netadr_t *a, const netadr_t *b );
 bool    NET_IsLANAddress( const netadr_t *address );
 bool    NET_IsLocalAddress( const netadr_t *address );
-bool    NET_IsAnyAddress( const netadr_t *address );
 void    NET_InitAddress( netadr_t *address, netadrtype_t type );
 void    NET_BroadcastAddress( netadr_t *address, int port );
 
@@ -573,20 +543,12 @@ FILESYSTEM
 ==============================================================
 */
 
-#define FS_NOTIFY_NEWPAKS   0x01
-
-typedef void (*fs_read_cb)( int filenum, const void *buf, size_t numb, float progress, void *customp );
-typedef void (*fs_done_cb)( int filenum, int status, void *customp );
-
 void        FS_Init( void );
-int         FS_Rescan( void );
 void        FS_Frame( void );
 void        FS_Shutdown( void );
 
 const char *FS_GameDirectory( void );
 const char *FS_BaseGameDirectory( void );
-int         FS_GetExplicitPurePakList( char ***paknames );
-bool        FS_IsExplicitPurePak( const char *pakname );
 
 // handling of absolute filenames
 // only to be used if necessary (library not supporting custom file handling functions etc.)
@@ -616,10 +578,8 @@ int FS_Printf( int file, _Printf_format_string_ const char *format, ... );
 int     FS_Write( const void *buffer, size_t len, int file );
 int     FS_Tell( int file );
 int     FS_Seek( int file, int offset, int whence );
-int     FS_Eof( int file );
 int     FS_Flush( int file );
-bool    FS_IsUrl( const char *url );
-int     FS_FileNo( int file, size_t *offset );
+int     FS_FileNo( int file );
 
 void    FS_SetCompressionLevel( int file, int level );
 int     FS_GetCompressionLevel( int file );
@@ -633,40 +593,21 @@ void    FS_FreeBaseFile( void *buffer );
 #define FS_LoadBaseFile( path,buffer,stack,stacksize ) FS_LoadBaseFileExt( path,0,buffer,stack,stacksize,__FILE__,__LINE__ )
 #define FS_LoadCacheFile( path,buffer,stack,stacksize ) FS_LoadFileExt( path,FS_CACHE,buffer,stack,stacksize,__FILE__,__LINE__ )
 
-int     FS_GetNotifications( void );
-int     FS_RemoveNotifications( int bitmask );
-
 // util functions
-bool    FS_CopyFile( const char *src, const char *dst );
-bool    FS_CopyBaseFile( const char *src, const char *dst );
-bool    FS_ExtractFile( const char *src, const char *dst );
 bool    FS_MoveFile( const char *src, const char *dst );
 bool    FS_MoveBaseFile( const char *src, const char *dst );
-bool    FS_MoveCacheFile( const char *src, const char *dst );
 bool    FS_RemoveFile( const char *filename );
 bool    FS_RemoveBaseFile( const char *filename );
 bool    FS_RemoveAbsoluteFile( const char *filename );
-bool    FS_RemoveDirectory( const char *dirname );
-bool    FS_RemoveBaseDirectory( const char *dirname );
-bool    FS_RemoveAbsoluteDirectory( const char *dirname );
 unsigned    FS_ChecksumAbsoluteFile( const char *filename );
-unsigned    FS_ChecksumBaseFile( const char *filename, bool ignorePakChecksum );
-bool    FS_CheckPakExtension( const char *filename );
-bool    FS_PakFileExists( const char *packfilename );
+unsigned    FS_ChecksumBaseFile( const char *filename );
 
 // // only for game files
 const char *FS_FirstExtension( const char *filename, const char * const * extensions, int num_extensions );
-const char *FS_PakNameForFile( const char *filename );
-bool    FS_IsPureFile( const char *pakname );
 const char *FS_BaseNameForFile( const char *filename );
 
 int         FS_GetFileList( const char *dir, const char *extension, char *buf, size_t bufsize, int start, int end );
 int         FS_GetFileListExt( const char *dir, const char *extension, char *buf, size_t *bufsize, int start, int end );
-
-// // only for base files
-bool    FS_IsPakValid( const char *filename, unsigned *checksum );
-bool    FS_AddPurePak( unsigned checksum );
-void    FS_RemovePurePaks( void );
 
 /*
 ==============================================================
@@ -731,7 +672,7 @@ struct mempool_s;
 typedef struct mempool_s mempool_t;
 
 #define MEMPOOL_TEMPORARY           1
-#define MEMPOOL_GAMEPROGS           2
+#define MEMPOOL_GAME                2
 #define MEMPOOL_USERINTERFACE       4
 #define MEMPOOL_CLIENTGAME          8
 #define MEMPOOL_SOUND               16
@@ -832,10 +773,6 @@ __declspec( noreturn ) void Sys_Error( _Printf_format_string_ const char *error,
 __declspec( noreturn ) void Sys_Quit( void );
 #endif
 
-char    *Sys_GetClipboardData( void );
-bool Sys_SetClipboardData( const char *data );
-void    Sys_FreeClipboardData( char *data );
-
 /*
 ==============================================================
 
@@ -868,7 +805,6 @@ MAPLIST SUBSYSTEM
 */
 void ML_Init( void );
 void ML_Shutdown( void );
-void ML_Restart( bool forcemaps );
 bool ML_Update( void );
 
 size_t ML_GetMapByNum( int num, char *out, size_t size );

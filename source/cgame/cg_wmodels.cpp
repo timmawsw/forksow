@@ -181,20 +181,9 @@ static bool CG_vWeap_ParseAnimationScript( weaponinfo_t *weaponinfo, const char 
 				if( debug ) {
 					CG_Printf( "%sScript: firesound:%s", S_COLOR_BLUE, S_COLOR_WHITE );
 				}
-				if( weaponinfo->num_fire_sounds >= WEAPONINFO_MAX_FIRE_SOUNDS ) {
-					if( debug ) {
-						CG_Printf( S_COLOR_BLUE "too many firesounds defined. Max is %i" S_COLOR_WHITE "\n", WEAPONINFO_MAX_FIRE_SOUNDS );
-					}
-					break;
-				}
 
 				token = COM_ParseExt( &ptr, false );
-				if( Q_stricmp( token, "NULL" ) ) {
-					weaponinfo->sound_fire[weaponinfo->num_fire_sounds] = S_RegisterSound( token );
-					if( weaponinfo->sound_fire[weaponinfo->num_fire_sounds] != NULL ) {
-						weaponinfo->num_fire_sounds++;
-					}
-				}
+				weaponinfo->sound_fire = FindSoundEffect( token );
 				if( debug ) {
 					CG_Printf( "%s%s%s\n", S_COLOR_BLUE, token, S_COLOR_WHITE );
 				}
@@ -421,7 +410,7 @@ static void CG_AddWeaponFlashOnTag( entity_t *weapon, const weaponinfo_t *weapon
 	entity_t flash;
 	float intensity;
 
-	if( flash_time < cg.time ) {
+	if( flash_time < cl.serverTime ) {
 		return;
 	}
 	if( !weaponInfo->model[WEAPMODEL_FLASH] ) {
@@ -432,7 +421,7 @@ static void CG_AddWeaponFlashOnTag( entity_t *weapon, const weaponinfo_t *weapon
 	}
 
 	if( weaponInfo->flashFade ) {
-		intensity = (float)( flash_time - cg.time ) / (float)weaponInfo->flashTime;
+		intensity = (float)( flash_time - cl.serverTime ) / (float)weaponInfo->flashTime;
 		c = ( uint8_t )( 255 * intensity );
 	} else {
 		intensity = 1.0f;
@@ -476,10 +465,10 @@ static void CG_AddWeaponBarrelOnTag( entity_t *weapon, const weaponinfo_t *weapo
 	barrel.scale = weapon->scale;
 
 	// rotation
-	if( barrel_time > cg.time ) {
+	if( barrel_time > cl.serverTime ) {
 		float intensity;
 
-		intensity =  (float)( barrel_time - cg.time ) / (float)weaponInfo->barrelTime;
+		intensity =  (float)( barrel_time - cl.serverTime ) / (float)weaponInfo->barrelTime;
 		rotangles[2] = 360.0f * weaponInfo->barrelSpeed * intensity * intensity;
 	}
 

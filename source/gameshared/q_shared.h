@@ -67,10 +67,17 @@ const char *COM_FileBase( const char *in );
 void COM_StripFilename( char *filename );
 int COM_FilePathLength( const char *in );
 
+enum ParseStopOnNewLine {
+	Parse_DontStopOnNewLine,
+	Parse_StopOnNewLine,
+};
+
 Span< char > ParseSpan( char ** ptr, bool stop_on_newline );
 Span< const char > ParseSpan( const char ** ptr, bool stop_on_newline );
 
-Span< const char > ParseSpan( Span< const char > * cursor, bool stop_on_newline );
+Span< const char > ParseSpan( Span< const char > * cursor, ParseStopOnNewLine stop );
+
+bool ParseFloat( Span< const char > str, float * x );
 
 // data is an in/out parm, returns a parsed out token
 char *COM_ParseExt2_r( char *token, size_t token_size, const char **data_p, bool nl, bool sq );
@@ -225,9 +232,6 @@ float Q_GainForAttenuation( int model, float maxdistance, float refdistance, flo
 
 //=============================================
 
-constexpr const char *SOUND_EXTENSIONS[] = { ".ogg" };
-constexpr size_t NUM_SOUND_EXTENSIONS = ARRAY_COUNT( SOUND_EXTENSIONS );
-
 constexpr const char *IMAGE_EXTENSIONS[] = { ".jpg", ".png" };
 constexpr size_t NUM_IMAGE_EXTENSIONS = ARRAY_COUNT( IMAGE_EXTENSIONS );
 
@@ -264,7 +268,7 @@ __declspec( noreturn ) void Com_Error( com_error_code_t code, _Printf_format_str
 #define FS_READ             0
 #define FS_WRITE            1
 #define FS_APPEND           2
-#define FS_GZ               0x100   // compress on write and decompress on read automatically. doesn't work on pk3 files
+#define FS_GZ               0x100   // compress on write and decompress on read automatically
 #define FS_UPDATE           0x200
 #define FS_CACHE            0x800
 
