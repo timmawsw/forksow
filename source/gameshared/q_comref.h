@@ -419,9 +419,6 @@ typedef struct {
 	// command (in)
 	usercmd_t cmd;
 
-	// A hint (in)
-	bool skipCollision;
-
 	// results (out)
 	int numtouch;
 	int touchents[MAXTOUCH];

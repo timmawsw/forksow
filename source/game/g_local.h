@@ -467,7 +467,7 @@ edict_t *G_PlayerForText( const char *text );
 
 void G_PrecacheWeapondef( int weapon, firedef_t *firedef );
 
-void G_SetBoundsForSpanEntity( edict_t *ent, vec_t size );
+void G_SetBoundsForSpanEntity( edict_t *ent, float size );
 
 //
 // g_callvotes.c
@@ -562,7 +562,7 @@ void SP_model( edict_t *ent );
 // g_weapon.c
 //
 void W_Fire_Blade( edict_t *self, int range, vec3_t start, vec3_t angles, float damage, int knockback, int timeDelta );
-void W_Fire_MG( edict_t *self, vec3_t start, vec3_t angles, int seed, int range, int hspread, int vspread, float damage, int knockback, int timeDelta );
+void W_Fire_MG( edict_t *self, vec3_t start, vec3_t angles, int range, int hspread, int vspread, float damage, int knockback, int timeDelta );
 void W_Fire_Riotgun( edict_t *self, vec3_t start, vec3_t angles, int range, int hspread, int vspread, int count, float damage, int knockback, int timeDelta );
 edict_t *W_Fire_Grenade( edict_t *self, vec3_t start, vec3_t angles, int speed, float damage, int minKnockback, int maxKnockback, int minDamage, float radius, int timeout, int timeDelta, bool aim_up );
 edict_t *W_Fire_Rocket( edict_t *self, vec3_t start, vec3_t angles, int speed, float damage, int minKnockback, int maxKnockback, int minDamage, int radius, int timeout, int timeDelta );
@@ -680,7 +680,7 @@ __declspec( noreturn ) void G_Error( _Printf_format_string_ const char *format, 
 void G_Printf( _Printf_format_string_ const char *format, ... );
 #endif
 
-void G_Init( unsigned int seed, unsigned int framemsec );
+void G_Init( unsigned int framemsec );
 void G_Shutdown( void );
 void G_ExitLevel( void );
 game_state_t *G_GetGameState( void );
@@ -704,7 +704,6 @@ bool G_CallSpawn( edict_t *ent );
 void G_RespawnLevel( void );
 void G_ResetLevel( void );
 void G_InitLevel( char *mapname, char *entities, int entstrlen, int64_t levelTime );
-const char *G_GetEntitySpawnKey( const char *key, edict_t *self );
 
 //
 // g_awards.c

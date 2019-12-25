@@ -105,11 +105,11 @@ const float pm_wjbouncefactor = 0.3f;
 #define VectorScale2D( in, scale, out ) ( ( out )[0] = ( in )[0] * ( scale ), ( out )[1] = ( in )[1] * ( scale ) )
 #define DotProduct2D( x, y )           ( ( x )[0] * ( y )[0] + ( x )[1] * ( y )[1] )
 
-static vec_t VectorNormalize2D( vec3_t v ) { // ByMiK : normalize horizontally (don't affect Z value)
+static float VectorNormalize2D( vec3_t v ) { // ByMiK : normalize horizontally (don't affect Z value)
 	float length, ilength;
 	length = v[0] * v[0] + v[1] * v[1];
 	if( length ) {
-		length = sqrt( length ); // FIXME
+		length = sqrtf( length ); // FIXME
 		ilength = 1.0f / length;
 		v[0] *= ilength;
 		v[1] *= ilength;
@@ -129,8 +129,8 @@ static void PlayerTouchWall( int nbTestDir, float maxZnormal, vec3_t *normal ) {
 	entity_state_t *state;
 
 	for( i = 0; i < nbTestDir; i++ ) {
-		dir[0] = pml.origin[0] + ( pm->maxs[0]*cos( ( M_TWOPI/nbTestDir )*i ) + pml.velocity[0] * 0.015f );
-		dir[1] = pml.origin[1] + ( pm->maxs[1]*sin( ( M_TWOPI/nbTestDir )*i ) + pml.velocity[1] * 0.015f );
+		dir[0] = pml.origin[0] + ( pm->maxs[0]*cosf( ( PI*2.0f /nbTestDir )*i ) + pml.velocity[0] * 0.015f );
+		dir[1] = pml.origin[1] + ( pm->maxs[1]*sinf( ( PI*2.0f /nbTestDir )*i ) + pml.velocity[1] * 0.015f );
 		dir[2] = pml.origin[2];
 
 		for( j = 0; j < 2; j++ ) {
@@ -156,7 +156,7 @@ static void PlayerTouchWall( int nbTestDir, float maxZnormal, vec3_t *normal ) {
 		}
 
 		if( trace.fraction > 0 ) {
-			if( dist > trace.fraction && fabs( trace.plane.normal[2] ) < maxZnormal ) {
+			if( dist > trace.fraction && Abs( trace.plane.normal[2] ) < maxZnormal ) {
 				dist = trace.fraction;
 				VectorCopy( trace.plane.normal, *normal );
 			}
@@ -214,12 +214,6 @@ static int PM_SlideMove( void ) {
 		if( pml.groundplane.normal[2] == 1.0f && pml.velocity[2] < 0.0f ) {
 			pml.velocity[2] = 0.0f;
 		}
-	}
-
-	// Do a shortcut in this case
-	if( pm->skipCollision ) {
-		VectorMA( pml.origin, remainingTime, pml.velocity, pml.origin );
-		return blockedmask;
 	}
 
 	VectorCopy( pml.origin, last_valid_origin );
@@ -350,12 +344,6 @@ static void PM_StepSlideMove( void ) {
 
 	blocked = PM_SlideMove();
 
-	// We have modified the origin in PM_SlideMove() in this case.
-	// No further computations are required.
-	if( pm->skipCollision ) {
-		return;
-	}
-
 	VectorCopy( pml.origin, down_o );
 	VectorCopy( pml.velocity, down_v );
 
@@ -401,7 +389,7 @@ static void PM_StepSlideMove( void ) {
 	}
 
 	// Preserve speed when sliding up ramps
-	hspeed = sqrt( start_v[0] * start_v[0] + start_v[1] * start_v[1] );
+	hspeed = sqrtf( start_v[0] * start_v[0] + start_v[1] * start_v[1] );
 	if( hspeed && ISWALKABLEPLANE( &trace.plane ) ) {
 		if( trace.plane.normal[2] >= 1.0f - SLIDEMOVE_PLANEINTERACT_EPSILON ) {
 			VectorCopy( start_v, pml.velocity );
@@ -438,7 +426,7 @@ static void PM_Friction( void ) {
 		return;
 	}
 
-	speed = sqrt( speed );
+	speed = sqrtf( speed );
 	drop = 0;
 
 	// apply ground friction
@@ -536,7 +524,7 @@ static void PM_AddCurrents( vec3_t wishvel ) {
 	// account for ladders
 	//
 
-	if( pml.ladder && fabs( pml.velocity[2] ) <= DEFAULT_LADDERSPEED ) {
+	if( pml.ladder && Abs( pml.velocity[2] ) <= DEFAULT_LADDERSPEED ) {
 		if( ( pm->playerState->viewangles[PITCH] <= -15 ) && ( pml.forwardPush > 0 ) ) {
 			wishvel[2] = DEFAULT_LADDERSPEED;
 		} else if( ( pm->playerState->viewangles[PITCH] >= 15 ) && ( pml.forwardPush > 0 ) ) {
@@ -713,12 +701,6 @@ static void PM_Move( void ) {
 */
 static void PM_GroundTrace( trace_t *trace ) {
 	vec3_t point;
-
-	if( pm->skipCollision ) {
-		memset( trace, 0, sizeof( trace_t ) );
-		trace->fraction = 1.0f;
-		return;
-	}
 
 	// see if standing on something solid
 	point[0] = pml.origin[0];
@@ -984,7 +966,7 @@ static void PM_CheckDash( void ) {
 		pm->playerState->pmove.stats[PM_STAT_DASHTIME] = PM_DASHJUMP_TIMEDELAY;
 
 		// return sound events
-		if( fabs( pml.sidePush ) > 10 && fabs( pml.sidePush ) >= fabs( pml.forwardPush ) ) {
+		if( Abs( pml.sidePush ) > 10 && Abs( pml.sidePush ) >= Abs( pml.forwardPush ) ) {
 			if( pml.sidePush > 0 ) {
 				pmove_gs->api.PredictedEvent( pm->playerState->POVnum, EV_DASH, 2 );
 			} else {
@@ -1041,7 +1023,6 @@ static void PM_CheckWallJump( void ) {
 		&& ( pm->playerState->pmove.stats[PM_STAT_FEATURES] & PMFEAT_WALLJUMP ) &&
 		( !( pm->playerState->pmove.pm_flags & PMF_WALLJUMPCOUNT ) )
 		&& pm->playerState->pmove.stats[PM_STAT_WJTIME] <= 0
-		&& !pm->skipCollision
 		) {
 		trace_t trace;
 		vec3_t point;
@@ -1120,13 +1101,11 @@ static void PM_CheckSpecialMovement( void ) {
 	pml.ladder = false;
 
 	// check for ladder
-	if( !pm->skipCollision ) {
-		VectorMA( pml.origin, 1, pml.flatforward, spot );
-		pmove_gs->api.Trace( &trace, pml.origin, pm->mins, pm->maxs, spot, pm->playerState->POVnum, pm->contentmask, 0 );
-		if( ( trace.fraction < 1 ) && ( trace.surfFlags & SURF_LADDER ) ) {
-			pml.ladder = true;
-			pm->ladder = true;
-		}
+	VectorMA( pml.origin, 1, pml.flatforward, spot );
+	pmove_gs->api.Trace( &trace, pml.origin, pm->mins, pm->maxs, spot, pm->playerState->POVnum, pm->contentmask, 0 );
+	if( ( trace.fraction < 1 ) && ( trace.surfFlags & SURF_LADDER ) ) {
+		pml.ladder = true;
+		pm->ladder = true;
 	}
 
 	// check for water jump

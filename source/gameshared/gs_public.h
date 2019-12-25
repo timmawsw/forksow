@@ -141,7 +141,6 @@ typedef struct {
 
 //==================================================================
 
-// S_DEFAULT_ATTENUATION_MODEL	"3"
 #define ATTN_NONE               0       // full volume the entire level
 #define ATTN_DISTANT            0.5     // distant sound (most likely explosions)
 #define ATTN_NORM               1       // players, weapons, etc
@@ -212,7 +211,94 @@ void Pmove( const gs_state_t * gs, pmove_t *pmove );
 
 //===============================================================
 
-#define HEALTH_TO_INT( x )    ( ( x ) < 1.0f ? (int)ceil( ( x ) ) : (int)floor( ( x ) + 0.5f ) )
+//==================
+//SPLITMODELS
+//==================
+
+// The parts must be listed in draw order
+enum {
+	LOWER = 0,
+	UPPER,
+	HEAD,
+
+	PMODEL_PARTS
+};
+
+// -Torso DEATH frames and Legs DEATH frames must be the same.
+
+// ANIMATIONS
+
+enum {
+	ANIM_NONE,
+	BOTH_DEATH1,      //Death animation
+	BOTH_DEAD1,       //corpse on the ground
+	BOTH_DEATH2,
+	BOTH_DEAD2,
+	BOTH_DEATH3,
+	BOTH_DEAD3,
+
+	LEGS_STAND_IDLE,
+	LEGS_WALK_FORWARD,
+	LEGS_WALK_BACK,
+	LEGS_WALK_LEFT,
+	LEGS_WALK_RIGHT,
+
+	LEGS_RUN_FORWARD,
+	LEGS_RUN_BACK,
+	LEGS_RUN_LEFT,
+	LEGS_RUN_RIGHT,
+
+	LEGS_JUMP_LEG1,
+	LEGS_JUMP_LEG2,
+	LEGS_JUMP_NEUTRAL,
+	LEGS_LAND,
+
+	LEGS_CROUCH_IDLE,
+	LEGS_CROUCH_WALK,
+
+	LEGS_SWIM_FORWARD,
+	LEGS_SWIM_NEUTRAL,
+
+	LEGS_WALLJUMP,
+	LEGS_WALLJUMP_LEFT,
+	LEGS_WALLJUMP_RIGHT,
+	LEGS_WALLJUMP_BACK,
+
+	LEGS_DASH,
+	LEGS_DASH_LEFT,
+	LEGS_DASH_RIGHT,
+	LEGS_DASH_BACK,
+
+	TORSO_HOLD_BLADE,
+	TORSO_HOLD_PISTOL,
+	TORSO_HOLD_LIGHTWEAPON,
+	TORSO_HOLD_HEAVYWEAPON,
+	TORSO_HOLD_AIMWEAPON,
+
+	TORSO_SHOOT_BLADE,
+	TORSO_SHOOT_PISTOL,
+	TORSO_SHOOT_LIGHTWEAPON,
+	TORSO_SHOOT_HEAVYWEAPON,
+	TORSO_SHOOT_AIMWEAPON,
+
+	TORSO_WEAPON_SWITCHOUT,
+	TORSO_WEAPON_SWITCHIN,
+
+	TORSO_DROPHOLD,
+	TORSO_DROP,
+
+	TORSO_SWIM,
+
+	TORSO_PAIN1,
+	TORSO_PAIN2,
+	TORSO_PAIN3,
+
+	PMODEL_TOTAL_ANIMATIONS,
+};
+
+//===============================================================
+
+#define HEALTH_TO_INT( x )    ( ( x ) < 1.0f ? (int)ceilf( ( x ) ) : (int)floorf( ( x ) + 0.5f ) )
 
 // gs_items - shared items definitions
 

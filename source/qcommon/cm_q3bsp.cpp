@@ -72,7 +72,7 @@ static int CM_CreateFacetFromPoints( cmodel_state_t *cms, cbrush_t *facet, vec3_
 				VectorCopy( verts[( i + 2 ) % 4], v[2] );
 				PlaneFromPoints( v, &plane );
 
-				if( fabs( DotProduct( mainplane.normal, plane.normal ) ) < 0.9 ) {
+				if( Abs( DotProduct( mainplane.normal, plane.normal ) ) < 0.9 ) {
 					return 0;
 				}
 			}
@@ -202,7 +202,7 @@ static void CM_CreatePatch( cmodel_state_t *cms, cface_t *patch, cshaderref_t *s
 	cplane_t *brushplanes;
 
 	// find the degree of subdivision in the u and v directions
-	Patch_GetFlatness( CM_SUBDIV_LEVEL, ( vec_t * )verts[0], 3, patch_cp, flat );
+	Patch_GetFlatness( CM_SUBDIV_LEVEL, ( float * )verts[0], 3, patch_cp, flat );
 
 	step[0] = 1 << flat[0];
 	step[1] = 1 << flat[1];

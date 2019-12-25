@@ -131,7 +131,7 @@ bool SV_ClientConnect( const socket_t *socket, const netadr_t *address, client_t
 	for( i = 0; i < sizeof( svs.clients[0].session ) - 1; i++ ) {
 		const unsigned char symbols[65] =
 			"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-		client->session[i] = symbols[rand() % ( sizeof( symbols ) - 1 )];
+		client->session[i] = random_select( &svs.rng, symbols );
 	}
 	client->session[i] = '\0';
 
@@ -154,7 +154,7 @@ void SV_DropClient( client_t *drop, int type, const char *format, ... ) {
 
 	if( format ) {
 		va_start( argptr, format );
-		Q_vsnprintfz( string, sizeof( string ), format, argptr );
+		vsnprintf( string, sizeof( string ), format, argptr );
 		va_end( argptr );
 		reason = string;
 	} else {
@@ -601,12 +601,12 @@ static void SV_BeginDownload_f( client_t *client ) {
 		if( local_http ) {
 			alloc_size = sizeof( char ) * ( 6 + strlen( uploadname ) * 3 + 1 );
 			url = ( char * ) Mem_TempMalloc( alloc_size );
-			Q_snprintfz( url, alloc_size, "files/" );
+			snprintf( url, alloc_size, "files/" );
 			Q_urlencode_unsafechars( uploadname, url + 6, alloc_size - 6 );
 		} else {
 			alloc_size = sizeof( char ) * ( strlen( sv_uploads_demos_baseurl->string ) + 1 );
 			url = ( char * ) Mem_TempMalloc( alloc_size );
-			Q_snprintfz( url, alloc_size, "%s/", sv_uploads_demos_baseurl->string );
+			snprintf( url, alloc_size, "%s/", sv_uploads_demos_baseurl->string );
 		}
 	} else {
 		url = NULL;
@@ -649,7 +649,7 @@ static void SV_ShowServerinfo_f( client_t *client ) {
 * SV_UserinfoCommand_f
 */
 static void SV_UserinfoCommand_f( client_t *client ) {
-	char *info;
+	const char *info;
 	int64_t time;
 
 	info = Cmd_Argv( 1 );

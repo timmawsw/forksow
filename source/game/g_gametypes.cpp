@@ -73,22 +73,12 @@ void G_Match_Autorecord_Start( void ) {
 	if( !has_players )
 		return;
 
-	char datetime[17];
-	time_t long_time;
-	struct tm *newtime;
+	char date[ 128 ];
+	Sys_FormatTime( date, sizeof( date ), "%Y-%m-%d_%H-%M" );
 
-	// date & time
-	time( &long_time );
-	newtime = localtime( &long_time );
+	snprintf( level.autorecord_name, sizeof( level.autorecord_name ), "%s_%s_auto%04i", date, level.mapname, random_uniform( &svs.rng, 1, 10000 ) );
 
-	Q_snprintfz( datetime, sizeof( datetime ), "%04d-%02d-%02d_%02d-%02d", newtime->tm_year + 1900,
-				 newtime->tm_mon + 1, newtime->tm_mday, newtime->tm_hour, newtime->tm_min );
-
-	// combine
-	Q_snprintfz( level.autorecord_name, sizeof( level.autorecord_name ), "%s_%s_auto%04i",
-				 datetime, level.mapname, (int)brandom( 1, 9999 ) );
-
-	trap_Cmd_ExecuteText( EXEC_APPEND, va( "serverrecord %s\n", level.autorecord_name ) );
+	Cbuf_ExecuteText( EXEC_APPEND, va( "serverrecord %s\n", level.autorecord_name ) );
 }
 
 /*
@@ -120,11 +110,11 @@ void G_Match_Autorecord_Stop( void ) {
 
 	if( g_autorecord->integer ) {
 		// stop it
-		trap_Cmd_ExecuteText( EXEC_APPEND, "serverrecordstop 1\n" );
+		Cbuf_ExecuteText( EXEC_APPEND, "serverrecordstop 1\n" );
 
 		// check if we wanna delete some
 		if( g_autorecord_maxdemos->integer > 0 ) {
-			trap_Cmd_ExecuteText( EXEC_APPEND, va( "serverrecordpurge %i\n", g_autorecord_maxdemos->integer ) );
+			Cbuf_ExecuteText( EXEC_APPEND, va( "serverrecordpurge %i\n", g_autorecord_maxdemos->integer ) );
 		}
 	}
 }
@@ -136,7 +126,7 @@ void G_Match_Autorecord_Cancel( void ) {
 	G_Match_SetAutorecordState( "cancel" );
 
 	if( g_autorecord->integer ) {
-		trap_Cmd_ExecuteText( EXEC_APPEND, "serverrecordcancel 1\n" );
+		Cbuf_ExecuteText( EXEC_APPEND, "serverrecordcancel 1\n" );
 	}
 }
 
@@ -221,7 +211,7 @@ void G_Match_LaunchState( int matchState ) {
 			level.forceStart = false;
 
 			server_gs.gameState.stats[GAMESTAT_MATCHSTATE] = MATCH_STATE_WARMUP;
-			server_gs.gameState.stats[GAMESTAT_MATCHDURATION] = (int64_t)( fabs( g_warmup_timelimit->value * 60 ) * 1000 );
+			server_gs.gameState.stats[GAMESTAT_MATCHDURATION] = (int64_t)( Abs( g_warmup_timelimit->value * 60 ) * 1000 );
 			server_gs.gameState.stats[GAMESTAT_MATCHSTART] = svs.gametime;
 
 			break;
@@ -339,166 +329,6 @@ bool G_Match_TimelimitHit( void ) {
 	}
 
 	return true;
-}
-
-
-static bool score_announcement_init = false;
-static int last_leaders[MAX_CLIENTS];
-static int leaders[MAX_CLIENTS];
-
-/*
-* G_IsLeading
-*/
-static bool G_IsLeading( edict_t *ent ) {
-	int num, i;
-
-	if( GS_TeamBasedGametype( &server_gs ) ) {
-		num = ent->s.team;
-	} else {
-		num = PLAYERNUM( ent ) + 1;
-	}
-
-	for( i = 0; i < MAX_CLIENTS && leaders[i] != 0; i++ ) {
-		if( leaders[i] == num ) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-/*
-* G_WasLeading
-*/
-static bool G_WasLeading( edict_t *ent ) {
-	int num, i;
-
-	if( GS_TeamBasedGametype( &server_gs ) ) {
-		num = ent->s.team;
-	} else {
-		num = PLAYERNUM( ent ) + 1;
-	}
-
-	for( i = 0; i < MAX_CLIENTS && last_leaders[i] != 0; i++ ) {
-		if( last_leaders[i] == num ) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-/*
-* G_Match_ScoreAnnouncement
-*/
-static void G_Match_ScoreAnnouncement( void ) {
-	int i;
-	edict_t *e, *chased;
-	int num_leaders, team;
-
-	if( !level.gametype.scoreAnnouncementEnabled ) {
-		return;
-	}
-
-	num_leaders = 0;
-	memset( leaders, 0, sizeof( leaders ) );
-
-	if( GS_TeamBasedGametype( &server_gs ) ) {
-		int score_max = -999999999;
-
-		for( team = TEAM_ALPHA; team < GS_MAX_TEAMS; team++ ) {
-			if( !teamlist[team].numplayers ) {
-				continue;
-			}
-
-			if( teamlist[team].stats.score > score_max ) {
-				score_max = teamlist[team].stats.score;
-				leaders[0] = team;
-				num_leaders = 1;
-			} else if( teamlist[team].stats.score == score_max ) {
-				leaders[num_leaders++] = team;
-			}
-		}
-		leaders[num_leaders] = 0;
-	} else {
-		int score_max = -999999999;
-
-		for( i = 0; i < MAX_CLIENTS && i < teamlist[TEAM_PLAYERS].numplayers; i++ ) {
-			if( game.clients[teamlist[TEAM_PLAYERS].playerIndices[i] - 1].level.stats.score > score_max ) {
-				score_max = game.clients[teamlist[TEAM_PLAYERS].playerIndices[i] - 1].level.stats.score;
-				leaders[0] = teamlist[TEAM_PLAYERS].playerIndices[i];
-				num_leaders = 1;
-			} else if( game.clients[teamlist[TEAM_PLAYERS].playerIndices[i] - 1].level.stats.score == score_max ) {
-				leaders[num_leaders++] = teamlist[TEAM_PLAYERS].playerIndices[i];
-			}
-		}
-		leaders[num_leaders] = 0;
-	}
-
-	if( !score_announcement_init ) {
-		// copy over to last_leaders
-		memcpy( last_leaders, leaders, sizeof( leaders ) );
-		score_announcement_init = true;
-		return;
-	}
-
-	for( e = game.edicts + 1; PLAYERNUM( e ) < server_gs.maxclients; e++ ) {
-		if( !e->r.client || trap_GetClientState( PLAYERNUM( e ) ) < CS_SPAWNED ) {
-			continue;
-		}
-
-		if( e->r.client->resp.chase.active ) {
-			chased = &game.edicts[e->r.client->resp.chase.target];
-		} else {
-			chased = e;
-		}
-
-		// floating spectator
-		if( chased->s.team == TEAM_SPECTATOR ) {
-			if( !GS_TeamBasedGametype( &server_gs ) ) {
-				continue;
-			}
-
-			if( last_leaders[1] == 0 && leaders[1] != 0 ) {
-				G_AnnouncerSound( e, trap_SoundIndex( va( S_ANNOUNCER_SCORE_TEAM_TIED_LEAD_1_to_2, ( rand() & 1 ) + 1 ) ),
-								  GS_MAX_TEAMS, true, NULL );
-			} else if( leaders[1] == 0 && ( last_leaders[0] != leaders[0] || last_leaders[1] != 0 ) ) {
-				//G_AnnouncerSound( e, trap_SoundIndex( va( S_ANNOUNCER_SCORE_TEAM_1_to_4_TAKEN_LEAD_1_to_2,
-				//	leaders[0]-1, ( rand()&1 )+1 ) ), GS_MAX_TEAMS, true, NULL );
-			}
-			continue;
-		}
-
-		// in the game or chasing someone who is
-		if( G_WasLeading( chased ) && !G_IsLeading( chased ) ) {
-			if( GS_TeamBasedGametype( &server_gs ) && !GS_IndividualGameType( &server_gs ) ) {
-				G_AnnouncerSound( e, trap_SoundIndex( va( S_ANNOUNCER_SCORE_TEAM_LOST_LEAD_1_to_2, ( rand() & 1 ) + 1 ) ),
-								  GS_MAX_TEAMS, true, NULL );
-			} else {
-				G_AnnouncerSound( e, trap_SoundIndex( va( S_ANNOUNCER_SCORE_LOST_LEAD_1_to_2, ( rand() & 1 ) + 1 ) ),
-								  GS_MAX_TEAMS, true, NULL );
-			}
-		} else if( ( !G_WasLeading( chased ) || ( last_leaders[1] != 0 ) ) && G_IsLeading( chased ) && ( leaders[1] == 0 ) ) {
-			if( GS_TeamBasedGametype( &server_gs ) && !GS_IndividualGameType( &server_gs ) ) {
-				G_AnnouncerSound( e, trap_SoundIndex( va( S_ANNOUNCER_SCORE_TEAM_TAKEN_LEAD_1_to_2, ( rand() & 1 ) + 1 ) ),
-								  GS_MAX_TEAMS, true, NULL );
-			} else {
-				G_AnnouncerSound( e, trap_SoundIndex( va( S_ANNOUNCER_SCORE_TAKEN_LEAD_1_to_2, ( rand() & 1 ) + 1 ) ),
-								  GS_MAX_TEAMS, true, NULL );
-			}
-		} else if( ( !G_WasLeading( chased ) || ( last_leaders[1] == 0 ) ) && G_IsLeading( chased ) && ( leaders[1] != 0 ) ) {
-			if( GS_TeamBasedGametype( &server_gs ) && !GS_IndividualGameType( &server_gs ) ) {
-				G_AnnouncerSound( e, trap_SoundIndex( va( S_ANNOUNCER_SCORE_TEAM_TIED_LEAD_1_to_2, ( rand() & 1 ) + 1 ) ),
-								  GS_MAX_TEAMS, true, NULL );
-			} else {
-				G_AnnouncerSound( e, trap_SoundIndex( va( S_ANNOUNCER_SCORE_TIED_LEAD_1_to_2, ( rand() & 1 ) + 1 ) ),
-								  GS_MAX_TEAMS, true, NULL );
-			}
-		}
-	}
-
-	// copy over to last_leaders
-	memcpy( last_leaders, leaders, sizeof( leaders ) );
 }
 
 /*
@@ -725,11 +555,11 @@ static void G_CheckNumBots( void ) {
 
 	// check sanity of g_numbots
 	if( g_numbots->integer < 0 ) {
-		trap_Cvar_Set( "g_numbots", "0" );
+		Cvar_Set( "g_numbots", "0" );
 	}
 
 	if( g_numbots->integer > server_gs.maxclients ) {
-		trap_Cvar_Set( "g_numbots", va( "%i", server_gs.maxclients ) );
+		Cvar_Set( "g_numbots", va( "%i", server_gs.maxclients ) );
 	}
 
 	int desiredNumBots = g_numbots->integer;
@@ -844,8 +674,6 @@ void G_RunGametype( void ) {
 		G_CheckEvenTeam();
 	}
 
-	G_Match_ScoreAnnouncement();
-
 	G_asGarbageCollect( false );
 }
 
@@ -881,20 +709,18 @@ void G_Gametype_SetDefaults( void ) {
 // do no validation, G_SpawnEntities will catch it
 static bool IsGladiatorMap() {
 	const char * entities = level.mapString;
-	COM_Parse( &entities ); // {
+	ParseToken( &entities, Parse_DontStopOnNewLine ); // {
 
 	while( true ) {
-		char key[ MAX_TOKEN_CHARS ];
-		COM_Parse_r( key, sizeof( key ), &entities );
+		Span< const char > key = ParseToken( &entities, Parse_DontStopOnNewLine );
+		Span< const char > value = ParseToken( &entities, Parse_DontStopOnNewLine );
 
-		char value[ MAX_TOKEN_CHARS ];
-		COM_Parse_r( value, sizeof( value ), &entities );
-
-		if( entities == NULL || strcmp( key, "}" ) == 0 )
+		if( entities == NULL || key == "}" )
 			break;
 
-		if( strcmp( key, "gametype" ) == 0 )
-			return strcmp( value, "gladiator" ) == 0;
+		if( key == "gametype" ) {
+			return value == "gladiator";
+		}
 	}
 
 	return false;
@@ -905,11 +731,11 @@ static bool IsGladiatorMap() {
 */
 void G_Gametype_Init( void ) {
 	// get the match cvars too
-	g_warmup_timelimit = trap_Cvar_Get( "g_warmup_timelimit", "5", CVAR_ARCHIVE );
-	g_match_extendedtime = trap_Cvar_Get( "g_match_extendedtime", "2", CVAR_ARCHIVE );
+	g_warmup_timelimit = Cvar_Get( "g_warmup_timelimit", "5", CVAR_ARCHIVE );
+	g_match_extendedtime = Cvar_Get( "g_match_extendedtime", "2", CVAR_ARCHIVE );
 
 	// game settings
-	g_scorelimit = trap_Cvar_Get( "g_scorelimit", "10", CVAR_ARCHIVE );
+	g_scorelimit = Cvar_Get( "g_scorelimit", "10", CVAR_ARCHIVE );
 
 	const char * gt = IsGladiatorMap() ? "gladiator" : "bomb";
 

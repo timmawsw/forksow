@@ -125,12 +125,12 @@ static void Cmd_GameOperator_f( edict_t *ent ) {
 		return;
 	}
 
-	if( trap_Cmd_Argc() < 2 ) {
+	if( Cmd_Argc() < 2 ) {
 		G_PrintMsg( ent, "Usage: 'operator <password>' or 'op <password>'\n" );
 		return;
 	}
 
-	if( !Q_stricmp( trap_Cmd_Argv( 1 ), g_operator_password->string ) ) {
+	if( !Q_stricmp( Cmd_Argv( 1 ), g_operator_password->string ) ) {
 		if( !ent->r.client->isoperator ) {
 			G_PrintMsg( NULL, "%s" S_COLOR_WHITE " is now a game operator\n", ent->r.client->netname );
 		}
@@ -151,7 +151,7 @@ static void Cmd_Use_f( edict_t *ent ) {
 
 	assert( ent && ent->r.client );
 
-	it = GS_Cmd_UseItem( &server_gs, &ent->r.client->ps, trap_Cmd_Args(), 0 );
+	it = GS_Cmd_UseItem( &server_gs, &ent->r.client->ps, Cmd_Args(), 0 );
 	if( !it ) {
 		return;
 	}
@@ -189,8 +189,8 @@ void Cmd_ChasePrev_f( edict_t *ent ) {
 static void Cmd_Score_f( edict_t *ent ) {
 	bool newvalue;
 
-	if( trap_Cmd_Argc() == 2 ) {
-		newvalue = ( atoi( trap_Cmd_Argv( 1 ) ) != 0 ) ? true : false;
+	if( Cmd_Argc() == 2 ) {
+		newvalue = ( atoi( Cmd_Argv( 1 ) ) != 0 ) ? true : false;
 	} else {
 		newvalue = !ent->r.client->level.showscores ? true : false;
 	}
@@ -202,7 +202,7 @@ static void Cmd_Score_f( edict_t *ent ) {
 * Cmd_Position_f
 */
 static void Cmd_Position_f( edict_t *ent ) {
-	char *action;
+	const char *action;
 
 	if( !sv_cheats->integer && GS_MatchState( &server_gs ) > MATCH_STATE_WARMUP &&
 		ent->r.client->ps.pmove.pm_type != PM_SPECTATOR ) {
@@ -216,7 +216,7 @@ static void Cmd_Position_f( edict_t *ent ) {
 	}
 	ent->r.client->teamstate.position_lastcmd = svs.realtime;
 
-	action = trap_Cmd_Argv( 1 );
+	action = Cmd_Argv( 1 );
 
 	if( !Q_stricmp( action, "save" ) ) {
 		ent->r.client->teamstate.position_saved = true;
@@ -237,14 +237,14 @@ static void Cmd_Position_f( edict_t *ent ) {
 				G_PrintMsg( ent, "Position not available.\n" );
 			}
 		}
-	} else if( !Q_stricmp( action, "set" ) && trap_Cmd_Argc() == 7 ) {
+	} else if( !Q_stricmp( action, "set" ) && Cmd_Argc() == 7 ) {
 		vec3_t origin, angles;
 		int i, argnumber = 2;
 
 		for( i = 0; i < 3; i++ )
-			origin[i] = atof( trap_Cmd_Argv( argnumber++ ) );
+			origin[i] = atof( Cmd_Argv( argnumber++ ) );
 		for( i = 0; i < 2; i++ )
-			angles[i] = atof( trap_Cmd_Argv( argnumber++ ) );
+			angles[i] = atof( Cmd_Argv( argnumber++ ) );
 		angles[2] = 0;
 
 		if( ent->r.client->resp.chase.active ) {
@@ -279,8 +279,8 @@ static void Cmd_PlayersExt_f( edict_t *ent, bool onlyspecs ) {
 	char line[64];
 	char msg[1024];
 
-	if( trap_Cmd_Argc() > 1 ) {
-		start = Clamp( 0, atoi( trap_Cmd_Argv( 1 ) ), server_gs.maxclients - 1 );
+	if( Cmd_Argc() > 1 ) {
+		start = Clamp( 0, atoi( Cmd_Argv( 1 ) ), server_gs.maxclients - 1 );
 	}
 
 	// print information
@@ -297,7 +297,7 @@ static void Cmd_PlayersExt_f( edict_t *ent, bool onlyspecs ) {
 
 			cl = clientEnt->r.client;
 
-			Q_snprintfz( line, sizeof( line ), "%3i %s" S_COLOR_WHITE "%s\n", i, cl->netname, cl->isoperator ? " op" : "" );
+			snprintf( line, sizeof( line ), "%3i %s" S_COLOR_WHITE "%s\n", i, cl->netname, cl->isoperator ? " op" : "" );
 
 			if( strlen( line ) + strlen( msg ) > sizeof( msg ) - 100 ) {
 				// can't print all of them in one packet
@@ -318,11 +318,11 @@ static void Cmd_PlayersExt_f( edict_t *ent, bool onlyspecs ) {
 	if( count ) {
 		Q_strncatz( msg, "--- ------------------------------\n", sizeof( msg ) );
 	}
-	Q_strncatz( msg, va( "%3i %s\n", count, trap_Cmd_Argv( 0 ) ), sizeof( msg ) );
+	Q_strncatz( msg, va( "%3i %s\n", count, Cmd_Argv( 0 ) ), sizeof( msg ) );
 	G_PrintMsg( ent, "%s", msg );
 
 	if( i < server_gs.maxclients ) {
-		G_PrintMsg( ent, "Type '%s %i' for more %s\n", trap_Cmd_Argv( 0 ), i, trap_Cmd_Argv( 0 ) );
+		G_PrintMsg( ent, "Type '%s %i' for more %s\n", Cmd_Argv( 0 ), i, Cmd_Argv( 0 ) );
 	}
 }
 
@@ -351,34 +351,34 @@ bool CheckFlood( edict_t *ent, bool teamonly ) {
 
 	if( g_floodprotection_messages->modified ) {
 		if( g_floodprotection_messages->integer < 0 ) {
-			trap_Cvar_Set( "g_floodprotection_messages", "0" );
+			Cvar_Set( "g_floodprotection_messages", "0" );
 		}
 		if( g_floodprotection_messages->integer > MAX_FLOOD_MESSAGES ) {
-			trap_Cvar_Set( "g_floodprotection_messages", va( "%i", MAX_FLOOD_MESSAGES ) );
+			Cvar_Set( "g_floodprotection_messages", va( "%i", MAX_FLOOD_MESSAGES ) );
 		}
 		g_floodprotection_messages->modified = false;
 	}
 
 	if( g_floodprotection_team->modified ) {
 		if( g_floodprotection_team->integer < 0 ) {
-			trap_Cvar_Set( "g_floodprotection_team", "0" );
+			Cvar_Set( "g_floodprotection_team", "0" );
 		}
 		if( g_floodprotection_team->integer > MAX_FLOOD_MESSAGES ) {
-			trap_Cvar_Set( "g_floodprotection_team", va( "%i", MAX_FLOOD_MESSAGES ) );
+			Cvar_Set( "g_floodprotection_team", va( "%i", MAX_FLOOD_MESSAGES ) );
 		}
 		g_floodprotection_team->modified = false;
 	}
 
 	if( g_floodprotection_seconds->modified ) {
 		if( g_floodprotection_seconds->value <= 0 ) {
-			trap_Cvar_Set( "g_floodprotection_seconds", "4" );
+			Cvar_Set( "g_floodprotection_seconds", "4" );
 		}
 		g_floodprotection_seconds->modified = false;
 	}
 
 	if( g_floodprotection_penalty->modified ) {
 		if( g_floodprotection_penalty->value < 0 ) {
-			trap_Cvar_Set( "g_floodprotection_penalty", "10" );
+			Cvar_Set( "g_floodprotection_penalty", "10" );
 		}
 		g_floodprotection_penalty->modified = false;
 	}
@@ -433,38 +433,17 @@ bool CheckFlood( edict_t *ent, bool teamonly ) {
 }
 
 static void Cmd_CoinToss_f( edict_t *ent ) {
-	bool qtails;
-	char *s;
-	char upper[MAX_STRING_CHARS];
-
 	if( GS_MatchState( &server_gs ) > MATCH_STATE_WARMUP && !GS_MatchPaused( &server_gs ) ) {
 		G_PrintMsg( ent, "You can only toss coins during warmup or timeouts\n" );
 		return;
 	}
+
 	if( CheckFlood( ent, false ) ) {
 		return;
 	}
 
-	if( trap_Cmd_Argc() < 2 || ( Q_stricmp( "heads", trap_Cmd_Argv( 1 ) ) && Q_stricmp( "tails", trap_Cmd_Argv( 1 ) ) ) ) {
-		//it isn't a valid token
-		G_PrintMsg( ent, "You have to choose heads or tails when tossing a coin\n" );
-		return;
-	}
-
-	Q_strncpyz( upper, trap_Cmd_Argv( 1 ), sizeof( upper ) );
-	s = upper;
-	while( *s ) {
-		*s = toupper( *s );
-		s++;
-	}
-
-	qtails = ( Q_stricmp( "heads", trap_Cmd_Argv( 1 ) ) != 0 ) ? true : false;
-	if( qtails == ( rand() & 1 ) ) {
-		G_PrintMsg( NULL, S_COLOR_YELLOW "COINTOSS %s: " S_COLOR_WHITE "It was %s! %s " S_COLOR_WHITE "tossed a coin and " S_COLOR_GREEN "won!\n", upper, trap_Cmd_Argv( 1 ), ent->r.client->netname );
-		return;
-	}
-
-	G_PrintMsg( NULL, S_COLOR_YELLOW "COINTOSS %s: " S_COLOR_WHITE "It was %s! %s " S_COLOR_WHITE "tossed a coin and " S_COLOR_RED "lost!\n", upper, qtails ? "heads" : "tails", ent->r.client->netname );
+	bool won = random_p( &svs.rng, 0.5f );
+	G_PrintMsg( NULL, "%s%s tossed a coin and %s!\n", won ? S_COLOR_GREEN : S_COLOR_RED, ent->r.client->netname, won ? "won" : "lost" );
 }
 
 /*
@@ -485,19 +464,19 @@ void Cmd_Say_f( edict_t *ent, bool arg0, bool checkflood ) {
 		return;
 	}
 
-	if( trap_Cmd_Argc() < 2 && !arg0 ) {
+	if( Cmd_Argc() < 2 && !arg0 ) {
 		return;
 	}
 
 	text[0] = 0;
 
 	if( arg0 ) {
-		Q_strncatz( text, trap_Cmd_Argv( 0 ), sizeof( text ) );
+		Q_strncatz( text, Cmd_Argv( 0 ), sizeof( text ) );
 		Q_strncatz( text, " ", sizeof( text ) );
 		arg0len = strlen( text );
-		Q_strncatz( text, trap_Cmd_Args(), sizeof( text ) );
+		Q_strncatz( text, Cmd_Args(), sizeof( text ) );
 	} else {
-		p = trap_Cmd_Args();
+		p = Cmd_Args();
 
 		if( *p == '"' ) {
 			if( p[strlen( p ) - 1] == '"' ) {
@@ -525,7 +504,7 @@ static void Cmd_SayCmd_f( edict_t *ent ) {
 * Cmd_SayTeam_f
 */
 static void Cmd_SayTeam_f( edict_t *ent ) {
-	G_Say_Team( ent, trap_Cmd_Args(), true );
+	G_Say_Team( ent, Cmd_Args(), true );
 }
 
 typedef struct
@@ -569,7 +548,7 @@ static const g_vsays_t g_vsays[] = {
 static void G_vsay_f( edict_t *ent, bool team ) {
 	edict_t *event = NULL;
 	const g_vsays_t *vsay;
-	char *msg = trap_Cmd_Argv( 1 );
+	const char *msg = Cmd_Argv( 1 );
 
 	if( ent->r.client && ( ent->r.client->muted & 2 ) ) {
 		return;
@@ -691,7 +670,7 @@ static void Cmd_Timeout_f( edict_t *ent ) {
 	G_PrintMsg( NULL, "%s%s called a timeout\n", ent->r.client->netname, S_COLOR_WHITE );
 
 	if( !GS_MatchPaused( &server_gs ) ) {
-		G_AnnouncerSound( NULL, trap_SoundIndex( va( S_ANNOUNCER_TIMEOUT_TIMEOUT_1_to_2, ( rand() & 1 ) + 1 ) ), GS_MAX_TEAMS, true, NULL );
+		G_AnnouncerSound( NULL, trap_SoundIndex( va( S_ANNOUNCER_TIMEOUT_TIMEOUT_1_to_2, random_uniform( &svs.rng, 1, 3 ) ) ), GS_MAX_TEAMS, true, NULL );
 	}
 
 	level.timeout.used[num]++;
@@ -737,7 +716,7 @@ static void Cmd_Timein_f( edict_t *ent ) {
 
 	level.timeout.endtime = level.timeout.time + TIMEIN_TIME + FRAMETIME;
 
-	G_AnnouncerSound( NULL, trap_SoundIndex( va( S_ANNOUNCER_TIMEOUT_TIMEIN_1_to_2, ( rand() & 1 ) + 1 ) ), GS_MAX_TEAMS, true, NULL );
+	G_AnnouncerSound( NULL, trap_SoundIndex( va( S_ANNOUNCER_TIMEOUT_TIMEIN_1_to_2, random_uniform( &svs.rng, 1, 3 ) ) ), GS_MAX_TEAMS, true, NULL );
 
 	G_PrintMsg( NULL, "%s%s called a timein\n", ent->r.client->netname, S_COLOR_WHITE );
 }
@@ -756,7 +735,7 @@ char *G_StatsMessage( edict_t *ent ) {
 	const gclient_t * client = ent->r.client;
 
 	// message header
-	Q_snprintfz( entry, sizeof( entry ), "%d", PLAYERNUM( ent ) );
+	snprintf( entry, sizeof( entry ), "%d", PLAYERNUM( ent ) );
 
 	for( int i = WEAP_GUNBLADE; i < WEAP_TOTAL; i++ ) {
 		const gsitem_t * item = GS_FindItemByTag( i );
@@ -791,13 +770,13 @@ char *G_StatsMessage( edict_t *ent ) {
 static void Cmd_ShowStats_f( edict_t *ent ) {
 	edict_t *target;
 
-	if( trap_Cmd_Argc() > 2 ) {
+	if( Cmd_Argc() > 2 ) {
 		G_PrintMsg( ent, "Usage: stats [player]\n" );
 		return;
 	}
 
-	if( trap_Cmd_Argc() == 2 ) {
-		target = G_PlayerForText( trap_Cmd_Argv( 1 ) );
+	if( Cmd_Argc() == 2 ) {
+		target = G_PlayerForText( Cmd_Argv( 1 ) );
 		if( target == NULL ) {
 			G_PrintMsg( ent, "No such player\n" );
 			return;
@@ -944,14 +923,14 @@ void G_InitGameCommands( void ) {
 * ClientCommand
 */
 void ClientCommand( edict_t *ent ) {
-	char *cmd;
+	const char *cmd;
 	int i;
 
 	if( !ent->r.client || trap_GetClientState( PLAYERNUM( ent ) ) < CS_SPAWNED ) {
 		return; // not fully in game yet
 
 	}
-	cmd = trap_Cmd_Argv( 0 );
+	cmd = Cmd_Argv( 0 );
 
 	G_Client_UpdateActivity( ent->r.client ); // activity detected
 
@@ -964,7 +943,7 @@ void ClientCommand( edict_t *ent ) {
 			if( g_Commands[i].func ) {
 				g_Commands[i].func( ent );
 			} else {
-				GT_asCallGameCommand( ent->r.client, cmd, trap_Cmd_Args(), trap_Cmd_Argc() - 1 );
+				GT_asCallGameCommand( ent->r.client, cmd, Cmd_Args(), Cmd_Argc() - 1 );
 			}
 			return;
 		}

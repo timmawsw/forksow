@@ -65,9 +65,9 @@ static void G_Timeout_Update( unsigned int msec ) {
 			int seconds_left = (int)( ( level.timeout.endtime - level.timeout.time ) / 1000.0 + 0.5 );
 
 			if( seconds_left == ( TIMEIN_TIME * 2 ) / 1000 ) {
-				G_AnnouncerSound( NULL, trap_SoundIndex( va( S_ANNOUNCER_COUNTDOWN_READY_1_to_2, ( rand() & 1 ) + 1 ) ),
+				G_AnnouncerSound( NULL, trap_SoundIndex( va( S_ANNOUNCER_COUNTDOWN_READY_1_to_2, random_uniform( &svs.rng, 1, 3 ) ) ),
 								  GS_MAX_TEAMS, false, NULL );
-				countdown_set = ( rand() & 1 ) + 1;
+				countdown_set = random_uniform( &svs.rng, 1, 3 );
 			} else if( seconds_left >= 1 && seconds_left <= 3 ) {
 				G_AnnouncerSound( NULL, trap_SoundIndex( va( S_ANNOUNCER_COUNTDOWN_COUNT_1_to_3_SET_1_to_2, seconds_left,
 															 countdown_set ) ), GS_MAX_TEAMS, false, NULL );
@@ -89,9 +89,9 @@ static void G_Timeout_Update( unsigned int msec ) {
 static void G_UpdateServerInfo( void ) {
 	// g_match_time
 	if( GS_MatchState( &server_gs ) <= MATCH_STATE_WARMUP ) {
-		trap_Cvar_ForceSet( "g_match_time", "Warmup" );
+		Cvar_ForceSet( "g_match_time", "Warmup" );
 	} else if( GS_MatchState( &server_gs ) == MATCH_STATE_COUNTDOWN ) {
-		trap_Cvar_ForceSet( "g_match_time", "Countdown" );
+		Cvar_ForceSet( "g_match_time", "Countdown" );
 	} else if( GS_MatchState( &server_gs ) == MATCH_STATE_PLAYTIME ) {
 		// partly from G_GetMatchState
 		char extra[MAX_INFO_VALUE];
@@ -119,12 +119,12 @@ static void G_UpdateServerInfo( void ) {
 		}
 
 		if( timelimit ) {
-			trap_Cvar_ForceSet( "g_match_time", va( "%02i:%02i / %02i:00%s", mins, secs, timelimit, extra ) );
+			Cvar_ForceSet( "g_match_time", va( "%02i:%02i / %02i:00%s", mins, secs, timelimit, extra ) );
 		} else {
-			trap_Cvar_ForceSet( "g_match_time", va( "%02i:%02i%s", mins, secs, extra ) );
+			Cvar_ForceSet( "g_match_time", va( "%02i:%02i%s", mins, secs, extra ) );
 		}
 	} else {
-		trap_Cvar_ForceSet( "g_match_time", "Finished" );
+		Cvar_ForceSet( "g_match_time", "Finished" );
 	}
 
 	// g_match_score
@@ -139,17 +139,17 @@ static void G_UpdateServerInfo( void ) {
 			// prevent "invalid info cvar value" flooding
 			score[0] = '\0';
 		}
-		trap_Cvar_ForceSet( "g_match_score", score );
+		Cvar_ForceSet( "g_match_score", score );
 	} else {
-		trap_Cvar_ForceSet( "g_match_score", "" );
+		Cvar_ForceSet( "g_match_score", "" );
 	}
 
 	// g_needpass
 	if( password->modified ) {
 		if( password->string && strlen( password->string ) ) {
-			trap_Cvar_ForceSet( "g_needpass", "1" );
+			Cvar_ForceSet( "g_needpass", "1" );
 		} else {
-			trap_Cvar_ForceSet( "g_needpass", "0" );
+			Cvar_ForceSet( "g_needpass", "0" );
 		}
 		password->modified = false;
 	}
@@ -162,7 +162,7 @@ static void G_UpdateServerInfo( void ) {
 void G_CheckCvars( void ) {
 	if( g_antilag_maxtimedelta->modified ) {
 		if( g_antilag_maxtimedelta->integer < 0 ) {
-			trap_Cvar_SetValue( "g_antilag_maxtimedelta", abs( g_antilag_maxtimedelta->integer ) );
+			Cvar_SetValue( "g_antilag_maxtimedelta", Abs( g_antilag_maxtimedelta->integer ) );
 		}
 		g_antilag_maxtimedelta->modified = false;
 		g_antilag_timenudge->modified = true;
@@ -170,9 +170,9 @@ void G_CheckCvars( void ) {
 
 	if( g_antilag_timenudge->modified ) {
 		if( g_antilag_timenudge->integer > g_antilag_maxtimedelta->integer ) {
-			trap_Cvar_SetValue( "g_antilag_timenudge", g_antilag_maxtimedelta->integer );
+			Cvar_SetValue( "g_antilag_timenudge", g_antilag_maxtimedelta->integer );
 		} else if( g_antilag_timenudge->integer < -g_antilag_maxtimedelta->integer ) {
-			trap_Cvar_SetValue( "g_antilag_timenudge", -g_antilag_maxtimedelta->integer );
+			Cvar_SetValue( "g_antilag_timenudge", -g_antilag_maxtimedelta->integer );
 		}
 		g_antilag_timenudge->modified = false;
 	}
@@ -180,7 +180,7 @@ void G_CheckCvars( void ) {
 	if( g_warmup_timelimit->modified ) {
 		// if we are inside timelimit period, update the endtime
 		if( GS_MatchState( &server_gs ) == MATCH_STATE_WARMUP ) {
-			server_gs.gameState.stats[GAMESTAT_MATCHDURATION] = (int64_t)fabs( 60.0f * 1000 * g_warmup_timelimit->integer );
+			server_gs.gameState.stats[GAMESTAT_MATCHDURATION] = (int64_t)Abs( 60.0f * 1000 * g_warmup_timelimit->integer );
 		}
 		g_warmup_timelimit->modified = false;
 	}

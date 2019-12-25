@@ -342,34 +342,13 @@ static bool NET_UDP_SendPacket( const socket_t *socket, const void *data, size_t
 */
 static bool NET_IP_OpenSocket( socket_t *sock, const netadr_t *address, socket_type_t socktype, bool server ) {
 	int newsocket;
-	const char *proto, *stype;
 
 	assert( sock && !sock->open );
 	assert( address );
+	assert( address->type == NA_IP || address->type == NA_IP6 );
+	assert( socktype == SOCKET_UDP || socktype == SOCKET_TCP );
 
-	if( address->type == NA_IP ) {
-		proto = "IP";
-	} else if( address->type == NA_IP6 ) {
-		proto = "IPv6";
-	} else {
-		NET_SetErrorString( "Invalid address type" );
-		return false;
-	}
-
-	if( socktype == SOCKET_UDP ) {
-		stype = "UDP";
-	}
-#ifdef TCP_SUPPORT
-	else if( socktype == SOCKET_TCP ) {
-		stype = "TCP";
-	}
-#endif
-	else {
-		NET_SetErrorString( "Invalid socket type" );
-		return false;
-	}
-
-	if( ( newsocket = OpenSocket( socktype, ( address->type == NA_IP6 ? true : false ) ) ) == INVALID_SOCKET ) {
+	if( ( newsocket = OpenSocket( socktype, address->type == NA_IP6 ) ) == INVALID_SOCKET ) {
 		return false;
 	}
 
@@ -925,13 +904,13 @@ char *NET_AddressToString( const netadr_t *a ) {
 		case NA_IP:
 		{
 			const netadr_ipv4_t *adr4 = &a->address.ipv4;
-			Q_snprintfz( s, sizeof( s ), "%i.%i.%i.%i:%hu", adr4->ip[0], adr4->ip[1], adr4->ip[2], adr4->ip[3], BigShort( adr4->port ) );
+			snprintf( s, sizeof( s ), "%i.%i.%i.%i:%hu", adr4->ip[0], adr4->ip[1], adr4->ip[2], adr4->ip[3], BigShort( adr4->port ) );
 			break;
 		}
 		case NA_IP6:
 		{
 			const netadr_ipv6_t *adr6 = &a->address.ipv6;
-			Q_snprintfz( s, sizeof( s ), "[%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x]:%hu",
+			snprintf( s, sizeof( s ), "[%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x]:%hu",
 						 adr6->ip[ 0], adr6->ip[ 1], adr6->ip[ 2], adr6->ip[ 3], adr6->ip[ 4], adr6->ip[ 5], adr6->ip[ 6], adr6->ip[ 7],
 						 adr6->ip[ 8], adr6->ip[ 9], adr6->ip[10], adr6->ip[11], adr6->ip[12], adr6->ip[13], adr6->ip[14], adr6->ip[15],
 						 BigShort( adr6->port ) );
@@ -1316,7 +1295,7 @@ void NET_SetErrorString( const char *format, ... ) {
 	char msg[MAX_PRINTMSG];
 
 	va_start( argptr, format );
-	Q_vsnprintfz( msg, sizeof( msg ), format, argptr );
+	vsnprintf( msg, sizeof( msg ), format, argptr );
 	va_end( argptr );
 
 	Q_strncpyz( errorstring, msg, sizeof( errorstring ) );

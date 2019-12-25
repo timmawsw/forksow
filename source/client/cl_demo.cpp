@@ -72,7 +72,7 @@ void CL_Stop_f( void ) {
 	CL_SetDemoMetaKeyValue( "hostname", cl.configstrings[CS_HOSTNAME] );
 	CL_SetDemoMetaKeyValue( "localtime", va( "%" PRIi64, (int64_t)cls.demo.localtime ) );
 	CL_SetDemoMetaKeyValue( "multipov", "0" );
-	CL_SetDemoMetaKeyValue( "duration", va( "%u", (int)ceil( (double)cls.demo.duration / 1000.0 ) ) );
+	CL_SetDemoMetaKeyValue( "duration", va( "%u", (int)ceilf( (double)cls.demo.duration / 1000.0 ) ) );
 	CL_SetDemoMetaKeyValue( "mapname", cl.configstrings[CS_MAPNAME] );
 	CL_SetDemoMetaKeyValue( "gametype", cl.configstrings[CS_GAMETYPENAME] );
 	CL_SetDemoMetaKeyValue( "matchscore", cl.configstrings[CS_MATCHSCORE] );
@@ -154,7 +154,7 @@ void CL_Record_f( void ) {
 	name_size = sizeof( char ) * ( strlen( "demos/" ) + strlen( demoname ) + strlen( APP_DEMO_EXTENSION_STR ) + 1 );
 	name = ( char * ) Mem_ZoneMalloc( name_size );
 
-	Q_snprintfz( name, name_size, "demos/%s", demoname );
+	snprintf( name, name_size, "demos/%s", demoname );
 	COM_SanitizeFilePath( name );
 	COM_DefaultExtension( name, APP_DEMO_EXTENSION_STR, name_size );
 
@@ -325,7 +325,7 @@ static void CL_StartDemo( const char *demoname, bool pause_on_stop ) {
 	name_size = sizeof( char ) * ( strlen( "demos/" ) + strlen( servername ) + strlen( APP_DEMO_EXTENSION_STR ) + 1 );
 	name = ( char * ) Mem_TempMalloc( name_size );
 
-	Q_snprintfz( name, name_size, "demos/%s", servername );
+	snprintf( name, name_size, "demos/%s", servername );
 	COM_DefaultExtension( name, APP_DEMO_EXTENSION_STR, name_size );
 
 	if( COM_ValidateRelativeFilename( name ) ) {
@@ -338,7 +338,7 @@ static void CL_StartDemo( const char *demoname, bool pause_on_stop ) {
 
 	if( !tempdemofilehandle ) {
 		// relative filename didn't work, try launching a demo from absolute path
-		Q_snprintfz( name, name_size, "%s", servername );
+		snprintf( name, name_size, "%s", servername );
 		COM_DefaultExtension( name, APP_DEMO_EXTENSION_STR, name_size );
 		tempdemofilelen = FS_FOpenAbsoluteFile( name, &tempdemofilehandle, FS_READ | SNAP_DEMO_GZ );
 	}
@@ -435,7 +435,7 @@ void CL_PauseDemo_f( void ) {
 void CL_DemoJump_f( void ) {
 	bool relative;
 	int time;
-	char *p;
+	const char *p;
 
 	if( !cls.demo.playing ) {
 		Com_Printf( "Can only demojump when playing a demo\n" );
@@ -506,14 +506,14 @@ size_t CL_ReadDemoMetaData( const char *demopath, char *meta_data, size_t meta_d
 		name_size = sizeof( char ) * ( strlen( "demos/" ) + strlen( servername ) + strlen( APP_DEMO_EXTENSION_STR ) + 1 );
 		name = ( char * ) Mem_TempMalloc( name_size );
 
-		Q_snprintfz( name, name_size, "demos/%s", servername );
+		snprintf( name, name_size, "demos/%s", servername );
 		COM_DefaultExtension( name, APP_DEMO_EXTENSION_STR, name_size );
 
 		demolength = FS_FOpenFile( name, &demofile, FS_READ | SNAP_DEMO_GZ );
 
 		if( !demofile || demolength < 1 ) {
 			// relative filename didn't work, try launching a demo from absolute path
-			Q_snprintfz( name, name_size, "%s", servername );
+			snprintf( name, name_size, "%s", servername );
 			COM_DefaultExtension( name, APP_DEMO_EXTENSION_STR, name_size );
 			demolength = FS_FOpenAbsoluteFile( name, &demofile, FS_READ );
 		}

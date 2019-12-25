@@ -1,7 +1,7 @@
-#include "client/client.h"
-
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
+
+#include "client/client.h"
 
 #include "sdl/SDL.h"
 
@@ -13,11 +13,6 @@ static int mx, my;
 static int rx, ry;
 
 static bool running_in_debugger = false;
-
-bool break1 = false;
-bool break2 = false;
-bool break3 = false;
-bool break4 = false;
 
 static void mouse_motion_event( const SDL_MouseMotionEvent * event ) {
 	mx = event->x;

@@ -18,27 +18,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-/*
-==========================================================================
-
-- SPLITMODELS -
-
-==========================================================================
-*/
-
-// - Adding the Player model using Skeletal animation blending
-// by Jalisk0
-
-#include "cg_local.h"
+#include "qcommon/assets.h"
+#include "qcommon/string.h"
+#include "cgame/cg_local.h"
 #include "client/renderer/renderer.h"
 #include "client/renderer/model.h"
 
 pmodel_t cg_entPModels[MAX_EDICTS];
 PlayerModelMetadata *cg_PModelInfos;
-
-//======================================================================
-//						PlayerModel Registering
-//======================================================================
 
 void CG_PModelsInit() {
 	memset( cg_entPModels, 0, sizeof( cg_entPModels ) );
@@ -54,9 +41,6 @@ void CG_PModelsShutdown() {
 	}
 }
 
-/*
-* CG_ResetPModels
-*/
 void CG_ResetPModels( void ) {
 	for( int i = 0; i < MAX_EDICTS; i++ ) {
 		cg_entPModels[i].flash_time = cg_entPModels[i].barrel_time = 0;
@@ -96,83 +80,73 @@ static Mat4 EulerAnglesToMat4( float pitch, float yaw, float roll ) {
 *
 * Note: The animations count begins at 1, not 0. I preserve zero for "no animation change"
 */
-static bool CG_ParseAnimationScript( PlayerModelMetadata *metadata, char *filename ) {
+static bool CG_ParseAnimationScript( PlayerModelMetadata * metadata, const char * filename ) {
 	int num_clips = 1;
 
-	int filenum;
-	int length = trap_FS_FOpenFile( filename, &filenum, FS_READ );
-	if( length == -1 ) {
+	Span< const char > cursor = AssetString( filename );
+	if( cursor.ptr == NULL ) {
 		CG_Printf( "Couldn't find animation script: %s\n", filename );
 		return false;
 	}
 
-	uint8_t * buf = ( uint8_t * )CG_Malloc( length + 1 );
-	length = trap_FS_Read( buf, length, filenum );
-	trap_FS_FCloseFile( filenum );
-	if( !length ) {
-		CG_Free( buf );
-		CG_Printf( "Couldn't load animation script: %s\n", filename );
-		return false;
-	}
-
-	const char * ptr = ( const char * ) buf;
-	while( ptr ) {
-		const char * cmd = COM_ParseExt( &ptr, true );
-		if( !cmd[0] )
+	while( true ) {
+		Span< const char > cmd = ParseToken( &cursor, Parse_DontStopOnNewLine );
+		if( cmd == "" )
 			break;
 
-		if( Q_stricmp( cmd, "upper_rotator_joints" ) == 0 ) {
-			const char * joint_name = COM_ParseExt( &ptr, false );
-			FindJointByName( metadata->model, joint_name, &metadata->upper_rotator_joints[ 0 ] );
+		if( cmd == "upper_rotator_joints" ) {
+			Span< const char > joint_name0 = ParseToken( &cursor, Parse_StopOnNewLine );
+			FindJointByName( metadata->model, Hash32( joint_name0 ), &metadata->upper_rotator_joints[ 0 ] );
 
-			joint_name = COM_ParseExt( &ptr, false );
-			FindJointByName( metadata->model, joint_name, &metadata->upper_rotator_joints[ 1 ] );
+			Span< const char > joint_name1 = ParseToken( &cursor, Parse_StopOnNewLine );
+			FindJointByName( metadata->model, Hash32( joint_name1 ), &metadata->upper_rotator_joints[ 1 ] );
 		}
-		else if( Q_stricmp( cmd, "head_rotator_joint" ) == 0 ) {
-			const char * joint_name  = COM_ParseExt( &ptr, false );
-			FindJointByName( metadata->model, joint_name, &metadata->head_rotator_joint );
+		else if( cmd == "head_rotator_joint" ) {
+			Span< const char > joint_name = ParseToken( &cursor, Parse_StopOnNewLine );
+			FindJointByName( metadata->model, Hash32( joint_name ), &metadata->head_rotator_joint );
 		}
-		else if( Q_stricmp( cmd, "upper_root_joint" ) == 0 ) {
-			const char * joint_name  = COM_ParseExt( &ptr, false );
-			FindJointByName( metadata->model, joint_name, &metadata->upper_root_joint );
+		else if( cmd == "upper_root_joint" ) {
+			Span< const char > joint_name = ParseToken( &cursor, Parse_StopOnNewLine );
+			FindJointByName( metadata->model, Hash32( joint_name ), &metadata->upper_root_joint );
 		}
-		else if( Q_stricmp( cmd, "tag" ) == 0 ) {
-			const char * joint_name = COM_ParseExt( &ptr, false );
+		else if( cmd == "tag" ) {
+			Span< const char > joint_name = ParseToken( &cursor, Parse_StopOnNewLine );
 			u8 joint_idx;
-			if( FindJointByName( metadata->model, joint_name, &joint_idx ) ) {
-				const char * tag_name = COM_ParseExt( &ptr, false );
+			if( FindJointByName( metadata->model, Hash32( joint_name ), &joint_idx ) ) {
+				Span< const char > tag_name = ParseToken( &cursor, Parse_StopOnNewLine );
 				PlayerModelMetadata::Tag * tag = &metadata->tag_backpack;
-				if( strcmp( tag_name, "tag_head" ) == 0 )
+				if( tag_name == "tag_head" )
 					tag = &metadata->tag_head;
-				else if( strcmp( tag_name, "tag_weapon" ) == 0 )
+				else if( tag_name == "tag_weapon" )
 					tag = &metadata->tag_weapon;
 
-				float forward = atof( COM_ParseExt( &ptr, false ) );
-				float right = atof( COM_ParseExt( &ptr, false ) );
-				float up = atof( COM_ParseExt( &ptr, false ) );
-				float pitch = atof( COM_ParseExt( &ptr, false ) );
-				float yaw = atof( COM_ParseExt( &ptr, false ) );
-				float roll = atof( COM_ParseExt( &ptr, false ) );
+				float forward = ParseFloat( &cursor, 0.0f, Parse_StopOnNewLine );
+				float right = ParseFloat( &cursor, 0.0f, Parse_StopOnNewLine );
+				float up = ParseFloat( &cursor, 0.0f, Parse_StopOnNewLine );
+				float pitch = ParseFloat( &cursor, 0.0f, Parse_StopOnNewLine );
+				float yaw = ParseFloat( &cursor, 0.0f, Parse_StopOnNewLine );
+				float roll = ParseFloat( &cursor, 0.0f, Parse_StopOnNewLine );
 
 				tag->joint_idx = joint_idx;
 				tag->transform = Mat4Translation( forward, right, up ) * EulerAnglesToMat4( pitch, yaw, roll );
 			}
 			else {
-				CG_Printf( "%s: Unknown joint name: %s\n", filename, joint_name );
+				String< 64 > meh( "{}", joint_name );
+				CG_Printf( "%s: Unknown joint name: %s\n", filename, meh.c_str() );
 				for( int i = 0; i < 7; i++ )
-					COM_ParseExt( &ptr, false );
+					ParseToken( &cursor, Parse_StopOnNewLine );
 			}
 		}
-		else if( Q_stricmp( cmd, "clip" ) == 0 ) {
+		else if( cmd == "clip" ) {
 			if( num_clips == PMODEL_TOTAL_ANIMATIONS ) {
 				CG_Printf( "%s: Too many animations\n", filename );
 				break;
 			}
 
-			int start_frame = atoi( COM_ParseExt( &ptr, false ) );
-			int end_frame = atoi( COM_ParseExt( &ptr, false ) );
-			int loop_frames = atoi( COM_ParseExt( &ptr, false ) );
-			int fps = atoi( COM_ParseExt( &ptr, false ) );
+			int start_frame = ParseInt( &cursor, 0, Parse_StopOnNewLine );
+			int end_frame = ParseInt( &cursor, 0, Parse_StopOnNewLine );
+			int loop_frames = ParseInt( &cursor, 0, Parse_StopOnNewLine );
+			int fps = ParseInt( &cursor, 0, Parse_StopOnNewLine );
 
 			PlayerModelMetadata::AnimationClip clip;
 			clip.start_time = float( start_frame ) / float( fps );
@@ -183,11 +157,10 @@ static bool CG_ParseAnimationScript( PlayerModelMetadata *metadata, char *filena
 			num_clips++;
 		}
 		else {
-			CG_Printf( "%s: unrecognized cmd: %s\n", filename, cmd );
+			String< 64 > meh( "{}", cmd );
+			CG_Printf( "%s: unrecognized cmd: %s\n", filename, meh.c_str() );
 		}
 	}
-
-	CG_Free( buf );
 
 	if( num_clips < PMODEL_TOTAL_ANIMATIONS ) {
 		CG_Printf( "%s: Not enough animations (%i)\n", filename, num_clips );
@@ -214,7 +187,7 @@ static bool CG_LoadPlayerModel( PlayerModelMetadata *metadata, const char *filen
 
 	// load animations script
 	if( metadata->model ) {
-		Q_snprintfz( anim_filename, sizeof( anim_filename ), "%s.cfg", filename );
+		snprintf( anim_filename, sizeof( anim_filename ), "%s.cfg", filename );
 		loaded_model = CG_ParseAnimationScript( metadata, anim_filename );
 	}
 
@@ -399,24 +372,10 @@ static float CG_OutlineScaleForDist( const entity_t * e, float maxdist, float sc
 	return 1.0f;
 }
 
-/*
-* CG_AddColoredOutLineEffect
-*/
-void CG_AddColoredOutLineEffect( entity_t *ent, int effects, uint8_t r, uint8_t g, uint8_t b, uint8_t a ) {
-	if( !cg_outlineModels->integer ) {
-		ent->outlineHeight = 0;
-		return;
-	}
-
+void CG_AddOutline( entity_t *ent, int effects, RGBA8 color ) {
 	ent->outlineHeight = CG_OutlineScaleForDist( ent, 4096, 1.0f );
-
-	if( effects & EF_GODMODE ) {
-		Vector4Set( ent->outlineColor, 255, 255, 255, a );
-	} else {
-		Vector4Set( ent->outlineColor, r, g, b, a );
-	}
+	ent->outlineColor = ( effects & EF_GODMODE ) ? RGBA8( 255, 255, 255, color.a ) : color;
 }
-
 
 //======================================================================
 //							animations
@@ -756,9 +715,7 @@ void CG_UpdatePlayerModelEnt( centity_t *cent ) {
 	pmodel_t * pmodel = &cg_entPModels[cent->current.number];
 	pmodel->metadata = CG_PModelForCentity( cent );
 
-	CG_TeamColorForEntity( cent->current.number, cent->ent.shaderRGBA );
-
-	Vector4Set( cent->outlineColor, 0, 0, 0, 255 );
+	cent->ent.color = RGBA8( CG_TeamColor( cent->current.number ) );
 
 	// Spawning (teleported bit) forces nobacklerp and the interruption of EVENT_CHANNEL animations
 	if( cent->current.teleported ) {
@@ -965,7 +922,7 @@ void CG_DrawPlayer( centity_t *cent ) {
 
 	MatrixPalettes pose = ComputeMatrixPalettes( &temp, meta->model, lower );
 
-	CG_AllocPlayerShadow( cent->current.number, cent->ent.origin, playerbox_stand_mins, playerbox_stand_maxs );
+	// CG_AllocPlayerShadow( cent->current.number, cent->ent.origin, playerbox_stand_mins, playerbox_stand_maxs );
 
 	Mat4 transform = FromQFAxisAndOrigin( cent->ent.axis, cent->ent.origin );
 

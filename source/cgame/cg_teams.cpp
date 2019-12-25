@@ -74,7 +74,7 @@ RGB8 CG_TeamColor( int team ) {
 	cvar_t * cvar = CG_IsAlly( team ) ? cg_allyColor : cg_enemyColor;
 
 	if( cvar->integer >= int( ARRAY_COUNT( TEAM_COLORS ) ) )
-		trap_Cvar_Set( cvar->name, cvar->dvalue );
+		Cvar_Set( cvar->name, cvar->dvalue );
 
 	return TEAM_COLORS[ cvar->integer ].rgb;
 }
@@ -87,28 +87,6 @@ Vec4 CG_TeamColorVec4( int team ) {
 		rgb.b * ( 1.0f / 255.0f ),
 		1.0f
 	);
-}
-
-void CG_TeamColor( int team, vec4_t color ) {
-	RGB8 rgb = CG_TeamColor( team );
-	color[0] = rgb.r * ( 1.0f / 255.0f );
-	color[1] = rgb.g * ( 1.0f / 255.0f );
-	color[2] = rgb.b * ( 1.0f / 255.0f );
-	color[3] = 1.0f;
-}
-
-void CG_TeamColorForEntity( int entNum, byte_vec4_t color ) {
-	if( entNum < 1 || entNum >= MAX_EDICTS ) {
-		Vector4Set( color, 255, 255, 255, 255 );
-		return;
-	}
-
-	const centity_t * cent = &cg_entities[entNum];
-	RGB8 rgb = CG_TeamColor( cent->current.team );
-	color[0] = rgb.r;
-	color[1] = rgb.g;
-	color[2] = rgb.b;
-	color[3] = 255;
 }
 
 void CG_RegisterForceModels() {

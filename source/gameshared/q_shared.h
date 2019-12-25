@@ -72,12 +72,31 @@ enum ParseStopOnNewLine {
 	Parse_StopOnNewLine,
 };
 
-Span< char > ParseSpan( char ** ptr, bool stop_on_newline );
-Span< const char > ParseSpan( const char ** ptr, bool stop_on_newline );
+Span< const char > ParseToken( const char ** ptr, ParseStopOnNewLine stop );
+Span< const char > ParseToken( Span< const char > * cursor, ParseStopOnNewLine stop );
 
-Span< const char > ParseSpan( Span< const char > * cursor, ParseStopOnNewLine stop );
+int ParseInt( Span< const char > * cursor, int def, ParseStopOnNewLine stop );
+float ParseFloat( Span< const char > * cursor, float def, ParseStopOnNewLine stop );
 
-bool ParseFloat( Span< const char > str, float * x );
+bool SpanToInt( Span< const char > str, int * x );
+bool SpanToFloat( Span< const char > str, float * x );
+
+bool StrEqual( Span< const char > lhs, Span< const char > rhs );
+bool StrEqual( Span< const char > lhs, const char * rhs );
+bool StrEqual( const char * rhs, Span< const char > lhs );
+
+bool StrCaseEqual( Span< const char > lhs, Span< const char > rhs );
+bool StrCaseEqual( Span< const char > lhs, const char * rhs );
+bool StrCaseEqual( const char * rhs, Span< const char > lhs );
+
+template< size_t N >
+bool operator==( Span< const char > span, const char ( &str )[ N ] ) {
+	return StrCaseEqual( span, Span< const char >( str, N - 1 ) );
+}
+
+template< size_t N > bool operator==( const char ( &str )[ N ], Span< const char > span ) { return span == str; }
+template< size_t N > bool operator!=( Span< const char > span, const char ( &str )[ N ] ) { return !( span == str ); }
+template< size_t N > bool operator!=( const char ( &str )[ N ], Span< const char > span ) { return !( span == str ); }
 
 // data is an in/out parm, returns a parsed out token
 char *COM_ParseExt2_r( char *token, size_t token_size, const char **data_p, bool nl, bool sq );
@@ -146,20 +165,11 @@ char *COM_ListNameForPosition( const char *namesList, int position, const char s
 void Q_strncpyz( char *dest, const char *src, size_t size );
 void Q_strncatz( char *dest, const char *src, size_t size );
 
-int Q_vsnprintfz( char *dest, size_t size, const char *format, va_list argptr );
-
-#ifndef _MSC_VER
-int Q_snprintfz( char *dest, size_t size, const char *format, ... ) __attribute__( ( format( printf, 3, 4 ) ) );
-#else
-int Q_snprintfz( char *dest, size_t size, _Printf_format_string_ const char *format, ... );
-#endif
-
 char *Q_strupr( char *s );
 char *Q_strlwr( char *s );
 const char *Q_strrstr( const char *s, const char *substr );
 bool Q_isdigit( const char *str );
 char *Q_trim( char *s );
-char *Q_chrreplace( char *s, const char subj, const char repl );
 void RemoveTrailingZeroesFloat( char * str );
 
 /**
@@ -172,10 +182,6 @@ void Q_urlencode_unsafechars( const char *src, char *dst, size_t dst_size );
  * total (untruncated) length of the resulting string.
  */
 size_t Q_urldecode( const char *src, char *dst, size_t dst_size );
-
-size_t Q_WCharUtf8Length( wchar_t wc );
-size_t Q_WCharToUtf8( wchar_t wc, char *dest, size_t bufsize );
-char *Q_WCharToUtf8Char( wchar_t wc );
 
 float *tv( float x, float y, float z );
 char *vtos( float v[3] );
@@ -212,12 +218,6 @@ bool Info_Validate( const char *s );
 #define MAX_IMAGES                  256
 #define MAX_ITEMS                   64          // 16x4
 #define MAX_GENERAL                 128         // general config strings
-
-//============================================
-// HTTP
-//============================================
-#define HTTP_CODE_OK                        200
-#define HTTP_CODE_PARTIAL_CONTENT           206
 
 //============================================
 // sound

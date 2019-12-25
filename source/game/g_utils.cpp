@@ -424,7 +424,7 @@ edict_t *G_PickTarget( const char *targetname ) {
 		return NULL;
 	}
 
-	return choice[rand() % num_choices];
+	return choice[ random_uniform( &svs.rng, 0, num_choices ) ];
 }
 
 
@@ -837,7 +837,7 @@ void G_PrintMsg( edict_t *ent, const char *format, ... ) {
 	char *s, *p;
 
 	va_start( argptr, format );
-	Q_vsnprintfz( msg, sizeof( msg ), format, argptr );
+	vsnprintf( msg, sizeof( msg ), format, argptr );
 	va_end( argptr );
 
 	// double quotes are bad
@@ -871,7 +871,7 @@ void G_ChatMsg( edict_t *ent, edict_t *who, bool teamonly, const char *format, .
 	char *s, *p;
 
 	va_start( argptr, format );
-	Q_vsnprintfz( msg, sizeof( msg ), format, argptr );
+	vsnprintf( msg, sizeof( msg ), format, argptr );
 	va_end( argptr );
 
 	// double quotes are bad
@@ -933,7 +933,7 @@ void G_CenterPrintMsg( edict_t *ent, const char *format, ... ) {
 	edict_t *other;
 
 	va_start( argptr, format );
-	Q_vsnprintfz( msg, sizeof( msg ), format, argptr );
+	vsnprintf( msg, sizeof( msg ), format, argptr );
 	va_end( argptr );
 
 	// double quotes are bad
@@ -941,7 +941,7 @@ void G_CenterPrintMsg( edict_t *ent, const char *format, ... ) {
 	while( ( p = strchr( p, '\"' ) ) != NULL )
 		*p = '\'';
 
-	Q_snprintfz( cmd, sizeof( cmd ), "cp \"%s\"", msg );
+	snprintf( cmd, sizeof( cmd ), "cp \"%s\"", msg );
 	trap_GameCmd( ent, cmd );
 
 	if( ent != NULL ) {
@@ -1140,7 +1140,7 @@ float LookAtKillerYAW( edict_t *self, edict_t *inflictor, edict_t *attacker ) {
 	}
 
 	if( dir[0] ) {
-		killer_yaw = RAD2DEG( atan2( dir[1], dir[0] ) );
+		killer_yaw = RAD2DEG( atan2f( dir[1], dir[0] ) );
 	} else {
 		killer_yaw = 0;
 		if( dir[1] > 0 ) {
@@ -1316,7 +1316,7 @@ void G_DropSpawnpointToFloor( edict_t *ent ) {
 * Set origin and origin2 and then call this before linkEntity
 * for laser entities for proper clipping against world leafs/clusters.
 */
-void G_SetBoundsForSpanEntity( edict_t *ent, vec_t size ) {
+void G_SetBoundsForSpanEntity( edict_t *ent, float size ) {
 	vec3_t sizeVec;
 
 	VectorSet( sizeVec, size, size, size );
@@ -1469,7 +1469,7 @@ void G_PrecacheWeapondef( int weapon, firedef_t *firedef ) {
 		return;
 	}
 
-	Q_snprintfz( cstring, sizeof( cstring ), "%i %i %u %u %u %u %i %i %i",
+	snprintf( cstring, sizeof( cstring ), "%i %i %u %u %u %u %i %i %i",
 				 firedef->usage_count,
 				 firedef->projectile_count,
 				 firedef->weaponup_time,

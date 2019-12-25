@@ -110,7 +110,7 @@ static void SV_CreateBaseline( void ) {
 * SV_SetServerConfigStrings
 */
 void SV_SetServerConfigStrings( void ) {
-	Q_snprintfz( sv.configstrings[CS_MAXCLIENTS], sizeof( sv.configstrings[0] ), "%i", sv_maxclients->integer );
+	snprintf( sv.configstrings[CS_MAXCLIENTS], sizeof( sv.configstrings[0] ), "%i", sv_maxclients->integer );
 	Q_strncpyz( sv.configstrings[CS_HOSTNAME], Cvar_String( "sv_hostname" ), sizeof( sv.configstrings[0] ) );
 }
 
@@ -136,10 +136,6 @@ static void SV_SpawnServer( const char *server, bool devmap ) {
 	// wipe the entire per-level structure
 	memset( &sv, 0, sizeof( sv ) );
 
-	u64 entropy[ 2 ];
-	CSPRNG_Bytes( entropy, sizeof( entropy ) );
-	sv.rng = new_rng( entropy[ 0 ], entropy[ 1 ] );
-
 	SV_ResetClientFrameCounters();
 	svs.realtime = 0;
 	svs.gametime = 0;
@@ -150,14 +146,14 @@ static void SV_SpawnServer( const char *server, bool devmap ) {
 
 	sv.nextSnapTime = 1000;
 
-	Q_snprintfz( sv.configstrings[CS_WORLDMODEL], sizeof( sv.configstrings[CS_WORLDMODEL] ), "maps/%s.bsp", server );
+	snprintf( sv.configstrings[CS_WORLDMODEL], sizeof( sv.configstrings[CS_WORLDMODEL] ), "maps/%s.bsp", server );
 	CM_LoadMap( svs.cms, sv.configstrings[CS_WORLDMODEL], false, &checksum );
 
-	Q_snprintfz( sv.configstrings[CS_MAPCHECKSUM], sizeof( sv.configstrings[CS_MAPCHECKSUM] ), "%i", checksum );
+	snprintf( sv.configstrings[CS_MAPCHECKSUM], sizeof( sv.configstrings[CS_MAPCHECKSUM] ), "%i", checksum );
 
 	// reserve the first modelIndexes for inline models
 	for( i = 1; i < CM_NumInlineModels( svs.cms ); i++ )
-		Q_snprintfz( sv.configstrings[CS_MODELS + i], sizeof( sv.configstrings[CS_MODELS + i] ), "*%i", i );
+		snprintf( sv.configstrings[CS_MODELS + i], sizeof( sv.configstrings[CS_MODELS + i] ), "*%i", i );
 
 	// set serverinfo variable
 	Cvar_FullSet( "mapname", sv.mapname, CVAR_SERVERINFO | CVAR_READONLY, true );
@@ -210,6 +206,10 @@ void SV_InitGame( void ) {
 		Cvar_GetLatchedVars( CVAR_LATCH );
 	}
 
+	u64 entropy[ 2 ];
+	CSPRNG_Bytes( entropy, sizeof( entropy ) );
+	svs.rng = new_rng( entropy[ 0 ], entropy[ 1 ] );
+
 	svs.initialized = true;
 
 	if( sv_skilllevel->integer > 2 ) {
@@ -226,7 +226,7 @@ void SV_InitGame( void ) {
 		Cvar_FullSet( "sv_maxclients", va( "%i", MAX_CLIENTS ), CVAR_SERVERINFO | CVAR_LATCH, true );
 	}
 
-	svs.spawncount = rand();
+	svs.spawncount = random_uniform( &svs.rng, 0, S16_MAX );
 	svs.clients = ( client_t * ) Mem_Alloc( sv_mempool, sizeof( client_t ) * sv_maxclients->integer );
 	svs.client_entities.num_entities = sv_maxclients->integer * UPDATE_BACKUP * MAX_SNAP_ENTITIES;
 	svs.client_entities.entities = ( entity_state_t * ) Mem_Alloc( sv_mempool, sizeof( entity_state_t ) * svs.client_entities.num_entities );
@@ -366,17 +366,11 @@ void SV_ShutdownGame( const char *finalmsg, bool reconnect ) {
 	memset( &sv, 0, sizeof( sv ) );
 	Com_SetServerState( sv.state );
 
-	u64 entropy[ 2 ];
-	CSPRNG_Bytes( entropy, sizeof( entropy ) );
-	sv.rng = new_rng( entropy[ 0 ], entropy[ 1 ] );
-
 	if( sv_mempool ) {
 		Mem_EmptyPool( sv_mempool );
 	}
 
 	memset( &svs, 0, sizeof( svs ) );
-
-	svs.initialized = false;
 }
 
 /*

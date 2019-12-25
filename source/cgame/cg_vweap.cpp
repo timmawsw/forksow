@@ -262,7 +262,7 @@ void CG_CalcViewWeapon( cg_viewweapon_t *viewweapon ) {
 	viewweapon->ent.model = weaponInfo->model[WEAPMODEL_HAND];
 	viewweapon->ent.scale = 1.0f;
 	viewweapon->ent.override_material = NULL;
-	Vector4Set( viewweapon->ent.shaderRGBA, 255, 255, 255, 255 );
+	viewweapon->ent.color = rgba8_white;
 
 	// calculate the entity position
 	VectorCopy( cg.view.origin, viewweapon->ent.origin );
@@ -309,11 +309,10 @@ void CG_CalcViewWeapon( cg_viewweapon_t *viewweapon ) {
 	AnglesToAxis( gunAngles, viewweapon->ent.axis );
 
 	if( cg_gun_fov->integer && !cg.predictedPlayerState.pmove.stats[PM_STAT_ZOOMTIME] ) {
-		float fracWeapFOV;
 		float gun_fov_y = WidescreenFov( bound( 20, cg_gun_fov->value, 160 ) );
 		float gun_fov_x = CalcHorizontalFov( gun_fov_y, frame_static.viewport_width, frame_static.viewport_height );
 
-		fracWeapFOV = tan( DEG2RAD( gun_fov_x ) * 0.5f ) / cg.view.fracDistFOV;
+		float fracWeapFOV = tanf( DEG2RAD( gun_fov_x ) * 0.5f ) / cg.view.fracDistFOV;
 
 		VectorScale( &viewweapon->ent.axis[AXIS_FORWARD], fracWeapFOV, &viewweapon->ent.axis[AXIS_FORWARD] );
 	}
@@ -340,7 +339,7 @@ void CG_AddViewWeapon( cg_viewweapon_t *viewweapon ) {
 	// update the other origins
 	VectorCopy( viewweapon->ent.origin, viewweapon->ent.origin2 );
 
-	CG_AddColoredOutLineEffect( &viewweapon->ent, cg.effects, 0, 0, 0, viewweapon->ent.shaderRGBA[3] );
+	CG_AddOutline( &viewweapon->ent, cg.effects, RGBA8( 0, 0, 0, viewweapon->ent.color.a ) );
 	CG_AddEntityToScene( &viewweapon->ent );
 
 	if( cg_weaponFlashes->integer == 2 ) {

@@ -72,7 +72,7 @@ bool CG_ChaseStep( int step ) {
 	}
 	
 	if( !cgs.demoPlaying ) {
-		trap_Cmd_ExecuteText( EXEC_NOW, step > 0 ? "chasenext" : "chaseprev" );
+		Cbuf_ExecuteText( EXEC_NOW, step > 0 ? "chasenext" : "chaseprev" );
 		return true;
 	}
 
@@ -178,7 +178,7 @@ void CG_AddKickAngles( vec3_t viewangles ) {
 
 		time = (float)( ( cg.kickangles[i].timestamp + cg.kickangles[i].kicktime ) - cl.serverTime );
 		uptime = ( (float)cg.kickangles[i].kicktime ) * 0.5f;
-		delta = 1.0f - ( fabs( time - uptime ) / uptime );
+		delta = 1.0f - ( Abs( time - uptime ) / uptime );
 
 		//CG_Printf("Kick Delta:%f\n", delta );
 		if( delta > 1.0f ) {
@@ -222,7 +222,7 @@ static void CG_CalcViewBob( void ) {
 	}
 
 	// calculate speed and cycle to be used for all cyclic walking effects
-	cg.xyspeed = sqrt( cg.predictedPlayerState.pmove.velocity[0] * cg.predictedPlayerState.pmove.velocity[0] + cg.predictedPlayerState.pmove.velocity[1] * cg.predictedPlayerState.pmove.velocity[1] );
+	cg.xyspeed = sqrtf( cg.predictedPlayerState.pmove.velocity[0] * cg.predictedPlayerState.pmove.velocity[0] + cg.predictedPlayerState.pmove.velocity[1] * cg.predictedPlayerState.pmove.velocity[1] );
 
 	bobScale = 0;
 	if( cg.xyspeed < 5 ) {
@@ -257,7 +257,7 @@ static void CG_CalcViewBob( void ) {
 	bobTime = ( cg.oldBobTime += bobMove );
 
 	cg.bobCycle = (int)bobTime;
-	cg.bobFracSin = fabs( sin( bobTime * M_PI ) );
+	cg.bobFracSin = Abs( sinf( bobTime * PI ) );
 }
 
 /*
@@ -311,7 +311,7 @@ void CG_StartKickAnglesEffect( vec3_t source, float knockback, float radius, int
 		return;
 	}
 
-	kick = fabs( knockback ) * delta;
+	kick = Abs( knockback ) * delta;
 	if( kick ) { // kick of 0 means no view adjust at all
 		//find first free kick spot, or the one closer to be finished
 		for( i = 0; i < MAX_ANGLES_KICKS; i++ ) {
@@ -374,13 +374,6 @@ void CG_StartFallKickEffect( int bounceTime ) {
 	}
 }
 
-/*
-* CG_ResetColorBlend
-*/
-void CG_ResetColorBlend( void ) {
-	memset( cg.colorblends, 0, sizeof( cg.colorblends ) );
-}
-
 //============================================================================
 
 /*
@@ -440,9 +433,9 @@ static void CG_InterpolatePlayerState( player_state_t *playerState ) {
 
 	teleported = ( ps->pmove.pm_flags & PMF_TIME_TELEPORT ) ? true : false;
 
-	if( abs( (int)( ops->pmove.origin[0] - ps->pmove.origin[0] ) ) > 256
-		|| abs( (int)( ops->pmove.origin[1] - ps->pmove.origin[1] ) ) > 256
-		|| abs( (int)( ops->pmove.origin[2] - ps->pmove.origin[2] ) ) > 256 ) {
+	if( Abs( (int)( ops->pmove.origin[0] - ps->pmove.origin[0] ) ) > 256
+		|| Abs( (int)( ops->pmove.origin[1] - ps->pmove.origin[1] ) ) > 256
+		|| Abs( (int)( ops->pmove.origin[2] - ps->pmove.origin[2] ) ) > 256 ) {
 		teleported = true;
 	}
 
@@ -474,15 +467,15 @@ static void CG_ThirdPersonOffsetView( cg_viewdef_t *view ) {
 	vec3_t maxs = { 4, 4, 4 };
 
 	if( !cg_thirdPersonAngle || !cg_thirdPersonRange ) {
-		cg_thirdPersonAngle = trap_Cvar_Get( "cg_thirdPersonAngle", "0", CVAR_ARCHIVE );
-		cg_thirdPersonRange = trap_Cvar_Get( "cg_thirdPersonRange", "70", CVAR_ARCHIVE );
+		cg_thirdPersonAngle = Cvar_Get( "cg_thirdPersonAngle", "0", CVAR_ARCHIVE );
+		cg_thirdPersonRange = Cvar_Get( "cg_thirdPersonRange", "70", CVAR_ARCHIVE );
 	}
 
 	// calc exact destination
 	VectorCopy( view->origin, chase_dest );
 	r = DEG2RAD( cg_thirdPersonAngle->value );
-	f = -cos( r );
-	r = -sin( r );
+	f = -cosf( r );
+	r = -sinf( r );
 	VectorMA( chase_dest, cg_thirdPersonRange->value * f, &view->axis[AXIS_FORWARD], chase_dest );
 	VectorMA( chase_dest, cg_thirdPersonRange->value * r, &view->axis[AXIS_RIGHT], chase_dest );
 	chase_dest[2] += 8;
@@ -493,11 +486,11 @@ static void CG_ThirdPersonOffsetView( cg_viewdef_t *view ) {
 
 	// calculate pitch to look at the same spot from camera
 	VectorSubtract( trace.endpos, view->origin, stop );
-	dist = sqrt( stop[0] * stop[0] + stop[1] * stop[1] );
+	dist = sqrtf( stop[0] * stop[0] + stop[1] * stop[1] );
 	if( dist < 1 ) {
 		dist = 1;
 	}
-	view->angles[PITCH] = RAD2DEG( -atan2( stop[2], dist ) );
+	view->angles[PITCH] = RAD2DEG( -atan2f( stop[2], dist ) );
 	view->angles[YAW] -= cg_thirdPersonAngle->value;
 	Matrix3_FromAngles( view->angles, view->axis );
 
@@ -534,7 +527,7 @@ float CG_ViewSmoothFallKick( void ) {
 	// fallkick offset
 	if( cg.fallEffectTime > cl.serverTime ) {
 		float fallfrac = (float)( cl.serverTime - cg.fallEffectRebounceTime ) / (float)( cg.fallEffectTime - cg.fallEffectRebounceTime );
-		float fallkick = -1.0f * sin( DEG2RAD( fallfrac * 180 ) ) * ( ( cg.fallEffectTime - cg.fallEffectRebounceTime ) * 0.01f );
+		float fallkick = -1.0f * sinf( DEG2RAD( fallfrac * 180 ) ) * ( ( cg.fallEffectTime - cg.fallEffectRebounceTime ) * 0.01f );
 		return fallkick;
 	} else {
 		cg.fallEffectTime = cg.fallEffectRebounceTime = 0;
@@ -557,7 +550,7 @@ bool CG_SwitchChaseCamMode( void ) {
 			if( realSpec ) {
 				if( ++chaseCam.mode >= CAM_MODES ) {
 					// if exceeds the cycle, start free fly
-					trap_Cmd_ExecuteText( EXEC_NOW, "camswitch" );
+					Cbuf_ExecuteText( EXEC_NOW, "camswitch" );
 					chaseCam.mode = 0;
 				}
 				return true;
@@ -570,7 +563,7 @@ bool CG_SwitchChaseCamMode( void ) {
 	}
 
 	if( realSpec && ( CG_DemoCam_IsFree() || cg.frame.playerState.pmove.pm_type == PM_SPECTATOR ) ) {
-		trap_Cmd_ExecuteText( EXEC_NOW, "camswitch" );
+		Cbuf_ExecuteText( EXEC_NOW, "camswitch" );
 		return true;
 	}
 
@@ -653,8 +646,8 @@ static void CG_SetupRefDef( cg_viewdef_t *view, refdef_t *rd ) {
 
 	// warp if underwater
 	if( rd->rdflags & RDF_UNDERWATER ) {
-		float phase = rd->time * 0.001 * WAVE_FREQUENCY * M_TWOPI;
-		float v = WAVE_AMPLITUDE * ( sinf( phase ) - 1.0 ) + 1;
+		float phase = rd->time * 0.001f * WAVE_FREQUENCY * 2.0f * PI;
+		float v = WAVE_AMPLITUDE * ( sinf( phase ) - 1.0f ) + 1;
 		rd->fov_x *= v;
 		rd->fov_y *= v;
 	}
@@ -757,7 +750,7 @@ static void CG_SetupViewDef( cg_viewdef_t *view, int type ) {
 
 	Matrix3_FromAngles( view->angles, view->axis );
 
-	view->fracDistFOV = tan( DEG2RAD( view->fov_x ) * 0.5f );
+	view->fracDistFOV = tanf( DEG2RAD( view->fov_x ) * 0.5f );
 
 	if( view->thirdperson ) {
 		CG_ThirdPersonOffsetView( view );
@@ -990,18 +983,18 @@ void CG_RenderView( unsigned extrapolationTime ) {
 
 	if( cg_fov->modified ) {
 		if( cg_fov->value < MIN_FOV ) {
-			trap_Cvar_ForceSet( cg_fov->name, STR_TOSTR( MIN_FOV ) );
+			Cvar_ForceSet( cg_fov->name, STR_TOSTR( MIN_FOV ) );
 		} else if( cg_fov->value > MAX_FOV ) {
-			trap_Cvar_ForceSet( cg_fov->name, STR_TOSTR( MAX_FOV ) );
+			Cvar_ForceSet( cg_fov->name, STR_TOSTR( MAX_FOV ) );
 		}
 		cg_fov->modified = false;
 	}
 
 	if( cg_zoomfov->modified ) {
 		if( cg_zoomfov->value < MIN_FOV ) {
-			trap_Cvar_ForceSet( cg_zoomfov->name, STR_TOSTR( MIN_FOV ) );
+			Cvar_ForceSet( cg_zoomfov->name, STR_TOSTR( MIN_FOV ) );
 		} else if( cg_zoomfov->value > MAX_FOV ) {
-			trap_Cvar_ForceSet( cg_zoomfov->name, STR_TOSTR( MAX_FOV ) );
+			Cvar_ForceSet( cg_zoomfov->name, STR_TOSTR( MAX_FOV ) );
 		}
 		cg_zoomfov->modified = false;
 	}
@@ -1009,8 +1002,6 @@ void CG_RenderView( unsigned extrapolationTime ) {
 	CG_FlashGameWindow(); // notify player of important game events
 
 	CG_UpdateChaseCam();
-
-	CG_ClearFragmentedDecals();
 
 	if( CG_DemoCam_Update() ) {
 		CG_SetupViewDef( &cg.view, CG_DemoCam_GetViewType() );
@@ -1034,14 +1025,9 @@ void CG_RenderView( unsigned extrapolationTime ) {
 	CG_AddEntities();
 	CG_AddViewWeapon( &cg.weapon );
 	CG_AddLocalEntities();
-	CG_AddParticles();
 	DrawGibs();
 	DrawParticles();
 	DrawPersistentBeams();
-
-	CG_AddDlights();
-	CG_AddPlayerShadows();
-	CG_AddDecals();
 	DrawSkybox();
 
 	CG_AddLocalSounds();

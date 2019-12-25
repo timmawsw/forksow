@@ -19,9 +19,8 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include "qcommon/base.h"
 #include "cgame/cg_local.h"
-
-enum { DEFAULTSCALE=0, NOSCALE, SCALEBYWIDTH, SCALEBYHEIGHT };
 
 static int layout_cursor_x = 400;
 static int layout_cursor_y = 300;
@@ -29,7 +28,6 @@ static int layout_cursor_width = 100;
 static int layout_cursor_height = 100;
 static Alignment layout_cursor_alignment = Alignment_LeftTop;
 static Vec4 layout_cursor_color = vec4_white;
-static vec3_t layout_cursor_rotation = { 0, 0, 0 };
 
 enum FontStyle {
 	FontStyle_Normal,
@@ -187,18 +185,7 @@ static int CG_GetVidHeight( const void *parameter ) {
 }
 
 static int CG_GetCvar( const void *parameter ) {
-	return trap_Cvar_Value( (const char *)parameter );
-}
-
-static int CG_GetDamageIndicatorDirValue( const void *parameter ) {
-	float frac = 0;
-	int index = (intptr_t)parameter;
-
-	if( cg.damageBlends[index] > cl.serverTime && !cg.view.thirdperson ) {
-		frac = Clamp01( ( cg.damageBlends[index] - cl.serverTime ) / 300.0f );
-	}
-
-	return frac * 1000;
+	return Cvar_Value( (const char *)parameter );
 }
 
 /**
@@ -230,7 +217,7 @@ static int CG_IsActiveCallvote( const void * parameter ) {
 static int CG_DownloadInProgress( const void *parameter ) {
 	const char *str;
 
-	str = trap_Cvar_String( "cl_download_name" );
+	str = Cvar_String( "cl_download_name" );
 	if( str[0] ) {
 		return 1;
 	}
@@ -313,11 +300,6 @@ static const reference_numeric_t cg_numeric_references[] = {
 	{ "DEMOPLAYING", CG_IsDemoPlaying, NULL },
 	{ "CALLVOTE", CG_IsActiveCallvote, NULL },
 
-	{ "DAMAGE_INDICATOR_TOP", CG_GetDamageIndicatorDirValue, (void *)0 },
-	{ "DAMAGE_INDICATOR_RIGHT", CG_GetDamageIndicatorDirValue, (void *)1 },
-	{ "DAMAGE_INDICATOR_BOTTOM", CG_GetDamageIndicatorDirValue, (void *)2 },
-	{ "DAMAGE_INDICATOR_LEFT", CG_GetDamageIndicatorDirValue, (void *)3 },
-
 	// cvars
 	{ "SHOW_FPS", CG_GetCvar, "cg_showFPS" },
 	{ "SHOW_OBITUARIES", CG_GetCvar, "cg_showObituaries" },
@@ -325,7 +307,6 @@ static const reference_numeric_t cg_numeric_references[] = {
 	{ "SHOW_PRESSED_KEYS", CG_GetCvar, "cg_showPressedKeys" },
 	{ "SHOW_SPEED", CG_GetCvar, "cg_showSpeed" },
 	{ "SHOW_AWARDS", CG_GetCvar, "cg_showAwards" },
-	{ "SHOW_R_SPEEDS", CG_GetCvar, "r_speeds" },
 
 	{ "DOWNLOAD_IN_PROGRESS", CG_DownloadInProgress, NULL },
 	{ "DOWNLOAD_PERCENT", CG_GetCvar, "cl_download_percent" },
@@ -1031,13 +1012,13 @@ static const char * prefixes[] = {
 };
 
 static const char * RandomObituary() {
-	return obituaries[ rand() % ARRAY_COUNT( obituaries ) ];
+	return random_select( &cls.rng, obituaries );
 }
 
 static const char * RandomPrefix( float p ) {
 	if( !random_p( &cls.rng, p ) )
 		return "";
-	return prefixes[ rand() % ARRAY_COUNT( prefixes ) ];
+	return random_select( &cls.rng, prefixes );
 }
 
 /*
@@ -1047,9 +1028,9 @@ void CG_SC_Obituary( void ) {
 	char message[128];
 	char message2[128];
 	cg_clientInfo_t *victim, *attacker;
-	int victimNum = atoi( trap_Cmd_Argv( 1 ) );
-	int attackerNum = atoi( trap_Cmd_Argv( 2 ) );
-	int mod = atoi( trap_Cmd_Argv( 3 ) );
+	int victimNum = atoi( Cmd_Argv( 1 ) );
+	int attackerNum = atoi( Cmd_Argv( 2 ) );
+	int mod = atoi( Cmd_Argv( 3 ) );
 	obituary_t *current;
 
 	victim = &cgs.clientInfo[victimNum - 1];
@@ -1580,7 +1561,7 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 
 		int ammo_in_clip = 0;
 
-		
+
 		if ( i != WEAP_GUNBLADE ) {
 			int capacity = GS_FindItemByTag( i )->capacity;
 			int clips = GS_FindItemByTag( i )->clips;
@@ -1596,9 +1577,9 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 				color_bg = Vec4( 0.5f, 0.25f, 0.0f, 1.0f );
 			}
 			if ( ammo_in_clip_pct <= 34) {
-				color = Vec4( 1.0f, 0.0f, 0.0f, 1.0f );		
+				color = Vec4( 1.0f, 0.0f, 0.0f, 1.0f );
 				color_bg = Vec4( 0.5f, 0.0f, 0.0f, 1.0f );
-			}	
+			}
 		}
 
 		Draw2DBox( curx, cury, curiw, curih, cgs.white_material, color );
@@ -1617,33 +1598,6 @@ static bool CG_LFuncDrawPicByName( struct cg_layoutnode_s *argumentnode, int num
 	int x = CG_HorizontalAlignForWidth( layout_cursor_x, layout_cursor_alignment, layout_cursor_width );
 	int y = CG_VerticalAlignForHeight( layout_cursor_y, layout_cursor_alignment, layout_cursor_height );
 	Draw2DBox( x, y, layout_cursor_width, layout_cursor_height, FindMaterial( CG_GetStringArg( &argumentnode ) ), layout_cursor_color );
-	return true;
-}
-
-static bool CG_LFuncDrawSubPicByName( struct cg_layoutnode_s *argumentnode, int numArguments ) {
-	int x = CG_HorizontalAlignForWidth( layout_cursor_x, layout_cursor_alignment, layout_cursor_width );
-	int y = CG_VerticalAlignForHeight( layout_cursor_y, layout_cursor_alignment, layout_cursor_height );
-
-	const Material * material = FindMaterial( CG_GetStringArg( &argumentnode ) );
-
-	float s1 = CG_GetNumericArg( &argumentnode );
-	float t1 = CG_GetNumericArg( &argumentnode );
-	float s2 = CG_GetNumericArg( &argumentnode );
-	float t2 = CG_GetNumericArg( &argumentnode );
-
-	// Draw2DBox( x, y, layout_cursor_width, layout_cursor_height, material, layout_cursor_color );
-	return true;
-}
-
-static bool CG_LFuncDrawRotatedPicByName( struct cg_layoutnode_s *argumentnode, int numArguments ) {
-	int x = CG_HorizontalAlignForWidth( layout_cursor_x, layout_cursor_alignment, layout_cursor_width );
-	int y = CG_VerticalAlignForHeight( layout_cursor_y, layout_cursor_alignment, layout_cursor_height );
-
-	const Material * material = FindMaterial( CG_GetStringArg( &argumentnode ) );
-
-	float angle = CG_GetNumericArg( &argumentnode );
-
-	// trap_R_DrawRotatedStretchPic( x, y, layout_cursor_width, layout_cursor_height, 0, 0, 1, 1, angle, layout_cursor_color, shader );
 	return true;
 }
 
@@ -1879,11 +1833,11 @@ static bool CG_LFuncDrawBindString( struct cg_layoutnode_s *argumentnode, int nu
 
 	char keys[ 128 ];
 	if( !CG_GetBoundKeysString( command, keys, sizeof( keys ) ) ) {
-		Q_snprintfz( keys, sizeof( keys ), "[%s]", command );
+		snprintf( keys, sizeof( keys ), "[%s]", command );
 	}
 
 	char buf[ 1024 ];
-	Q_snprintfz( buf, sizeof( buf ), fmt, keys );
+	snprintf( buf, sizeof( buf ), fmt, keys );
 
 	DrawText( GetHUDFont(), layout_cursor_font_size, buf, layout_cursor_alignment, layout_cursor_x, layout_cursor_y, layout_cursor_color, layout_cursor_font_border );
 
@@ -2151,20 +2105,6 @@ static const cg_layoutcommand_t cg_LayoutCommands[] =
 	},
 
 	{
-		"drawSubPicByName",
-		CG_LFuncDrawSubPicByName,
-		5,
-		"Draws a part of a pic with arguments being the file path and the texture coordinates",
-	},
-
-	{
-		"drawRotatedPicByName",
-		CG_LFuncDrawRotatedPicByName,
-		2,
-		"Draws a pic with arguments being the file path and the rotation",
-	},
-
-	{
 		"drawWeaponIcons",
 		CG_LFuncDrawWeaponIcons,
 		5,
@@ -2314,7 +2254,7 @@ static cg_layoutnode_t *CG_LayoutParseArgumentNode( const char *token ) {
 		// replace stat names by values
 		for( i = 0; cg_numeric_references[i].name != NULL; i++ ) {
 			if( !Q_stricmp( valuetok, cg_numeric_references[i].name ) ) {
-				Q_snprintfz( tmpstring, sizeof( tmpstring ), "%i", i );
+				snprintf( tmpstring, sizeof( tmpstring ), "%i", i );
 				valuetok = tmpstring;
 				break;
 			}
@@ -2331,7 +2271,7 @@ static cg_layoutnode_t *CG_LayoutParseArgumentNode( const char *token ) {
 
 		for( i = 0; cg_numeric_constants[i].name != NULL; i++ ) {
 			if( !Q_stricmp( valuetok, cg_numeric_constants[i].name ) ) {
-				Q_snprintfz( tmpstring, sizeof( tmpstring ), "%i", cg_numeric_constants[i].value );
+				snprintf( tmpstring, sizeof( tmpstring ), "%i", cg_numeric_constants[i].value );
 				valuetok = tmpstring;
 				break;
 			}
@@ -2778,7 +2718,7 @@ static char *CG_LoadHUDFile( const char *path ) {
 
 			// File was OK :)
 			if( rec_fn[rec_lvl] != NULL ) {
-				len = trap_FS_FOpenFile( rec_fn[rec_lvl], &f, FS_READ );
+				len = FS_FOpenFile( rec_fn[rec_lvl], &f, FS_READ );
 				if( len > 0 ) {
 					rec_plvl = rec_lvl;
 					rec_buf[rec_lvl] = ( char * )CG_Malloc( len + 1 );
@@ -2786,7 +2726,7 @@ static char *CG_LoadHUDFile( const char *path ) {
 					rec_ptr[rec_lvl] = rec_buf[rec_lvl];
 
 					// Now read the file
-					if( trap_FS_Read( rec_buf[rec_lvl], len, f ) <= 0 ) {
+					if( FS_Read( rec_buf[rec_lvl], len, f ) <= 0 ) {
 						if( rec_lvl > 0 ) {
 							CG_Printf( "HUD: WARNING: Read error while loading file: %s\n", rec_fn[rec_lvl] );
 						}
@@ -2796,11 +2736,11 @@ static char *CG_LoadHUDFile( const char *path ) {
 						rec_buf[rec_lvl] = NULL;
 						rec_lvl--;
 					}
-					trap_FS_FCloseFile( f );
+					FS_FCloseFile( f );
 				} else {
 					if( !len ) {
 						// File was empty - still have to close
-						trap_FS_FCloseFile( f );
+						FS_FCloseFile( f );
 					} else if( rec_lvl > 0 ) {
 						CG_Printf( "HUD: WARNING: Could not include file: %s\n", rec_fn[rec_lvl] );
 					}
@@ -2845,16 +2785,16 @@ static char *CG_LoadHUDFile( const char *path ) {
 				rec_lvl++;
 				i = strlen( "huds/" ) + strlen( token ) + strlen( ".hud" ) + 1;
 				rec_fn[rec_lvl] = ( char * )CG_Malloc( i );
-				Q_snprintfz( rec_fn[rec_lvl], i, "huds/%s", token );
+				snprintf( rec_fn[rec_lvl], i, "huds/%s", token );
 				COM_DefaultExtension( rec_fn[rec_lvl], ".hud", i );
-				if( trap_FS_FOpenFile( rec_fn[rec_lvl], NULL, FS_READ ) < 0 ) {
+				if( FS_FOpenFile( rec_fn[rec_lvl], NULL, FS_READ ) < 0 ) {
 					// File doesn't exist!
 					CG_Free( rec_fn[rec_lvl] );
 					i = strlen( "huds/inc/" ) + strlen( token ) + strlen( ".hud" ) + 1;
 					rec_fn[rec_lvl] = ( char * )CG_Malloc( i );
-					Q_snprintfz( rec_fn[rec_lvl], i, "huds/inc/%s", token );
+					snprintf( rec_fn[rec_lvl], i, "huds/inc/%s", token );
 					COM_DefaultExtension( rec_fn[rec_lvl], ".hud", i );
-					if( trap_FS_FOpenFile( rec_fn[rec_lvl], NULL, FS_READ ) < 0 ) {
+					if( FS_FOpenFile( rec_fn[rec_lvl], NULL, FS_READ ) < 0 ) {
 						CG_Free( rec_fn[rec_lvl] );
 						rec_fn[rec_lvl] = NULL;
 						rec_lvl--;

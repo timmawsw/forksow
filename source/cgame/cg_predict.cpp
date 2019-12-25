@@ -92,14 +92,14 @@ void CG_CheckPredictionError( void ) {
 	VectorSubtract( cg.frame.playerState.pmove.origin, origin, delta );
 
 	// save the prediction error for interpolation
-	if( abs( delta[0] ) > 128 || abs( delta[1] ) > 128 || abs( delta[2] ) > 128 ) {
+	if( Abs( delta[0] ) > 128 || Abs( delta[1] ) > 128 || Abs( delta[2] ) > 128 ) {
 		if( cg_showMiss->integer ) {
-			CG_Printf( "prediction miss on %" PRIi64 ": %i\n", cg.frame.serverFrame, abs( delta[0] ) + abs( delta[1] ) + abs( delta[2] ) );
+			CG_Printf( "prediction miss on %" PRIi64 ": %i\n", cg.frame.serverFrame, Abs( delta[0] ) + Abs( delta[1] ) + Abs( delta[2] ) );
 		}
 		VectorClear( cg.predictionError );          // a teleport or something
 	} else {
 		if( cg_showMiss->integer && ( delta[0] || delta[1] || delta[2] ) ) {
-			CG_Printf( "prediction miss on %" PRIi64" : %i\n", cg.frame.serverFrame, abs( delta[0] ) + abs( delta[1] ) + abs( delta[2] ) );
+			CG_Printf( "prediction miss on %" PRIi64" : %i\n", cg.frame.serverFrame, Abs( delta[0] ) + Abs( delta[1] ) + Abs( delta[2] ) );
 		}
 		VectorCopy( cg.frame.playerState.pmove.origin, cg.predictedOrigins[frame] );
 		VectorCopy( delta, cg.predictionError ); // save for error interpolation
@@ -280,7 +280,7 @@ static void CG_ClipMoveToEntities( const vec3_t start, const vec3_t mins, const 
 			}
 		}
 
-		trap_CM_TransformedBoxTrace( &trace, (vec_t *)start, (vec_t *)end, (vec_t *)mins, (vec_t *)maxs, cmodel, contentmask, origin, angles );
+		trap_CM_TransformedBoxTrace( &trace, (float *)start, (float *)end, (float *)mins, (float *)maxs, cmodel, contentmask, origin, angles );
 		if( trace.allsolid || trace.fraction < tr->fraction ) {
 			trace.ent = ent->number;
 			*tr = trace;
@@ -318,7 +318,7 @@ int CG_PointContents( const vec3_t point ) {
 	struct cmodel_s *cmodel;
 	int contents;
 
-	contents = trap_CM_TransformedPointContents( (vec_t *)point, NULL, NULL, NULL );
+	contents = trap_CM_TransformedPointContents( (float *)point, NULL, NULL, NULL );
 
 	for( i = 0; i < cg_numSolids; i++ ) {
 		ent = cg_solidList[i];
@@ -328,7 +328,7 @@ int CG_PointContents( const vec3_t point ) {
 
 		cmodel = trap_CM_InlineModel( ent->modelindex );
 		if( cmodel ) {
-			contents |= trap_CM_TransformedPointContents( (vec_t *)point, cmodel, ent->origin, ent->angles );
+			contents |= trap_CM_TransformedPointContents( (float *)point, cmodel, ent->origin, ent->angles );
 		}
 	}
 

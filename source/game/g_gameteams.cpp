@@ -34,8 +34,8 @@ cvar_t *g_teams_allow_uneven;
 void G_Teams_Init( void ) {
 	edict_t *ent;
 
-	g_teams_maxplayers = trap_Cvar_Get( "g_teams_maxplayers", "0", CVAR_ARCHIVE );
-	g_teams_allow_uneven = trap_Cvar_Get( "g_teams_allow_uneven", "1", CVAR_ARCHIVE );
+	g_teams_maxplayers = Cvar_Get( "g_teams_maxplayers", "0", CVAR_ARCHIVE );
+	g_teams_allow_uneven = Cvar_Get( "g_teams_allow_uneven", "1", CVAR_ARCHIVE );
 
 	//unlock all teams and clear up team lists
 	memset( teamlist, 0, sizeof( teamlist ) );
@@ -209,7 +209,7 @@ static bool G_Teams_CanKeepEvenTeam( int leaving, int joining ) {
 		}
 	}
 
-	return teamlist[joining].numplayers + 1 == min || abs( max - min ) <= 1;
+	return teamlist[joining].numplayers + 1 == min || Abs( max - min ) <= 1;
 }
 
 /*
@@ -379,14 +379,14 @@ bool G_Teams_JoinAnyTeam( edict_t *ent, bool silent ) {
 * G_Teams_Join_Cmd
 */
 void G_Teams_Join_Cmd( edict_t *ent ) {
-	char *t;
+	const char *t;
 	int team;
 
 	if( !ent->r.client || trap_GetClientState( PLAYERNUM( ent ) ) < CS_SPAWNED ) {
 		return;
 	}
 
-	t = trap_Cmd_Argv( 1 );
+	t = Cmd_Argv( 1 );
 	if( !t || *t == 0 ) {
 		G_Teams_JoinAnyTeam( ent, false );
 		return;
@@ -427,7 +427,7 @@ static int G_Teams_ChallengersQueueCmp( const edict_t **pe1, const edict_t **pe2
 	if( e2->r.client->queueTimeStamp > e1->r.client->queueTimeStamp ) {
 		return -1;
 	}
-	return rand() & 1 ? -1 : 1;
+	return random_uniform( &svs.rng, 0, 2 ) == 0 ? -1 : 1;
 }
 
 /*

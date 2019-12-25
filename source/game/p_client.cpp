@@ -204,7 +204,7 @@ static edict_t *CopyToBodyQue( edict_t *ent, edict_t *attacker, int damage ) {
 		// reset gib impulse
 		VectorClear( body->velocity );
 
-		body->nextThink = level.time + 3000 + random() * 3000;
+		body->nextThink = level.time + 3000 + random_float01( &svs.rng ) * 3000;
 		body->deadflag = DEAD_DEAD;
 	}
 	if( ent->s.type == ET_PLAYER ) {
@@ -214,7 +214,7 @@ static edict_t *CopyToBodyQue( edict_t *ent, edict_t *attacker, int damage ) {
 		body->s.bodyOwner = ent->s.number; // bodyOwner is the same as modelindex2
 		body->s.teleported = true;
 
-		edict_t * event = G_SpawnEvent( EV_DIE, rand(), NULL );
+		edict_t * event = G_SpawnEvent( EV_DIE, random_uniform( &svs.rng, 0, 256 ), NULL );
 		event->r.svflags |= SVF_BROADCAST;
 		event->s.ownerNum = body->s.number;
 
@@ -229,7 +229,7 @@ static edict_t *CopyToBodyQue( edict_t *ent, edict_t *attacker, int damage ) {
 	} else {   // wasn't a player, just copy it's model
 		VectorClear( body->velocity );
 		body->s.modelindex = ent->s.modelindex;
-		body->nextThink = level.time + 5000 + random() * 10000;
+		body->nextThink = level.time + 5000 + random_float01( &svs.rng ) * 10000;
 	}
 
 	GClip_LinkEntity( body );
@@ -302,9 +302,9 @@ void G_Client_InactivityRemove( gclient_t *client ) {
 
 	if( g_inactivity_maxtime->modified ) {
 		if( g_inactivity_maxtime->value <= 0.0f ) {
-			trap_Cvar_ForceSet( "g_inactivity_maxtime", "0.0" );
+			Cvar_ForceSet( "g_inactivity_maxtime", "0.0" );
 		} else if( g_inactivity_maxtime->value < 15.0f ) {
-			trap_Cvar_ForceSet( "g_inactivity_maxtime", "15.0" );
+			Cvar_ForceSet( "g_inactivity_maxtime", "15.0" );
 		}
 
 		g_inactivity_maxtime->modified = false;
@@ -343,9 +343,9 @@ static void G_Client_AssignTeamSkin( edict_t *ent, char *userinfo ) {
 	}
 
 	if( usermodel ) {
-		Q_snprintfz( model, sizeof( model ), "$models/players/%s", usermodel );
+		snprintf( model, sizeof( model ), "$models/players/%s", usermodel );
 	} else {
-		Q_snprintfz( model, sizeof( model ), "$models/players/%s", DEFAULT_PLAYERMODEL );
+		snprintf( model, sizeof( model ), "$models/players/%s", DEFAULT_PLAYERMODEL );
 	}
 
 	if( !ent->deadflag ) {
@@ -944,7 +944,7 @@ bool ClientConnect( edict_t *ent, char *userinfo, bool fakeClient ) {
 	if( !fakeClient ) {
 		char message[MAX_STRING_CHARS];
 
-		Q_snprintfz( message, sizeof( message ), "%s connected", ent->r.client->netname );
+		snprintf( message, sizeof( message ), "%s connected", ent->r.client->netname );
 
 		G_PrintMsg( NULL, "%s\n", message );
 

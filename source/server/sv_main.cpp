@@ -413,15 +413,7 @@ static bool SV_RunGameFrame( int msec ) {
 			accTime = 0;
 		}
 
-		if( host_speeds->integer ) {
-			time_before_game = Sys_Milliseconds();
-		}
-
 		ge->RunFrame( moduleTime );
-
-		if( host_speeds->integer ) {
-			time_after_game = Sys_Milliseconds();
-		}
 	}
 
 	// if we don't have to send a snapshot we are done here
@@ -467,9 +459,7 @@ void SV_Frame( unsigned realmsec, unsigned gamemsec ) {
 
 	u64 entropy[ 2 ];
 	CSPRNG_Bytes( entropy, sizeof( entropy ) );
-	sv.rng = new_rng( entropy[ 0 ], entropy[ 1 ] );
-
-	time_before_game = time_after_game = 0;
+	svs.rng = new_rng( entropy[ 0 ], entropy[ 1 ] );
 
 	// if server is not active, do nothing
 	if( !svs.initialized ) {
@@ -562,6 +552,10 @@ void SV_Init( void ) {
 	assert( !sv_initialized );
 
 	memset( &svc, 0, sizeof( svc ) );
+
+	u64 entropy[ 2 ];
+	CSPRNG_Bytes( entropy, sizeof( entropy ) );
+	svs.rng = new_rng( entropy[ 0 ], entropy[ 1 ] );
 
 	SV_InitOperatorCommands();
 

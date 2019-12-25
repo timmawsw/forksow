@@ -49,14 +49,8 @@ enum {
 	AXIS_UP = 6
 };
 
-typedef float vec_t;
-typedef vec_t vec2_t[2];
-typedef vec_t vec3_t[3];
-typedef vec_t vec4_t[4];
-
-typedef vec_t mat3_t[9];
-
-typedef uint8_t byte_vec4_t[4];
+typedef float vec3_t[3];
+typedef float mat3_t[9];
 
 // 0-2 are axial planes
 #define PLANE_X     0
@@ -75,20 +69,11 @@ typedef struct cplane_s {
 constexpr vec3_t vec3_origin = { 0, 0, 0 };
 constexpr mat3_t axis_identity = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
 
-constexpr double M_TWOPI = M_PI * 2.0;
-
-#define DEG2RAD( a ) ( ( a * float( M_PI ) ) / 180.0f )
-#define RAD2DEG( a ) ( ( a * 180.0f ) / float( M_PI ) )
-
 #define max( a, b ) ( ( a ) > ( b ) ? ( a ) : ( b ) )
 #define min( a, b ) ( ( a ) < ( b ) ? ( a ) : ( b ) )
 #define bound( lo, x, hi ) ( ( lo ) >= ( hi ) ? ( lo ) : ( x ) < ( lo ) ? ( lo ) : ( x ) > ( hi ) ? ( hi ) : ( x ) )
 
-#define random()    ( ( rand() & 0x7fff ) / ( (float)0x7fff ) )  // 0..1
-#define brandom( a, b )    ( ( a ) + random() * ( ( b ) - ( a ) ) )                // a..b
-#define crandom()   brandom( -1, 1 )                           // -1..1
-
-inline float Q_RSqrt( float x ) {
+inline float Q_Rsqrtf( float x ) {
 	return _mm_cvtss_f32( _mm_rsqrt_ss( _mm_set_ss( x ) ) );
 }
 
@@ -102,7 +87,7 @@ float Unlerp( T lo, T x, T hi ) {
 	return float( x - lo ) / float( hi - lo );
 }
 
-#define SQRTFAST( x ) ( ( x ) * Q_RSqrt( x ) ) // jal : //The expression a * rsqrt(b) is intended as a higher performance alternative to a / sqrt(b). The two expressions are comparably accurate, but do not compute exactly the same value in every case. For example, a * rsqrt(a*a + b*b) can be just slightly greater than 1, in rare cases.
+#define SQRTFAST( x ) ( ( x ) * Q_Rsqrtf( x ) ) // jal : //The expression a * rsqrt(b) is intended as a higher performance alternative to a / sqrt(b). The two expressions are comparably accurate, but do not compute exactly the same value in every case. For example, a * rsqrt(a*a + b*b) can be just slightly greater than 1, in rare cases.
 
 #define DotProduct( x, y )     ( ( x )[0] * ( y )[0] + ( x )[1] * ( y )[1] + ( x )[2] * ( y )[2] )
 #define CrossProduct( v1, v2, cross ) ( ( cross )[0] = ( v1 )[1] * ( v2 )[2] - ( v1 )[2] * ( v2 )[1], ( cross )[1] = ( v1 )[2] * ( v2 )[0] - ( v1 )[0] * ( v2 )[2], ( cross )[2] = ( v1 )[0] * ( v2 )[1] - ( v1 )[1] * ( v2 )[0] )
@@ -133,16 +118,9 @@ float Unlerp( T lo, T x, T hi ) {
 #define Vector2Set( v, x, y )     ( ( v )[0] = ( x ), ( v )[1] = ( y ) )
 #define Vector2Copy( a, b )    ( ( b )[0] = ( a )[0], ( b )[1] = ( a )[1] )
 
-#define Vector4Set( v, a, b, c, d )   ( ( v )[0] = ( a ), ( v )[1] = ( b ), ( v )[2] = ( c ), ( v )[3] = ( d ) )
-#define Vector4Clear( a )     ( ( a )[0] = ( a )[1] = ( a )[2] = ( a )[3] = 0 )
-#define Vector4Copy( a, b )    ( ( b )[0] = ( a )[0], ( b )[1] = ( a )[1], ( b )[2] = ( a )[2], ( b )[3] = ( a )[3] )
-#define Vector4Scale( in, scale, out )      ( ( out )[0] = ( in )[0] * scale, ( out )[1] = ( in )[1] * scale, ( out )[2] = ( in )[2] * scale, ( out )[3] = ( in )[3] * scale )
-
-vec_t VectorNormalize( vec3_t v );       // returns vector length
-vec_t VectorNormalize2( const vec3_t v, vec3_t out );
+float VectorNormalize( vec3_t v );       // returns vector length
+float VectorNormalize2( const vec3_t v, vec3_t out );
 void  VectorNormalizeFast( vec3_t v );
-
-vec_t Vector4Normalize( vec4_t v );      // returns vector length
 
 void ClearBounds( vec3_t mins, vec3_t maxs );
 void CopyBounds( const vec3_t inmins, const vec3_t inmaxs, vec3_t outmins, vec3_t outmaxs );
@@ -178,9 +156,9 @@ int PlaneTypeForNormal( const vec3_t normal );
 void CategorizePlane( cplane_t *plane );
 void PlaneFromPoints( vec3_t verts[3], cplane_t *plane );
 
-bool ComparePlanes( const vec3_t p1normal, vec_t p1dist, const vec3_t p2normal, vec_t p2dist );
+bool ComparePlanes( const vec3_t p1normal, float p1dist, const vec3_t p2normal, float p2dist );
 void SnapVector( vec3_t normal );
-void SnapPlane( vec3_t normal, vec_t *dist );
+void SnapPlane( vec3_t normal, float *dist );
 
 #define BOX_ON_PLANE_SIDE( emins, emaxs, p )  \
 	( ( ( p )->type < 3 ) ?                       \

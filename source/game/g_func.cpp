@@ -18,7 +18,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "g_local.h"
+#include "qcommon/base.h"
+#include "game/g_local.h"
 
 void G_AssignMoverSounds( edict_t *ent, const char *start, const char *move, const char *stop ) {
 	if( st.noise && Q_stricmp( st.noise, "default" ) ) {
@@ -607,9 +608,9 @@ static void Think_CalcMoveSpeed( edict_t *self ) {
 	}
 
 	// find the smallest distance any member of the team will be moving
-	min = fabs( self->moveinfo.distance );
+	min = Abs( self->moveinfo.distance );
 	for( ent = self->teamchain; ent; ent = ent->teamchain ) {
-		dist = fabs( ent->moveinfo.distance );
+		dist = Abs( ent->moveinfo.distance );
 		if( dist < min ) {
 			min = dist;
 		}
@@ -619,7 +620,7 @@ static void Think_CalcMoveSpeed( edict_t *self ) {
 
 	// adjust speeds so they will all complete at the same time
 	for( ent = self; ent; ent = ent->teamchain ) {
-		newspeed = fabs( ent->moveinfo.distance ) / time;
+		newspeed = Abs( ent->moveinfo.distance ) / time;
 		ent->moveinfo.speed = newspeed;
 	}
 }
@@ -769,9 +770,9 @@ void SP_func_door( edict_t *ent ) {
 
 	// calculate second position
 	VectorCopy( ent->s.origin, ent->moveinfo.start_origin );
-	abs_movedir[0] = fabs( ent->moveinfo.movedir[0] );
-	abs_movedir[1] = fabs( ent->moveinfo.movedir[1] );
-	abs_movedir[2] = fabs( ent->moveinfo.movedir[2] );
+	abs_movedir[0] = Abs( ent->moveinfo.movedir[0] );
+	abs_movedir[1] = Abs( ent->moveinfo.movedir[1] );
+	abs_movedir[2] = Abs( ent->moveinfo.movedir[2] );
 	ent->moveinfo.distance = abs_movedir[0] * ent->r.size[0] + abs_movedir[1] * ent->r.size[1] + abs_movedir[2] * ent->r.size[2] - st.lip;
 	VectorMA( ent->moveinfo.start_origin, ent->moveinfo.distance, ent->moveinfo.movedir, ent->moveinfo.end_origin );
 
@@ -1153,9 +1154,9 @@ void SP_func_button( edict_t *ent ) {
 	}
 
 	VectorCopy( ent->s.origin, ent->moveinfo.start_origin );
-	abs_movedir[0] = fabs( ent->moveinfo.movedir[0] );
-	abs_movedir[1] = fabs( ent->moveinfo.movedir[1] );
-	abs_movedir[2] = fabs( ent->moveinfo.movedir[2] );
+	abs_movedir[0] = Abs( ent->moveinfo.movedir[0] );
+	abs_movedir[1] = Abs( ent->moveinfo.movedir[1] );
+	abs_movedir[2] = Abs( ent->moveinfo.movedir[2] );
 	dist = abs_movedir[0] * ent->r.size[0] + abs_movedir[1] * ent->r.size[1] + abs_movedir[2] * ent->r.size[2] - st.lip;
 	VectorMA( ent->moveinfo.start_origin, dist, ent->moveinfo.movedir, ent->moveinfo.end_origin );
 
@@ -1471,7 +1472,7 @@ void SP_trigger_elevator( edict_t *self ) {
 
 void func_timer_think( edict_t *self ) {
 	G_UseTargets( self, self->activator );
-	self->nextThink = level.time + 1000 * ( self->wait + crandom() * self->random );
+	self->nextThink = level.time + 1000 * ( self->wait + random_float11( &svs.rng ) * self->random );
 }
 
 void func_timer_use( edict_t *self, edict_t *other, edict_t *activator ) {
@@ -1508,7 +1509,7 @@ void SP_func_timer( edict_t *self ) {
 
 	if( self->spawnflags & 1 ) {
 		self->nextThink = level.time + 1000 *
-						  ( 1.0 + st.pausetime + self->delay + self->wait + crandom() * self->random );
+						  ( 1.0 + st.pausetime + self->delay + self->wait + random_float11( &svs.rng ) * self->random );
 		self->activator = self;
 	}
 }

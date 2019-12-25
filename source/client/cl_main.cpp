@@ -169,7 +169,7 @@ void CL_ServerDisconnect_f( void ) {
 
 	Com_Printf( "Connection was closed by server: %s\n", reason );
 
-	Q_snprintfz( menuparms, sizeof( menuparms ), "menu_open connfailed dropreason %i servername \"%s\" droptype %i rejectmessage \"%s\"",
+	snprintf( menuparms, sizeof( menuparms ), "menu_open connfailed dropreason %i servername \"%s\" droptype %i rejectmessage \"%s\"",
 				 DROP_REASON_CONNTERMINATED, cls.servername, type, reason );
 
 	Cbuf_ExecuteText( EXEC_NOW, menuparms );
@@ -355,7 +355,7 @@ static void CL_Connect_Cmd_f( socket_type_t socket ) {
 
 		temp_size = strlen( "demo " ) + strlen( http_scheme ) + strlen( connectstring ) + 1;
 		temp = ( char * ) Mem_TempMalloc( temp_size );
-		Q_snprintfz( temp, temp_size, "demo %s%s", http_scheme, connectstring );
+		snprintf( temp, temp_size, "demo %s%s", http_scheme, connectstring );
 
 		Cbuf_ExecuteText( EXEC_NOW, temp );
 
@@ -662,7 +662,7 @@ void CL_Disconnect( const char *message ) {
 
 	if( cl_connectChain[0] == '\0' ) {
 		if( message != NULL ) {
-			Q_snprintfz( menuparms, sizeof( menuparms ), "menu_open connfailed dropreason %i servername \"%s\" droptype %i rejectmessage \"%s\"",
+			snprintf( menuparms, sizeof( menuparms ), "menu_open connfailed dropreason %i servername \"%s\" droptype %i rejectmessage \"%s\"",
 						 ( wasconnecting ? DROP_REASON_CONNFAILED : DROP_REASON_CONNERROR ), cls.servername, DROP_TYPE_GENERAL, message );
 
 			Cbuf_ExecuteText( EXEC_NOW, menuparms );
@@ -674,7 +674,7 @@ void CL_Disconnect( const char *message ) {
 		} else {
 			s = cl_connectChain + strlen( cl_connectChain ) - 1;
 		}
-		Q_snprintfz( cl_nextString, sizeof( cl_nextString ), "connect \"%s\" \"%s\"", cl_connectChain, s + 1 );
+		snprintf( cl_nextString, sizeof( cl_nextString ), "connect \"%s\" \"%s\"", cl_connectChain, s + 1 );
 	}
 
 done:
@@ -797,7 +797,7 @@ void CL_Reconnect_f( void ) {
 */
 static void CL_ConnectionlessPacket( const socket_t *socket, const netadr_t *address, msg_t *msg ) {
 	char *s;
-	char *c;
+	const char *c;
 
 	MSG_BeginReading( msg );
 	MSG_ReadInt32( msg ); // skip the -1
@@ -912,7 +912,7 @@ static void CL_ConnectionlessPacket( const socket_t *socket, const netadr_t *add
 			Com_Printf( "Automatic reconnecting not allowed.\n" );
 
 			CL_Disconnect( NULL );
-			Q_snprintfz( menuparms, sizeof( menuparms ), "menu_open connfailed dropreason %i servername \"%s\" droptype %i rejectmessage \"%s\"",
+			snprintf( menuparms, sizeof( menuparms ), "menu_open connfailed dropreason %i servername \"%s\" droptype %i rejectmessage \"%s\"",
 						 DROP_REASON_CONNFAILED, cls.servername, cls.rejecttype, cls.rejectmessage );
 
 			Cbuf_ExecuteText( EXEC_NOW, menuparms );
@@ -1632,7 +1632,7 @@ void CL_UpdateSnapshot( void ) {
 
 			// if we don't have current snap (or delay is too big) don't wait to fire the pending one
 			if( ( !cls.demo.play_jump && cl.currentSnapNum <= 0 ) ||
-				( !cls.demo.playing && abs( cl.newServerTimeDelta - cl.serverTimeDelta ) > 200 ) ) {
+				( !cls.demo.playing && Abs( cl.newServerTimeDelta - cl.serverTimeDelta ) > 200 ) ) {
 				cl.serverTimeDelta = cl.newServerTimeDelta;
 			}
 		}
@@ -1887,19 +1887,12 @@ void CL_Frame( int realMsec, int gameMsec ) {
 	VID_CheckChanges();
 
 	// update the screen
-	if( host_speeds->integer ) {
-		time_before_ref = Sys_Milliseconds();
-	}
-
 	u32 viewport_width, viewport_height;
 	VID_GetViewportSize( &viewport_width, &viewport_height );
 	RendererBeginFrame( viewport_width, viewport_height );
 
 	SCR_UpdateScreen();
 	RendererSubmitFrame();
-	if( host_speeds->integer ) {
-		time_after_ref = Sys_Milliseconds();
-	}
 
 	// update audio
 	if( cls.state != CA_ACTIVE ) {
@@ -1957,7 +1950,7 @@ int CL_AddSessionHttpRequestHeaders( const char *url, const char **headers ) {
 
 	if( cls.httpbaseurl && *cls.httpbaseurl ) {
 		if( !strncmp( url, cls.httpbaseurl, strlen( cls.httpbaseurl ) ) ) {
-			Q_snprintfz( pH, sizeof( pH ), "%i", cl.playernum );
+			snprintf( pH, sizeof( pH ), "%i", cl.playernum );
 
 			headers[0] = "X-Client";
 			headers[1] = pH;
@@ -2013,8 +2006,6 @@ void CL_Init( void ) {
 	u64 entropy[ 2 ];
 	CSPRNG_Bytes( entropy, sizeof( entropy ) );
 	cls.rng = new_rng( entropy[ 0 ], entropy[ 1 ] );
-
-	srand( time( NULL ) );
 
 	cls.monotonicTime = 0;
 

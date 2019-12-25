@@ -76,50 +76,27 @@ static void CG_DrawCenterString( void ) {
 * CG_ScreenInit
 */
 void CG_ScreenInit( void ) {
-	cg_showFPS =        trap_Cvar_Get( "cg_showFPS", "0", CVAR_ARCHIVE );
-	cg_draw2D =     trap_Cvar_Get( "cg_draw2D", "1", 0 );
-	cg_centerTime =     trap_Cvar_Get( "cg_centerTime", "2.5", 0 );
+	cg_showFPS =        Cvar_Get( "cg_showFPS", "0", CVAR_ARCHIVE );
+	cg_draw2D =     Cvar_Get( "cg_draw2D", "1", 0 );
+	cg_centerTime =     Cvar_Get( "cg_centerTime", "2.5", 0 );
 
-	cg_crosshair_color =    trap_Cvar_Get( "cg_crosshair_color", "255 255 255", CVAR_ARCHIVE );
-	cg_crosshair_damage_color = trap_Cvar_Get( "cg_crosshair_damage_color", "255 0 0", CVAR_ARCHIVE );
-	cg_crosshair_size = trap_Cvar_Get( "cg_crosshair_size", "3", CVAR_ARCHIVE );
+	cg_crosshair_color =    Cvar_Get( "cg_crosshair_color", "255 255 255", CVAR_ARCHIVE );
+	cg_crosshair_damage_color = Cvar_Get( "cg_crosshair_damage_color", "255 0 0", CVAR_ARCHIVE );
+	cg_crosshair_size = Cvar_Get( "cg_crosshair_size", "3", CVAR_ARCHIVE );
 	cg_crosshair_color->modified = true;
 	cg_crosshair_damage_color->modified = true;
 
-	cg_showSpeed =      trap_Cvar_Get( "cg_showSpeed", "0", CVAR_ARCHIVE );
-	cg_showPointedPlayer =  trap_Cvar_Get( "cg_showPointedPlayer", "1", CVAR_ARCHIVE );
-	cg_showViewBlends = trap_Cvar_Get( "cg_showViewBlends", "1", CVAR_ARCHIVE );
-	cg_showAwards =     trap_Cvar_Get( "cg_showAwards", "1", CVAR_ARCHIVE );
+	cg_showSpeed =      Cvar_Get( "cg_showSpeed", "0", CVAR_ARCHIVE );
+	cg_showPointedPlayer =  Cvar_Get( "cg_showPointedPlayer", "1", CVAR_ARCHIVE );
+	cg_showViewBlends = Cvar_Get( "cg_showViewBlends", "1", CVAR_ARCHIVE );
+	cg_showAwards =     Cvar_Get( "cg_showAwards", "1", CVAR_ARCHIVE );
 
-	cg_showPlayerNames =        trap_Cvar_Get( "cg_showPlayerNames", "2", CVAR_ARCHIVE );
-	cg_showPlayerNames_alpha =  trap_Cvar_Get( "cg_showPlayerNames_alpha", "0.4", CVAR_ARCHIVE );
-	cg_showPlayerNames_zfar =   trap_Cvar_Get( "cg_showPlayerNames_zfar", "1024", CVAR_ARCHIVE );
-	cg_showPlayerNames_barWidth =   trap_Cvar_Get( "cg_showPlayerNames_barWidth", "8", CVAR_ARCHIVE );
+	cg_showPlayerNames =        Cvar_Get( "cg_showPlayerNames", "2", CVAR_ARCHIVE );
+	cg_showPlayerNames_alpha =  Cvar_Get( "cg_showPlayerNames_alpha", "0.4", CVAR_ARCHIVE );
+	cg_showPlayerNames_zfar =   Cvar_Get( "cg_showPlayerNames_zfar", "1024", CVAR_ARCHIVE );
+	cg_showPlayerNames_barWidth =   Cvar_Get( "cg_showPlayerNames_barWidth", "8", CVAR_ARCHIVE );
 
-	cg_showPressedKeys = trap_Cvar_Get( "cg_showPressedKeys", "0", CVAR_ARCHIVE );
-}
-
-/*
-* CG_ParseValue
-*/
-int CG_ParseValue( const char **s ) {
-	int index;
-	char *token;
-
-	token = COM_Parse( s );
-	if( !token[0] ) {
-		return 0;
-	}
-	if( token[0] != '%' ) {
-		return atoi( token );
-	}
-
-	index = atoi( token + 1 );
-	if( index < 0 || index >= PS_MAX_STATS ) {
-		CG_Error( "Bad stat index: %i", index );
-	}
-
-	return cg.predictedPlayerState.stats[index];
+	cg_showPressedKeys = Cvar_Get( "cg_showPressedKeys", "0", CVAR_ARCHIVE );
 }
 
 /*
@@ -165,7 +142,7 @@ void CG_DrawCrosshair() {
 		}
 		else {
 			crosshair_color = vec4_white;
-			trap_Cvar_Set( cg_crosshair_color->name, "255 255 255" );
+			Cvar_Set( cg_crosshair_color->name, "255 255 255" );
 		}
 	}
 
@@ -177,7 +154,7 @@ void CG_DrawCrosshair() {
 		}
 		else {
 			crosshair_color = vec4_red;
-			trap_Cvar_Set( cg_crosshair_damage_color->name, "255 255 255" );
+			Cvar_Set( cg_crosshair_damage_color->name, "255 255 255" );
 		}
 	}
 
@@ -279,15 +256,15 @@ void CG_DrawClock( int x, int y, Alignment alignment, const Font * font, float f
 	// fixme?: this could have its own HUD drawing, I guess.
 
 	if( GS_RaceGametype( &client_gs ) ) {
-		Q_snprintfz( string, sizeof( string ), "%i:%02i.%i",
+		snprintf( string, sizeof( string ), "%i:%02i.%i",
 					 minutes, ( int )seconds, ( int )( seconds * 10.0 ) % 10 );
 	}
 	else if( cg.predictedPlayerState.stats[STAT_NEXT_RESPAWN] ) {
 		int respawn = cg.predictedPlayerState.stats[STAT_NEXT_RESPAWN];
-		Q_snprintfz( string, sizeof( string ), "%i:%02i R:%02i", minutes, (int)seconds, respawn );
+		snprintf( string, sizeof( string ), "%i:%02i R:%02i", minutes, (int)seconds, respawn );
 	}
 	else {
-		Q_snprintfz( string, sizeof( string ), "%i:%02i", minutes, (int)seconds );
+		snprintf( string, sizeof( string ), "%i:%02i", minutes, (int)seconds );
 	}
 
 	DrawText( font, font_size, string, alignment, x, y, color, border );
@@ -333,7 +310,7 @@ static void CG_UpdatePointedNum( void ) {
 * CG_DrawPlayerNames
 */
 void CG_DrawPlayerNames( const Font * font, float font_size, Vec4 color, bool border ) {
-	static vec4_t alphagreen = { 0, 1, 0, 0 }, alphared = { 1, 0, 0, 0 }, alphayellow = { 1, 1, 0, 0 }, alphamagenta = { 1, 0, 1, 1 }, alphagrey = { 0.85, 0.85, 0.85, 1 };
+	// static vec4_t alphagreen = { 0, 1, 0, 0 }, alphared = { 1, 0, 0, 0 }, alphayellow = { 1, 1, 0, 0 }, alphamagenta = { 1, 0, 1, 1 }, alphagrey = { 0.85, 0.85, 0.85, 1 };
 	vec3_t dir, drawOrigin;
 	float dist, fadeFrac;
 	trace_t trace;
@@ -428,7 +405,7 @@ void CG_DrawPlayerNames( const Font * font, float font_size, Vec4 color, bool bo
 			int barheight = 0;
 			int barseparator = barheight * 0.333;
 
-			alphagreen[3] = alphared[3] = alphayellow[3] = alphamagenta[3] = alphagrey[3] = tmpcolor.w;
+			// alphagreen[3] = alphared[3] = alphayellow[3] = alphamagenta[3] = alphagrey[3] = tmpcolor.w;
 
 			// soften the alpha of the box color
 			tmpcolor.w *= 0.4f;
@@ -527,7 +504,7 @@ void CG_DrawDamageNumbers() {
 			color = CG_TeamColorVec4( TEAM_ENEMY );
 		}
 		else {
-			Q_snprintfz( buf, sizeof( buf ), "%d", dn.damage );
+			snprintf( buf, sizeof( buf ), "%d", dn.damage );
 			color = vec4_white;
 		}
 
@@ -605,7 +582,7 @@ void CG_DrawBombHUD() {
 			Vec2 coords = WorldToScreenClamped( FromQF3( site->origin ), Vec2( cgs.fontSystemMediumSize * 2 ), &clamped );
 
 			char buf[ 4 ];
-			Q_snprintfz( buf, sizeof( buf ), "%c", site->letter );
+			snprintf( buf, sizeof( buf ), "%c", site->letter );
 			DrawText( cgs.fontMontserrat, cgs.textSizeMedium, buf, Alignment_CenterMiddle, coords.x, coords.y, vec4_white, true );
 
 			if( show_labels && !clamped && bomb.state != BombState_Dropped ) {
@@ -683,93 +660,32 @@ bool CG_LoadingItemName( const char *str ) {
 
 //===============================================================
 
-/*
-* CG_AddBlend - wsw
-*/
-static void CG_AddBlend( float r, float g, float b, float a, float *v_blend ) {
-	float a2, a3;
+static Vec4 CG_CalcColorBlend() {
+	int contents = CG_PointContents( cg.view.origin );
+	if( contents & CONTENTS_WATER )
+		return Vec4( 0.0f, 0.1f, 1.0f, 0.2f );
+	if( contents & CONTENTS_LAVA )
+		return Vec4( 1.0f, 0.3f, 0.0f, 0.6f );
+	if( contents & CONTENTS_SLIME )
+		return Vec4( 0.0f, 0.1f, 0.05f, 0.6f );
 
-	if( a <= 0 ) {
-		return;
-	}
-	a2 = v_blend[3] + ( 1 - v_blend[3] ) * a; // new total alpha
-	a3 = v_blend[3] / a2; // fraction of color from old
-
-	v_blend[0] = v_blend[0] * a3 + r * ( 1 - a3 );
-	v_blend[1] = v_blend[1] * a3 + g * ( 1 - a3 );
-	v_blend[2] = v_blend[2] * a3 + b * ( 1 - a3 );
-	v_blend[3] = a2;
-}
-
-/*
-* CG_CalcColorBlend - wsw
-*/
-static void CG_CalcColorBlend( float *color ) {
-	float time;
-	float uptime;
-	float delta;
-	int i, contents;
-
-	//clear old values
-	for( i = 0; i < 4; i++ )
-		color[i] = 0.0f;
-
-	// Add colorblend based on world position
-	contents = CG_PointContents( cg.view.origin );
-	if( contents & CONTENTS_WATER ) {
-		CG_AddBlend( 0.0f, 0.1f, 8.0f, 0.2f, color );
-	}
-	if( contents & CONTENTS_LAVA ) {
-		CG_AddBlend( 1.0f, 0.3f, 0.0f, 0.6f, color );
-	}
-	if( contents & CONTENTS_SLIME ) {
-		CG_AddBlend( 0.0f, 0.1f, 0.05f, 0.6f, color );
-	}
-
-	// Add colorblends from sfx
-	for( i = 0; i < MAX_COLORBLENDS; i++ ) {
-		if( cl.serverTime > cg.colorblends[i].timestamp + cg.colorblends[i].blendtime ) {
-			continue;
-		}
-
-		time = (float)( ( cg.colorblends[i].timestamp + cg.colorblends[i].blendtime ) - cl.serverTime );
-		uptime = ( (float)cg.colorblends[i].blendtime ) * 0.5f;
-		delta = 1.0f - ( fabs( time - uptime ) / uptime );
-		if( delta <= 0.0f ) {
-			continue;
-		}
-		if( delta > 1.0f ) {
-			delta = 1.0f;
-		}
-
-		CG_AddBlend( cg.colorblends[i].blend[0],
-					 cg.colorblends[i].blend[1],
-					 cg.colorblends[i].blend[2],
-					 cg.colorblends[i].blend[3] * delta,
-					 color );
-	}
+	return Vec4( 0 );
 }
 
 /*
 * CG_SCRDrawViewBlend
 */
 static void CG_SCRDrawViewBlend( void ) {
-	vec4_t colorblend;
-
 	if( !cg_showViewBlends->integer ) {
 		return;
 	}
 
-	CG_CalcColorBlend( colorblend );
-	if( colorblend[3] < 0.01f ) {
+	Vec4 color = CG_CalcColorBlend();
+	if( color.w < 0.01f ) {
 		return;
 	}
 
-	Vec4 c;
-	for( int i = 0; i < 4; i++ ) {
-		c.ptr()[ i ] = colorblend[ i ];
-	}
-	Draw2DBox( 0, 0, frame_static.viewport_width, frame_static.viewport_height, cgs.white_material, c );
+	Draw2DBox( 0, 0, frame_static.viewport_width, frame_static.viewport_height, cgs.white_material, color );
 }
 
 

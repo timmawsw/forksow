@@ -18,9 +18,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#include "q_math.h"
-#include "q_shared.h"
-#include "q_collision.h"
+#include "gameshared/q_math.h"
+#include "gameshared/q_shared.h"
+#include "gameshared/q_collision.h"
+#include "qcommon/base.h"
 #include "qcommon/rng.h"
 
 //============================================================================
@@ -97,8 +98,8 @@ void RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, 
 	vec3_t vr, vu, vf;
 
 	s = DEG2RAD( degrees );
-	c = cos( s );
-	s = sin( s );
+	c = cosf( s );
+	s = sinf( s );
 
 	VectorCopy( dir, vf );
 	OrthonormalBasis( vf, vr, vu );
@@ -165,7 +166,7 @@ void VecToAngles( const vec3_t vec, vec3_t angles ) {
 		}
 	} else {
 		if( vec[0] ) {
-			yaw = RAD2DEG( atan2( vec[1], vec[0] ) );
+			yaw = RAD2DEG( atan2f( vec[1], vec[0] ) );
 		} else if( vec[1] > 0 ) {
 			yaw = 90;
 		} else {
@@ -175,8 +176,8 @@ void VecToAngles( const vec3_t vec, vec3_t angles ) {
 			yaw += 360;
 		}
 
-		forward = sqrt( vec[0] * vec[0] + vec[1] * vec[1] );
-		pitch = RAD2DEG( atan2( vec[2], forward ) );
+		forward = sqrtf( vec[0] * vec[0] + vec[1] * vec[1] );
+		pitch = RAD2DEG( atan2f( vec[2], forward ) );
 		if( pitch < 0 ) {
 			pitch += 360;
 		}
@@ -224,9 +225,9 @@ void PerpendicularVector( vec3_t dst, const vec3_t src ) {
 	// find the smallest magnitude axially aligned vector
 	//
 	for( pos = 0, i = 0; i < 3; i++ ) {
-		if( fabs( src[i] ) < minelem ) {
+		if( Abs( src[i] ) < minelem ) {
 			pos = i;
-			minelem = fabs( src[i] );
+			minelem = Abs( src[i] );
 		}
 	}
 	tempvec[0] = tempvec[1] = tempvec[2] = 0.0F;
@@ -304,8 +305,8 @@ float AngleNormalize360( float angle ) {
 */
 float AngleNormalize180( float angle ) {
 	angle = AngleNormalize360( angle );
-	if( angle > 180.0 ) {
-		angle -= 360.0;
+	if( angle > 180.0f ) {
+		angle -= 360.0f;
 	}
 	return angle;
 }
@@ -323,7 +324,7 @@ float AngleDelta( float angle1, float angle2 ) {
 * WidescreenFov
 */
 float WidescreenFov( float fov ) {
-	return atan( tan( (fov) / 360.0 * M_PI ) * (3.0 / 4.0) ) * (360.0 / M_PI);
+	return atanf( tanf( fov / 360.0f * PI ) * 0.75f ) * ( 360.0f / PI );
 }
 
 /*
@@ -337,8 +338,8 @@ float CalcHorizontalFov( float fov_y, float width, float height ) {
 	}
 
 	x = width;
-	x *= tan( fov_y / 360.0 * M_PI );
-	return atan( x / height ) * 360.0 / M_PI;
+	x *= tanf( fov_y / 360.0f * PI );
+	return atanf( x / height ) * 360.0f / PI;
 }
 
 /*
@@ -486,11 +487,11 @@ void PlaneFromPoints( vec3_t verts[3], cplane_t *plane ) {
 /*
 * ComparePlanes
 */
-bool ComparePlanes( const vec3_t p1normal, vec_t p1dist, const vec3_t p2normal, vec_t p2dist ) {
-	if( fabs( p1normal[0] - p2normal[0] ) < PLANE_NORMAL_EPSILON
-		&& fabs( p1normal[1] - p2normal[1] ) < PLANE_NORMAL_EPSILON
-		&& fabs( p1normal[2] - p2normal[2] ) < PLANE_NORMAL_EPSILON
-		&& fabs( p1dist - p2dist ) < PLANE_DIST_EPSILON ) {
+bool ComparePlanes( const vec3_t p1normal, float p1dist, const vec3_t p2normal, float p2dist ) {
+	if( Abs( p1normal[0] - p2normal[0] ) < PLANE_NORMAL_EPSILON
+		&& Abs( p1normal[1] - p2normal[1] ) < PLANE_NORMAL_EPSILON
+		&& Abs( p1normal[2] - p2normal[2] ) < PLANE_NORMAL_EPSILON
+		&& Abs( p1dist - p2dist ) < PLANE_DIST_EPSILON ) {
 		return true;
 	}
 
@@ -504,12 +505,12 @@ void SnapVector( vec3_t normal ) {
 	int i;
 
 	for( i = 0; i < 3; i++ ) {
-		if( fabs( normal[i] - 1 ) < PLANE_NORMAL_EPSILON ) {
+		if( Abs( normal[i] - 1 ) < PLANE_NORMAL_EPSILON ) {
 			VectorClear( normal );
 			normal[i] = 1;
 			break;
 		}
-		if( fabs( normal[i] - -1 ) < PLANE_NORMAL_EPSILON ) {
+		if( Abs( normal[i] - -1 ) < PLANE_NORMAL_EPSILON ) {
 			VectorClear( normal );
 			normal[i] = -1;
 			break;
@@ -520,10 +521,10 @@ void SnapVector( vec3_t normal ) {
 /*
 * SnapPlane
 */
-void SnapPlane( vec3_t normal, vec_t *dist ) {
+void SnapPlane( vec3_t normal, float *dist ) {
 	SnapVector( normal );
 
-	if( fabs( *dist - Q_rint( *dist ) ) < PLANE_DIST_EPSILON ) {
+	if( Abs( *dist - Q_rint( *dist ) ) < PLANE_DIST_EPSILON ) {
 		*dist = Q_rint( *dist );
 	}
 }
@@ -557,7 +558,7 @@ bool BoundsOverlapSphere( const vec3_t mins, const vec3_t maxs, const vec3_t cen
 }
 
 void AddPointToBounds( const vec3_t v, vec3_t mins, vec3_t maxs ) {
-	vec_t val;
+	float val;
 
 	for( int i = 0; i < 3; i++ ) {
 		val = v[i];
@@ -574,13 +575,13 @@ float RadiusFromBounds( const vec3_t mins, const vec3_t maxs ) {
 	vec3_t corner;
 
 	for( int i = 0; i < 3; i++ ) {
-		corner[i] = fabs( mins[i] ) > fabs( maxs[i] ) ? fabs( mins[i] ) : fabs( maxs[i] );
+		corner[i] = Abs( mins[i] ) > Abs( maxs[i] ) ? Abs( mins[i] ) : Abs( maxs[i] );
 	}
 
 	return VectorLength( corner );
 }
 
-vec_t VectorNormalize( vec3_t v ) {
+float VectorNormalize( vec3_t v ) {
 	float length = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
 
 	if( length ) {
@@ -594,7 +595,7 @@ vec_t VectorNormalize( vec3_t v ) {
 	return length;
 }
 
-vec_t VectorNormalize2( const vec3_t v, vec3_t out ) {
+float VectorNormalize2( const vec3_t v, vec3_t out ) {
 	float length, ilength;
 
 	length = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
@@ -612,27 +613,10 @@ vec_t VectorNormalize2( const vec3_t v, vec3_t out ) {
 	return length;
 }
 
-vec_t Vector4Normalize( vec4_t v ) {
-	float length, ilength;
-
-	length = v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3];
-
-	if( length ) {
-		length = sqrtf( length ); // FIXME
-		ilength = 1.0 / length;
-		v[0] *= ilength;
-		v[1] *= ilength;
-		v[2] *= ilength;
-		v[3] *= ilength;
-	}
-
-	return length;
-}
-
 // fast vector normalize routine that does not check to make sure
 // that length != 0, nor does it return length, uses rsqrt approximation
 void VectorNormalizeFast( vec3_t v ) {
-	float ilength = Q_RSqrt( DotProduct( v, v ) );
+	float ilength = Q_Rsqrtf( DotProduct( v, v ) );
 
 	v[0] *= ilength;
 	v[1] *= ilength;
@@ -719,26 +703,26 @@ double PositiveMod( double x, double y ) {
 Vec3 UniformSampleSphere( RNG * rng ) {
 	float z = random_float11( rng );
 	float r = sqrtf( Max2( 0.0f, 1.0f - z * z ) );
-	float phi = 2.0f * float( M_PI ) * random_float01( rng );
+	float phi = 2.0f * PI * random_float01( rng );
 	return Vec3( r * cosf( phi ), r * sinf( phi ), z );
 }
 
 Vec3 UniformSampleInsideSphere( RNG * rng ) {
 	Vec3 p = UniformSampleSphere( rng );
-	float r = powf( random_float01( rng ), 1.0f / 3.0f );
+	float r = cbrtf( random_float01( rng ) );
 	return p * r;
 }
 
 Vec3 UniformSampleCone( RNG * rng, float theta ) {
-	assert( theta >= 0.0f && theta <= float( M_PI ) );
+	assert( theta >= 0.0f && theta <= PI );
 	float z = random_uniform_float( rng, cosf( theta ), 1.0f );
 	float r = sqrtf( Max2( 0.0f, 1.0f - z * z ) );
-	float phi = 2.0f * float( M_PI ) * random_float01( rng );
+	float phi = 2.0f * PI * random_float01( rng );
 	return Vec3( r * cosf( phi ), r * sinf( phi ), z );
 }
 
 Vec2 UniformSampleDisk( RNG * rng ) {
-	float theta = random_float01( rng ) * 2.0f * float( M_PI );
+	float theta = random_float01( rng ) * 2.0f * PI;
 	float r = sqrtf( random_float01( rng ) );
 	return Vec2( r * cosf( theta ), r * sinf( theta ) );
 }
@@ -747,7 +731,7 @@ float SampleNormalDistribution( RNG * rng ) {
 	// generate a float in (0, 1). works because prev(1) + FLT_MIN == prev(1)
 	float u1 = random_float01( rng ) + FLT_MIN;
 	float u2 = random_float01( rng );
-	return sqrtf( -2.0f * logf( u1 ) ) * cosf( u2 * 2.0f * float( M_PI ) );
+	return sqrtf( -2.0f * logf( u1 ) ) * cosf( u2 * 2.0f * PI );
 }
 
 Vec3 Project( Vec3 a, Vec3 b ) {
@@ -769,7 +753,7 @@ Mat4 TransformKToDir( Vec3 dir ) {
 
 	Vec3 K = Vec3( 0, 0, 1 );
 
-	if( fabsf( dir.z ) >= 0.9999f ) {
+	if( Abs( dir.z ) >= 0.9999f ) {
 		return dir.z > 0 ? Mat4::Identity() : -Mat4::Identity();
 	}
 

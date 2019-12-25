@@ -60,9 +60,6 @@ cvar_t *cg_projectileFireTrailAlpha;
 cvar_t *cg_bloodTrailAlpha;
 cvar_t *cg_explosionsRing;
 cvar_t *cg_explosionsDust;
-cvar_t *cg_outlineModels;
-cvar_t *cg_outlineWorld;
-cvar_t *cg_outlinePlayers;
 cvar_t *cg_fov;
 cvar_t *cg_zoomfov;
 cvar_t *cg_voiceChats;
@@ -80,9 +77,6 @@ cvar_t *cg_damageNumbers;
 cvar_t *cg_particles;
 cvar_t *cg_showClamp;
 
-cvar_t *cg_damage_indicator;
-cvar_t *cg_damage_indicator_time;
-
 cvar_t *cg_allyColor;
 cvar_t *cg_allyModel;
 cvar_t *cg_allyForceModel;
@@ -99,7 +93,7 @@ void CG_Error( const char *format, ... ) {
 	char msg[1024];
 
 	va_start( argptr, format );
-	Q_vsnprintfz( msg, sizeof( msg ), format, argptr );
+	vsnprintf( msg, sizeof( msg ), format, argptr );
 	va_end( argptr );
 
 	trap_Error( msg );
@@ -113,7 +107,7 @@ void CG_Printf( const char *format, ... ) {
 	char msg[1024];
 
 	va_start( argptr, format );
-	Q_vsnprintfz( msg, sizeof( msg ), format, argptr );
+	vsnprintf( msg, sizeof( msg ), format, argptr );
 	va_end( argptr );
 
 	trap_Print( msg );
@@ -127,7 +121,7 @@ void CG_LocalPrint( const char *format, ... ) {
 	char msg[GAMECHAT_STRING_SIZE];
 
 	va_start( argptr, format );
-	Q_vsnprintfz( msg, sizeof( msg ), format, argptr );
+	vsnprintf( msg, sizeof( msg ), format, argptr );
 	va_end( argptr );
 
 	trap_PrintToLog( msg );
@@ -409,81 +403,76 @@ static void CG_RegisterClients( void ) {
 * CG_RegisterVariables
 */
 static void CG_RegisterVariables( void ) {
-	cg_showMiss =       trap_Cvar_Get( "cg_showMiss", "0", 0 );
+	cg_showMiss =       Cvar_Get( "cg_showMiss", "0", 0 );
 
-	cg_debugPlayerModels =  trap_Cvar_Get( "cg_debugPlayerModels", "0", CVAR_CHEAT );
-	cg_debugWeaponModels =  trap_Cvar_Get( "cg_debugWeaponModels", "0", CVAR_CHEAT );
+	cg_debugPlayerModels =  Cvar_Get( "cg_debugPlayerModels", "0", CVAR_CHEAT );
+	cg_debugWeaponModels =  Cvar_Get( "cg_debugWeaponModels", "0", CVAR_CHEAT );
 
-	cg_hand =           trap_Cvar_Get( "hand", "0", CVAR_USERINFO | CVAR_ARCHIVE );
-	cg_handicap =       trap_Cvar_Get( "handicap", "0", CVAR_USERINFO | CVAR_ARCHIVE );
-	cg_fov =        trap_Cvar_Get( "fov", "100", CVAR_ARCHIVE );
-	cg_zoomfov =    trap_Cvar_Get( "zoomfov", "75", CVAR_ARCHIVE );
+	cg_hand =           Cvar_Get( "hand", "0", CVAR_USERINFO | CVAR_ARCHIVE );
+	cg_handicap =       Cvar_Get( "handicap", "0", CVAR_USERINFO | CVAR_ARCHIVE );
+	cg_fov =        Cvar_Get( "fov", "100", CVAR_ARCHIVE );
+	cg_zoomfov =    Cvar_Get( "zoomfov", "75", CVAR_ARCHIVE );
 
-	cg_addDecals =      trap_Cvar_Get( "cg_decals", "1", CVAR_ARCHIVE );
+	cg_addDecals =      Cvar_Get( "cg_decals", "1", CVAR_ARCHIVE );
 
-	cg_thirdPerson =    trap_Cvar_Get( "cg_thirdPerson", "0", CVAR_CHEAT );
-	cg_thirdPersonAngle =   trap_Cvar_Get( "cg_thirdPersonAngle", "0", 0 );
-	cg_thirdPersonRange =   trap_Cvar_Get( "cg_thirdPersonRange", "90", 0 );
+	cg_thirdPerson =    Cvar_Get( "cg_thirdPerson", "0", CVAR_CHEAT );
+	cg_thirdPersonAngle =   Cvar_Get( "cg_thirdPersonAngle", "0", 0 );
+	cg_thirdPersonRange =   Cvar_Get( "cg_thirdPersonRange", "90", 0 );
 
-	cg_gun =        trap_Cvar_Get( "cg_gun", "1", CVAR_ARCHIVE );
-	cg_gunx =       trap_Cvar_Get( "cg_gunx", "0", CVAR_ARCHIVE );
-	cg_guny =       trap_Cvar_Get( "cg_guny", "0", CVAR_ARCHIVE );
-	cg_gunz =       trap_Cvar_Get( "cg_gunz", "0", CVAR_ARCHIVE );
-	cg_gunbob =     trap_Cvar_Get( "cg_gunbob", "1", CVAR_ARCHIVE );
+	cg_gun =        Cvar_Get( "cg_gun", "1", CVAR_ARCHIVE );
+	cg_gunx =       Cvar_Get( "cg_gunx", "0", CVAR_ARCHIVE );
+	cg_guny =       Cvar_Get( "cg_guny", "0", CVAR_ARCHIVE );
+	cg_gunz =       Cvar_Get( "cg_gunz", "0", CVAR_ARCHIVE );
+	cg_gunbob =     Cvar_Get( "cg_gunbob", "1", CVAR_ARCHIVE );
 
-	cg_gun_fov =        trap_Cvar_Get( "cg_gun_fov", "75", CVAR_ARCHIVE );
-	cg_weaponFlashes =  trap_Cvar_Get( "cg_weaponFlashes", "2", CVAR_ARCHIVE );
+	cg_gun_fov =        Cvar_Get( "cg_gun_fov", "75", CVAR_ARCHIVE );
+	cg_weaponFlashes =  Cvar_Get( "cg_weaponFlashes", "2", CVAR_ARCHIVE );
 
 	// wsw
-	cg_volume_players = trap_Cvar_Get( "cg_volume_players", "1.0", CVAR_ARCHIVE );
-	cg_volume_effects = trap_Cvar_Get( "cg_volume_effects", "1.0", CVAR_ARCHIVE );
-	cg_volume_announcer =   trap_Cvar_Get( "cg_volume_announcer", "1.0", CVAR_ARCHIVE );
-	cg_volume_hitsound =    trap_Cvar_Get( "cg_volume_hitsound", "1.0", CVAR_ARCHIVE );
-	cg_volume_voicechats =  trap_Cvar_Get( "cg_volume_voicechats", "1.0", CVAR_ARCHIVE );
-	cg_handOffset =     trap_Cvar_Get( "cg_handOffset", "5", CVAR_ARCHIVE );
-	cg_projectileFireTrail =    trap_Cvar_Get( "cg_projectileFireTrail", "140", CVAR_ARCHIVE );
-	cg_bloodTrail =     trap_Cvar_Get( "cg_bloodTrail", "10", CVAR_ARCHIVE );
-	cg_showBloodTrail = trap_Cvar_Get( "cg_showBloodTrail", "1", CVAR_ARCHIVE );
-	cg_projectileFireTrailAlpha =   trap_Cvar_Get( "cg_projectileFireTrailAlpha", "0.45", CVAR_ARCHIVE );
-	cg_bloodTrailAlpha =    trap_Cvar_Get( "cg_bloodTrailAlpha", "1.0", CVAR_ARCHIVE );
-	cg_explosionsRing = trap_Cvar_Get( "cg_explosionsRing", "0", CVAR_ARCHIVE );
-	cg_explosionsDust =    trap_Cvar_Get( "cg_explosionsDust", "0", CVAR_ARCHIVE );
-	cg_outlineModels =  trap_Cvar_Get( "cg_outlineModels", "1", CVAR_ARCHIVE );
-	cg_outlinePlayers = trap_Cvar_Get( "cg_outlinePlayers", "1", CVAR_ARCHIVE );
-	cg_showObituaries = trap_Cvar_Get( "cg_showObituaries", va( "%i", CG_OBITUARY_HUD | CG_OBITUARY_CENTER ), CVAR_ARCHIVE );
-	cg_damageNumbers = trap_Cvar_Get( "cg_damageNumbers", "1", CVAR_ARCHIVE );
-	cg_autoaction_demo =    trap_Cvar_Get( "cg_autoaction_demo", "0", CVAR_ARCHIVE );
-	cg_autoaction_screenshot =  trap_Cvar_Get( "cg_autoaction_screenshot", "0", CVAR_ARCHIVE );
-	cg_autoaction_spectator = trap_Cvar_Get( "cg_autoaction_spectator", "0", CVAR_ARCHIVE );
-	cg_particles =      trap_Cvar_Get( "cg_particles", "1", CVAR_ARCHIVE );
+	cg_volume_players = Cvar_Get( "cg_volume_players", "1.0", CVAR_ARCHIVE );
+	cg_volume_effects = Cvar_Get( "cg_volume_effects", "1.0", CVAR_ARCHIVE );
+	cg_volume_announcer =   Cvar_Get( "cg_volume_announcer", "1.0", CVAR_ARCHIVE );
+	cg_volume_hitsound =    Cvar_Get( "cg_volume_hitsound", "1.0", CVAR_ARCHIVE );
+	cg_volume_voicechats =  Cvar_Get( "cg_volume_voicechats", "1.0", CVAR_ARCHIVE );
+	cg_handOffset =     Cvar_Get( "cg_handOffset", "5", CVAR_ARCHIVE );
+	cg_projectileFireTrail =    Cvar_Get( "cg_projectileFireTrail", "140", CVAR_ARCHIVE );
+	cg_bloodTrail =     Cvar_Get( "cg_bloodTrail", "10", CVAR_ARCHIVE );
+	cg_showBloodTrail = Cvar_Get( "cg_showBloodTrail", "1", CVAR_ARCHIVE );
+	cg_projectileFireTrailAlpha =   Cvar_Get( "cg_projectileFireTrailAlpha", "0.45", CVAR_ARCHIVE );
+	cg_bloodTrailAlpha =    Cvar_Get( "cg_bloodTrailAlpha", "1.0", CVAR_ARCHIVE );
+	cg_explosionsRing = Cvar_Get( "cg_explosionsRing", "0", CVAR_ARCHIVE );
+	cg_explosionsDust =    Cvar_Get( "cg_explosionsDust", "0", CVAR_ARCHIVE );
+	cg_showObituaries = Cvar_Get( "cg_showObituaries", va( "%i", CG_OBITUARY_HUD | CG_OBITUARY_CENTER ), CVAR_ARCHIVE );
+	cg_damageNumbers = Cvar_Get( "cg_damageNumbers", "1", CVAR_ARCHIVE );
+	cg_autoaction_demo =    Cvar_Get( "cg_autoaction_demo", "0", CVAR_ARCHIVE );
+	cg_autoaction_screenshot =  Cvar_Get( "cg_autoaction_screenshot", "0", CVAR_ARCHIVE );
+	cg_autoaction_spectator = Cvar_Get( "cg_autoaction_spectator", "0", CVAR_ARCHIVE );
+	cg_particles =      Cvar_Get( "cg_particles", "1", CVAR_ARCHIVE );
 
-	cg_cartoonEffects =     trap_Cvar_Get( "cg_cartoonEffects", "7", CVAR_ARCHIVE );
+	cg_cartoonEffects =     Cvar_Get( "cg_cartoonEffects", "7", CVAR_ARCHIVE );
 
-	cg_damage_indicator =   trap_Cvar_Get( "cg_damage_indicator", "1", CVAR_ARCHIVE );
-	cg_damage_indicator_time =  trap_Cvar_Get( "cg_damage_indicator_time", "25", CVAR_ARCHIVE );
+	cg_voiceChats =     Cvar_Get( "cg_voiceChats", "1", CVAR_ARCHIVE );
 
-	cg_voiceChats =     trap_Cvar_Get( "cg_voiceChats", "1", CVAR_ARCHIVE );
+	cg_projectileAntilagOffset = Cvar_Get( "cg_projectileAntilagOffset", "1.0", CVAR_ARCHIVE );
 
-	cg_projectileAntilagOffset = trap_Cvar_Get( "cg_projectileAntilagOffset", "1.0", CVAR_ARCHIVE );
-
-	cg_chatFilter =     trap_Cvar_Get( "cg_chatFilter", "0", CVAR_ARCHIVE );
+	cg_chatFilter =     Cvar_Get( "cg_chatFilter", "0", CVAR_ARCHIVE );
 
 	// developer cvars
-	cg_showClamp = trap_Cvar_Get( "cg_showClamp", "0", CVAR_DEVELOPER );
+	cg_showClamp = Cvar_Get( "cg_showClamp", "0", CVAR_DEVELOPER );
 
-	cg_allyColor = trap_Cvar_Get( "cg_allyColor", "0", CVAR_ARCHIVE );
-	cg_allyModel = trap_Cvar_Get( "cg_allyModel", "bigvic", CVAR_ARCHIVE );
-	cg_allyForceModel = trap_Cvar_Get( "cg_allyForceModel", "1", CVAR_ARCHIVE | CVAR_READONLY );
+	cg_allyColor = Cvar_Get( "cg_allyColor", "0", CVAR_ARCHIVE );
+	cg_allyModel = Cvar_Get( "cg_allyModel", "bigvic", CVAR_ARCHIVE );
+	cg_allyForceModel = Cvar_Get( "cg_allyForceModel", "1", CVAR_ARCHIVE | CVAR_READONLY );
 	cg_allyModel->modified = true;
 	cg_allyForceModel->modified = true;
 
-	cg_enemyColor = trap_Cvar_Get( "cg_enemyColor", "1", CVAR_ARCHIVE );
-	cg_enemyModel = trap_Cvar_Get( "cg_enemyModel", "padpork", CVAR_ARCHIVE );
-	cg_enemyForceModel = trap_Cvar_Get( "cg_enemyForceModel", "1", CVAR_ARCHIVE | CVAR_READONLY );
+	cg_enemyColor = Cvar_Get( "cg_enemyColor", "1", CVAR_ARCHIVE );
+	cg_enemyModel = Cvar_Get( "cg_enemyModel", "padpork", CVAR_ARCHIVE );
+	cg_enemyForceModel = Cvar_Get( "cg_enemyForceModel", "1", CVAR_ARCHIVE | CVAR_READONLY );
 	cg_enemyModel->modified = true;
 	cg_enemyForceModel->modified = true;
 
-	trap_Cvar_Get( "cg_loadout", "", CVAR_ARCHIVE | CVAR_USERINFO );
+	Cvar_Get( "cg_loadout", "", CVAR_ARCHIVE | CVAR_USERINFO );
 }
 
 /*
@@ -626,13 +615,9 @@ void CG_Reset( void ) {
 	CG_ResetPModels();
 
 	CG_ResetKickAngles();
-	CG_ResetColorBlend();
-	CG_ResetDamageIndicator();
 
 	CG_SC_ResetObituaries();
 
-	CG_ClearDecals();
-	CG_ClearEffects();
 	CG_ClearLocalEntities();
 
 	// start up announcer events queue from clean
@@ -666,8 +651,6 @@ void CG_Init( const char *serverName, unsigned int playerNum,
 	memset( &cgs, 0, sizeof( cg_static_t ) );
 
 	memset( cg_entities, 0, sizeof( cg_entities ) );
-
-	srand( time( NULL ) );
 
 	// save server name
 	cgs.serverName = CG_CopyString( serverName );
@@ -705,9 +688,6 @@ void CG_Init( const char *serverName, unsigned int playerNum,
 	CG_ValidateItemList();
 
 	CG_InitHUD();
-
-	CG_ClearDecals();
-	CG_ClearEffects();
 
 	InitParticles();
 	InitPersistentBeams();

@@ -37,7 +37,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "bsp.h"
 
 inline Vec3 FromQF3( const vec3_t v ) { return Vec3( v[ 0 ], v[ 1 ], v[ 2 ] ); }
-inline Vec4 FromQF4( const vec4_t v ) { return Vec4( v[ 0 ], v[ 1 ], v[ 2 ], v[ 3 ] ); }
 inline EulerDegrees3 FromQFAngles( const vec3_t v ) { return { v[ PITCH ], v[ YAW ], v[ ROLL ] }; }
 
 inline Mat4 FromQFAxisAndOrigin( const mat3_t axis, const vec3_t origin ) {
@@ -250,7 +249,6 @@ enum svc_ops_e {
 	svc_servercs,           //tmp jalfixme : send reliable commands as unreliable
 	svc_frame,
 	svc_demoinfo,
-	svc_extension           // for future expansion
 };
 
 //==============================================
@@ -335,7 +333,7 @@ char        **Cmd_CompleteBuildArgList( const char *partial );
 char        **Cmd_CompleteBuildArgListExt( const char *command, const char *arguments );
 char        **Cmd_CompleteFileList( const char *partial, const char *basedir, const char *extension, bool subdirectories );
 int         Cmd_Argc( void );
-char        *Cmd_Argv( int arg );
+const char        *Cmd_Argv( int arg );
 char        *Cmd_Args( void );
 void        Cmd_TokenizeString( const char *text );
 void        Cmd_ExecuteString( const char *text );
@@ -603,7 +601,6 @@ unsigned    FS_ChecksumAbsoluteFile( const char *filename );
 unsigned    FS_ChecksumBaseFile( const char *filename );
 
 // // only for game files
-const char *FS_FirstExtension( const char *filename, const char * const * extensions, int num_extensions );
 const char *FS_BaseNameForFile( const char *filename );
 
 int         FS_GetFileList( const char *dir, const char *extension, char *buf, size_t bufsize, int start, int end );
@@ -651,14 +648,7 @@ void        Com_SetServerCM( struct cmodel_state_s *cms, unsigned checksum );
 
 extern cvar_t *developer;
 extern const bool is_dedicated_server;
-extern cvar_t *host_speeds;
 extern cvar_t *versioncvar;
-
-// host_speeds times
-extern int64_t time_before_game;
-extern int64_t time_after_game;
-extern int64_t time_before_ref;
-extern int64_t time_after_ref;
 
 /*
 ==============================================================
