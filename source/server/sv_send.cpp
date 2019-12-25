@@ -384,8 +384,8 @@ static bool SV_SendClientDatagram( client_t *client ) {
 
 	SV_AddReliableCommandsToMessage( client, &tmpMessage );
 
-	// send over all the relevant entity_state_t
-	// and the player_state_t
+	// send over all the relevant SyncEntityState
+	// and the SyncPlayerState
 	SV_BuildClientFrameSnap( client );
 
 	SV_WriteFrameSnapToClient( client, &tmpMessage );

@@ -37,7 +37,7 @@ static void CG_Event_WeaponBeam( vec3_t origin, vec3_t dir, int ownerNum ) {
 	}
 
 	// when it's predicted we have to delay the drawing until the view weapon is calculated
-	owner->localEffects[LOCALEFFECT_EV_WEAPONBEAM] = WEAP_ELECTROBOLT;
+	owner->localEffects[LOCALEFFECT_EV_WEAPONBEAM] = Weapon_Railgun;
 	VectorCopy( origin, owner->laserOrigin );
 	VectorCopy( trace.endpos, owner->laserPoint );
 }
@@ -138,7 +138,7 @@ void CG_LaserBeamEffect( centity_t *cent ) {
 		VecToAngles( dir, laserAngles );
 	}
 
-	range = GS_GetWeaponDef( WEAP_LASERGUN )->firedef.timeout;
+	range = GS_GetWeaponDef( Weapon_Laser )->firedef.timeout;
 
 	sfx = cgs.media.sfxLasergunHum;
 
@@ -156,7 +156,7 @@ void CG_LaserBeamEffect( centity_t *cent ) {
 
 	// enable continuous flash on the weapon owner
 	if( cg_weaponFlashes->integer ) {
-		cg_entPModels[cent->current.number].flash_time = cl.serverTime + CG_GetWeaponInfo( WEAP_LASERGUN )->flashTime;
+		cg_entPModels[cent->current.number].flash_time = cl.serverTime + CG_GetWeaponInfo( Weapon_Laser )->flashTime;
 	}
 
 	if( ISVIEWERENTITY( cent->current.number ) ) {
@@ -171,11 +171,11 @@ void CG_LaserBeamEffect( centity_t *cent ) {
 static void CG_Event_LaserBeam( const vec3_t origin, const vec3_t dir, int entNum ) {
 	// lasergun's smooth refire
 	// it appears that 64ms is that maximum allowed time interval between prediction events on localhost
-	unsigned int timeout = Max2( GS_GetWeaponDef( WEAP_LASERGUN )->firedef.reload_time + 10, 65u );
+	unsigned int timeout = Max2( GS_GetWeaponDef( Weapon_Laser )->firedef.reload_time + 10, 65u );
 
 	centity_t *cent = &cg_entities[entNum];
 	VectorCopy( origin, cent->laserOrigin );
-	VectorMA( cent->laserOrigin, GS_GetWeaponDef( WEAP_LASERGUN )->firedef.timeout, dir, cent->laserPoint );
+	VectorMA( cent->laserOrigin, GS_GetWeaponDef( Weapon_Laser )->firedef.timeout, dir, cent->laserPoint );
 
 	VectorCopy( cent->laserOrigin, cent->laserOriginOld );
 	VectorCopy( cent->laserPoint, cent->laserPointOld );
@@ -192,7 +192,7 @@ static void CG_FireWeaponEvent( int entNum, int weapon ) {
 
 	// hack idle attenuation on the plasmagun to reduce sound flood on the scene
 	float attenuation;
-	if( weapon == WEAP_PLASMAGUN ) {
+	if( weapon == Weapon_Plasma ) {
 		attenuation = ATTN_IDLE;
 	} else {
 		attenuation = ATTN_NORM;
@@ -213,7 +213,7 @@ static void CG_FireWeaponEvent( int entNum, int weapon ) {
 
 	// flash and barrel effects
 
-	if( weapon == WEAP_GUNBLADE && weaponInfo->barrelTime ) {
+	if( weapon == Weapon_Knife && weaponInfo->barrelTime ) {
 		// start barrel rotation or offsetting
 		cg_entPModels[entNum].barrel_time = cl.serverTime + weaponInfo->barrelTime;
 	} else {
@@ -233,33 +233,33 @@ static void CG_FireWeaponEvent( int entNum, int weapon ) {
 		case WEAP_NONE:
 			break;
 
-		case WEAP_GUNBLADE:
+		case Weapon_Knife:
 			CG_PModel_AddAnimation( entNum, 0, TORSO_SHOOT_BLADE, 0, EVENT_CHANNEL );
 			break;
 
-		case WEAP_LASERGUN:
+		case Weapon_Laser:
 			CG_PModel_AddAnimation( entNum, 0, TORSO_SHOOT_PISTOL, 0, EVENT_CHANNEL );
 			break;
 
 		default:
-		case WEAP_RIOTGUN:
-		case WEAP_PLASMAGUN:
+		case Weapon_Shotgun:
+		case Weapon_Plasma:
 			CG_PModel_AddAnimation( entNum, 0, TORSO_SHOOT_LIGHTWEAPON, 0, EVENT_CHANNEL );
 			break;
 
-		case WEAP_ROCKETLAUNCHER:
-		case WEAP_GRENADELAUNCHER:
+		case Weapon_RocketLauncher:
+		case Weapon_GrenadeLauncher:
 			CG_PModel_AddAnimation( entNum, 0, TORSO_SHOOT_HEAVYWEAPON, 0, EVENT_CHANNEL );
 			break;
 
-		case WEAP_ELECTROBOLT:
+		case Weapon_Railgun:
 			CG_PModel_AddAnimation( entNum, 0, TORSO_SHOOT_AIMWEAPON, 0, EVENT_CHANNEL );
 			break;
 	}
 
 	// add animation to the view weapon model
 	if( ISVIEWERENTITY( entNum ) && !cg.view.thirdperson ) {
-		CG_ViewWeapon_StartAnimationEvent( weapon == WEAP_GUNBLADE ? WEAPANIM_ATTACK_WEAK : WEAPANIM_ATTACK_STRONG );
+		CG_ViewWeapon_StartAnimationEvent( weapon == Weapon_Knife ? WEAPANIM_ATTACK_WEAK : WEAPANIM_ATTACK_STRONG );
 	}
 }
 
@@ -322,7 +322,7 @@ static void CG_BulletImpact( trace_t *tr ) {
 static void CG_Event_FireMachinegun( vec3_t origin, vec3_t dir, int owner, int team ) {
 	Vec4 color = CG_TeamColorVec4( team );
 
-	int range = GS_GetWeaponDef( WEAP_MACHINEGUN )->firedef.timeout;
+	int range = GS_GetWeaponDef( Weapon_MachineGun )->firedef.timeout;
 
 	vec3_t right, up;
 	ViewVectors( dir, right, up );
@@ -423,7 +423,7 @@ static void CG_Fire_SunflowerPattern( vec3_t start, vec3_t dir, int ignore, int 
 static void CG_Event_FireRiotgun( vec3_t origin, vec3_t dir, int owner ) {
 	trace_t trace;
 	vec3_t end;
-	const gs_weapon_definition_t *weapondef = GS_GetWeaponDef( WEAP_RIOTGUN );
+	const WeaponDef *weapondef = GS_GetWeaponDef( Weapon_Shotgun );
 	const firedef_t *firedef = &weapondef->firedef;
 
 	CG_Fire_SunflowerPattern( origin, dir, owner, firedef->projectile_count,
@@ -546,7 +546,7 @@ static void CG_StartVoiceTokenEffect( int entNum, int vsay ) {
 /*
 * CG_Event_Fall
 */
-void CG_Event_Fall( const entity_state_t * state, int parm ) {
+void CG_Event_Fall( const SyncEntityState * state, int parm ) {
 	if( ISVIEWERENTITY( state->number ) ) {
 		CG_StartFallKickEffect( ( parm + 5 ) * 10 );
 	}
@@ -570,7 +570,7 @@ void CG_Event_Fall( const entity_state_t * state, int parm ) {
 /*
 * CG_Event_Pain
 */
-static void CG_Event_Pain( entity_state_t *state, int parm ) {
+static void CG_Event_Pain( SyncEntityState *state, int parm ) {
 	constexpr PlayerSound sounds[] = { PlayerSound_Pain25, PlayerSound_Pain50, PlayerSound_Pain75, PlayerSound_Pain100 };
 	CG_PlayerSound( state->number, CHAN_AUTO, sounds[ parm ], cg_volume_players->value, state->attenuation );
 	constexpr int animations[] = { TORSO_PAIN1, TORSO_PAIN2, TORSO_PAIN3 };
@@ -596,7 +596,7 @@ static void CG_Event_Die( int entNum, int parm ) {
 /*
 * CG_Event_Dash
 */
-void CG_Event_Dash( entity_state_t *state, int parm ) {
+void CG_Event_Dash( SyncEntityState *state, int parm ) {
 	switch( parm ) {
 		case 0: // dash front
 			CG_PModel_AddAnimation( state->number, LEGS_DASH, 0, 0, EVENT_CHANNEL );
@@ -623,7 +623,7 @@ void CG_Event_Dash( entity_state_t *state, int parm ) {
 /*
 * CG_Event_WallJump
 */
-void CG_Event_WallJump( entity_state_t *state, int parm, int ev ) {
+void CG_Event_WallJump( SyncEntityState *state, int parm, int ev ) {
 	vec3_t normal, forward, right;
 
 	ByteToDir( parm, normal );
@@ -651,21 +651,21 @@ void CG_Event_WallJump( entity_state_t *state, int parm, int ev ) {
 	}
 }
 
-static void CG_PlayJumpSound( const entity_state_t * state ) {
+static void CG_PlayJumpSound( const SyncEntityState * state ) {
 	CG_PlayerSound( state->number, CHAN_BODY, PlayerSound_Jump, cg_volume_players->value, state->attenuation );
 }
 
 /*
 * CG_Event_DoubleJump
 */
-void CG_Event_DoubleJump( entity_state_t *state, int parm ) {
+void CG_Event_DoubleJump( SyncEntityState *state, int parm ) {
 	CG_PlayJumpSound( state );
 }
 
 /*
 * CG_Event_Jump
 */
-void CG_Event_Jump( entity_state_t *state, int parm ) {
+void CG_Event_Jump( SyncEntityState *state, int parm ) {
 	CG_PlayJumpSound( state );
 
 	centity_t *cent = &cg_entities[state->number];
@@ -701,7 +701,7 @@ void CG_Event_Jump( entity_state_t *state, int parm ) {
 /*
 * CG_EntityEvent
 */
-void CG_EntityEvent( entity_state_t *ent, int ev, int parm, bool predicted ) {
+void CG_EntityEvent( SyncEntityState *ent, int ev, int parm, bool predicted ) {
 	vec3_t dir;
 	bool viewer = ISVIEWERENTITY( ent->number );
 	int count = 0;
@@ -752,7 +752,7 @@ void CG_EntityEvent( entity_state_t *ent, int ev, int parm, bool predicted ) {
 
 				CG_ViewWeapon_RefreshAnimation( &cg.weapon );
 
-				if( weapon == WEAP_LASERGUN ) {
+				if( weapon == Weapon_Laser ) {
 					vec3_t origin;
 					VectorCopy( cg.predictedPlayerState.pmove.origin, origin );
 					origin[2] += cg.predictedPlayerState.viewheight;
@@ -778,16 +778,16 @@ void CG_EntityEvent( entity_state_t *ent, int ev, int parm, bool predicted ) {
 				origin[2] += cg.predictedPlayerState.viewheight;
 				AngleVectors( cg.predictedPlayerState.viewangles, dir, NULL, NULL );
 
-				if( weapon == WEAP_ELECTROBOLT ) {
+				if( weapon == Weapon_Railgun ) {
 					CG_Event_WeaponBeam( origin, dir, ent->number );
 				}
-				else if( weapon == WEAP_RIOTGUN ) {
+				else if( weapon == Weapon_Shotgun ) {
 					CG_Event_FireRiotgun( origin, dir, ent->number );
 				}
-				else if( weapon == WEAP_LASERGUN ) {
+				else if( weapon == Weapon_Laser ) {
 					CG_Event_LaserBeam( origin, dir, ent->number );
 				}
-				else if( weapon == WEAP_MACHINEGUN ) {
+				else if( weapon == Weapon_MachineGun ) {
 					CG_Event_FireMachinegun( origin, dir, ent->number, ent->team );
 				}
 			}
@@ -1005,7 +1005,7 @@ void CG_EntityEvent( entity_state_t *ent, int ev, int parm, bool predicted ) {
 */
 static void CG_FireEntityEvents( bool early ) {
 	int pnum, j;
-	entity_state_t *state;
+	SyncEntityState *state;
 
 	for( pnum = 0; pnum < cg.frame.numEntities; pnum++ ) {
 		state = &cg.frame.parsedEntities[pnum & ( MAX_PARSE_ENTITIES - 1 )];

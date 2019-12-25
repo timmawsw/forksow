@@ -199,15 +199,15 @@ static const asEnumVal_t asPMoveFeaturesVals[] =
 static const asEnumVal_t asWeaponTagEnumVals[] =
 {
 	ASLIB_ENUM_VAL( WEAP_NONE ),
-	ASLIB_ENUM_VAL( WEAP_GUNBLADE ),
-	ASLIB_ENUM_VAL( WEAP_MACHINEGUN ),
-	ASLIB_ENUM_VAL( WEAP_RIOTGUN ),
-	ASLIB_ENUM_VAL( WEAP_GRENADELAUNCHER ),
-	ASLIB_ENUM_VAL( WEAP_ROCKETLAUNCHER ),
-	ASLIB_ENUM_VAL( WEAP_PLASMAGUN ),
-	ASLIB_ENUM_VAL( WEAP_LASERGUN ),
-	ASLIB_ENUM_VAL( WEAP_ELECTROBOLT ),
-	ASLIB_ENUM_VAL( WEAP_TOTAL ),
+	ASLIB_ENUM_VAL( Weapon_Knife ),
+	ASLIB_ENUM_VAL( Weapon_MachineGun ),
+	ASLIB_ENUM_VAL( Weapon_Shotgun ),
+	ASLIB_ENUM_VAL( Weapon_GrenadeLauncher ),
+	ASLIB_ENUM_VAL( Weapon_RocketLauncher ),
+	ASLIB_ENUM_VAL( Weapon_Plasma ),
+	ASLIB_ENUM_VAL( Weapon_Laser ),
+	ASLIB_ENUM_VAL( Weapon_Railgun ),
+	ASLIB_ENUM_VAL( Weapon_Count ),
 
 	ASLIB_ENUM_VAL_NULL
 };
@@ -891,7 +891,7 @@ static int objectGameClient_InventoryCount( int index, gclient_t *self ) {
 }
 
 static void objectGameClient_InventorySetCount( int index, int newcount, gclient_t *self ) {
-	const gsitem_t *it;
+	const Item *it;
 
 	if( index < 0 || index >= MAX_ITEMS ) {
 		return;
@@ -919,7 +919,7 @@ static void objectGameClient_InventoryGiveItemExt( int index, int count, gclient
 		return;
 	}
 
-	const gsitem_t * it = GS_FindItemByTag( index );
+	const Item * it = GS_FindItemByTag( index );
 	if( !it ) {
 		return;
 	}
@@ -944,7 +944,7 @@ static void objectGameClient_InventoryClear( gclient_t *self ) {
 }
 
 static bool objectGameClient_CanSelectWeapon( int index, gclient_t *self ) {
-	if( index < WEAP_NONE || index >= WEAP_TOTAL ) {
+	if( index < WEAP_NONE || index >= Weapon_Count ) {
 		return false;
 	}
 
@@ -952,7 +952,7 @@ static bool objectGameClient_CanSelectWeapon( int index, gclient_t *self ) {
 }
 
 static void objectGameClient_SelectWeapon( int index, gclient_t *self ) {
-	if( index < WEAP_NONE || index >= WEAP_TOTAL ) {
+	if( index < WEAP_NONE || index >= Weapon_Count ) {
 		self->ps.stats[STAT_PENDING_WEAPON] = GS_SelectBestWeapon( &self->ps );
 		return;
 	}
@@ -1704,11 +1704,11 @@ static const asClassDescriptor_t asTraceClassDescriptor =
 //=======================================================================
 
 // CLASS: Item
-static asstring_t *objectGItem_getName( gsitem_t *self ) {
+static asstring_t *objectGItem_getName( Item *self ) {
 	return game.asExport->asStringFactoryBuffer( self->name, self->name ? strlen( self->name ) : 0 );
 }
 
-static asstring_t *objectGItem_getShortName( gsitem_t *self ) {
+static asstring_t *objectGItem_getShortName( Item *self ) {
 	return game.asExport->asStringFactoryBuffer( self->shortname, self->shortname ? strlen( self->shortname ) : 0 );
 }
 
@@ -1732,10 +1732,8 @@ static const asMethod_t asitem_Methods[] =
 
 static const asProperty_t asitem_Properties[] =
 {
-	{ ASLIB_PROPERTY_DECL( const int, tag ), ASLIB_FOFFSET( gsitem_t, tag ) },
-	{ ASLIB_PROPERTY_DECL( const uint, type ), ASLIB_FOFFSET( gsitem_t, type ) },
-	{ ASLIB_PROPERTY_DECL( const int, ammoTag ), ASLIB_FOFFSET( gsitem_t, ammo_tag ) },
-	{ ASLIB_PROPERTY_DECL( const int, cost ), ASLIB_FOFFSET( gsitem_t, cost ) },
+	{ ASLIB_PROPERTY_DECL( const ItemType, type ), ASLIB_FOFFSET( Item, type ) },
+	{ ASLIB_PROPERTY_DECL( const int, cost ), ASLIB_FOFFSET( Item, cost ) },
 
 	ASLIB_PROPERTY_NULL
 };
@@ -1744,7 +1742,7 @@ static const asClassDescriptor_t asItemClassDescriptor =
 {
 	"Item",                     /* name */
 	asOBJ_REF | asOBJ_NOCOUNT,    /* object type flags */
-	sizeof( gsitem_t ),         /* size */
+	sizeof( Item ),         /* size */
 	asitem_Funcdefs,            /* funcdefs */
 	asitem_ObjectBehaviors,     /* object behaviors */
 	asitem_Methods,             /* methods */
@@ -1818,11 +1816,11 @@ static g_teamlist_t *asFunc_GetTeamlist( int teamNum ) {
 	return &teamlist[teamNum];
 }
 
-static const gsitem_t *asFunc_GS_FindItemByTag( int tag ) {
+static const Item *asFunc_GS_FindItemByTag( int tag ) {
 	return GS_FindItemByTag( tag );
 }
 
-static const gsitem_t *asFunc_GS_FindItemByName( asstring_t *name ) {
+static const Item *asFunc_GS_FindItemByName( asstring_t *name ) {
 	return ( !name || !name->len ) ? NULL : GS_FindItemByName( name->buffer );
 }
 

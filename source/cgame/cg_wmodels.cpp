@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //						weaponinfo Registering
 //======================================================================
 
-static weaponinfo_t cg_pWeaponModelInfos[WEAP_TOTAL];
+static weaponinfo_t cg_pWeaponModelInfos[Weapon_Count];
 
 static const char *wmPartSufix[] = { "", "_flash", "_hand", "_barrel", NULL };
 
@@ -393,7 +393,7 @@ struct weaponinfo_s *CG_CreateWeaponZeroModel( char *filename ) {
 * CG_GetWeaponInfo
 */
 struct weaponinfo_s *CG_GetWeaponInfo( int weapon ) {
-	if( weapon < 0 || ( weapon >= WEAP_TOTAL ) ) {
+	if( weapon < 0 || ( weapon >= Weapon_Count ) ) {
 		weapon = WEAP_NONE;
 	}
 

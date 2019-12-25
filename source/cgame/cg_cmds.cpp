@@ -121,8 +121,6 @@ void CG_ConfigString( int i, const char *s ) {
 		if( !cgs.demoPlaying ) {
 			Cmd_AddCommand( cgs.configStrings[i], NULL );
 		}
-	} else if( i >= CS_WEAPONDEFS && i < CS_WEAPONDEFS + MAX_WEAPONDEFS ) {
-		CG_OverrideWeapondef( i - CS_WEAPONDEFS, cgs.configStrings[i] );
 	}
 }
 
@@ -151,8 +149,8 @@ static void CG_SC_PlayerStats() {
 	CG_Printf( "\nWeapon\n" );
 	CG_Printf( "    hit/shot percent\n" );
 
-	for( int i = WEAP_GUNBLADE; i < WEAP_TOTAL; i++ ) {
-		const gsitem_t * item = GS_FindItemByTag( i );
+	for( int i = Weapon_Knife; i < Weapon_Count; i++ ) {
+		const Item * item = GS_FindItemByTag( i );
 		assert( item );
 
 		int shots = ParseIntOr0( &s );
@@ -315,7 +313,7 @@ static void CG_SC_DemoGet( void ) {
 }
 
 static void CG_SC_ChangeLoadout() {
-	int weapons[ WEAP_TOTAL ] = { };
+	int weapons[ Weapon_Count ] = { };
 	size_t n = 0;
 
 	if( Cmd_Argc() - 1 >= ARRAY_COUNT( weapons ) )
@@ -323,7 +321,7 @@ static void CG_SC_ChangeLoadout() {
 
 	for( int i = 0; i < Cmd_Argc() - 1; i++ ) {
 		int weapon = atoi( Cmd_Argv( i + 1 ) );
-		if( weapon <= WEAP_NONE || weapon >= WEAP_TOTAL )
+		if( weapon <= WEAP_NONE || weapon >= Weapon_Count )
 			return;
 		weapons[ n ] = weapon;
 		n++;
@@ -395,7 +393,7 @@ CGAME COMMANDS
 * CG_UseItem
 */
 void CG_UseItem( const char *name ) {
-	const gsitem_t *item;
+	const Item *item;
 
 	if( !cg.frame.valid || cgs.demoPlaying ) {
 		return;
@@ -428,7 +426,7 @@ static void CG_Cmd_UseItem_f( void ) {
 	CG_UseItem( Cmd_Args() );
 }
 
-static const Item * CG_UseWeaponStep( const player_state_t * playerState, bool next, ItemType predicted_equipped_item ) {
+static const Item * CG_UseWeaponStep( const SyncPlayerState * playerState, bool next, ItemType predicted_equipped_item ) {
 	if( predicted_equipped_item < Item_FirstWeapon || predicted_equipped_item > Item_LastWeapon ) {
 		return GS_FindItemByType( cg.lastWeapon );
 	}
@@ -458,7 +456,7 @@ static const Item * CG_UseWeaponStep( const player_state_t * playerState, bool n
 * CG_Cmd_NextWeapon_f
 */
 static void CG_Cmd_NextWeapon_f( void ) {
-	const gsitem_t *item;
+	const Item *item;
 
 	if( !cg.frame.valid ) {
 		return;
@@ -481,7 +479,7 @@ static void CG_Cmd_NextWeapon_f( void ) {
 * CG_Cmd_PrevWeapon_f
 */
 static void CG_Cmd_PrevWeapon_f( void ) {
-	const gsitem_t *item;
+	const Item *item;
 
 	if( !cg.frame.valid ) {
 		return;
@@ -504,7 +502,7 @@ static void CG_Cmd_PrevWeapon_f( void ) {
 * CG_Cmd_PrevWeapon_f
 */
 static void CG_Cmd_LastWeapon_f( void ) {
-	const gsitem_t *item;
+	const Item *item;
 
 	if( !cg.frame.valid || cgs.demoPlaying ) {
 		return;
@@ -526,13 +524,13 @@ static void CG_Cmd_LastWeapon_f( void ) {
 static void CG_Cmd_Weapon_f() {
 	int w = atoi( Cmd_Argv( 1 ) );
 	int seen = 0;
-	for( int i = WEAP_GUNBLADE; i < WEAP_TOTAL; i++ ) {
+	for( int i = Weapon_Knife; i < Weapon_Count; i++ ) {
 		if( cg.predictedPlayerState.inventory[ i ] == 0 )
 			continue;
 		seen++;
 
 		if( seen == w ) {
-			const gsitem_t * item = GS_FindItemByTag( i );
+			const Item * item = GS_FindItemByTag( i );
 			CG_UseItem( item->name );
 		}
 	}

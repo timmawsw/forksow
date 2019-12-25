@@ -48,11 +48,11 @@ typedef struct snapshot_s {
 	size_t areabytes;
 	uint8_t *areabits;             // portalarea visibility bits
 	int numplayers;
-	player_state_t playerState;
-	player_state_t playerStates[MAX_CLIENTS];
+	SyncPlayerState playerState;
+	SyncPlayerState playerStates[MAX_CLIENTS];
 	int numEntities;
-	entity_state_t parsedEntities[MAX_PARSE_ENTITIES];
-	game_state_t gameState;
+	SyncEntityState parsedEntities[MAX_PARSE_ENTITIES];
+	SyncGameState gameState;
 	int numgamecommands;
 	gcommand_t gamecommands[MAX_PARSE_GAMECOMMANDS];
 	char gamecommandsData[( MAX_STRING_CHARS / 16 ) * MAX_PARSE_GAMECOMMANDS];

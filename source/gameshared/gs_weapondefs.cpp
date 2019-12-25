@@ -5,7 +5,7 @@
 #define WEAPONDOWN_FRAMETIME 50
 #define WEAPONUP_FRAMETIME 50
 
-Weapon gs_weaponDefs[] = {
+const WeaponDef gs_weaponDefs[] = {
 	{
 		"Knife", "gb",
 		RGB8( 255, 255, 255 ),
@@ -298,9 +298,9 @@ Weapon gs_weaponDefs[] = {
 	},
 };
 
-STATIC_ASSERT( ARRAY_COUNT( gs_weaponDefs ) == Item_WeaponCount );
+STATIC_ASSERT( ARRAY_COUNT( gs_weaponDefs ) == Weapon_Count );
 
-Weapon * GS_GetWeaponDef( int weapon ) {
-	assert( weapon >= 0 && weapon < WEAP_TOTAL );
+const Weapon * GS_GetWeaponDef( int weapon ) {
+	assert( weapon >= 0 && weapon < Weapon_Count );
 	return &gs_weaponDefs[ weapon ];
 }

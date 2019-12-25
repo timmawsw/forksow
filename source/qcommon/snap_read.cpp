@@ -71,7 +71,7 @@ static void SNAP_ParseDeltaGameState( msg_t *msg, snapshot_t *oldframe, snapshot
 /*
 * SNAP_ParsePlayerstate
 */
-static void SNAP_ParsePlayerstate( msg_t *msg, const player_state_t *oldstate, player_state_t *state ) {
+static void SNAP_ParsePlayerstate( msg_t *msg, const SyncPlayerState *oldstate, SyncPlayerState *state ) {
 	MSG_ReadDeltaPlayerState( msg, oldstate, state );
 }
 
@@ -80,8 +80,8 @@ static void SNAP_ParsePlayerstate( msg_t *msg, const player_state_t *oldstate, p
 *
 * Parses deltas from the given base and adds the resulting entity to the current frame
 */
-static void SNAP_ParseDeltaEntity( msg_t *msg, snapshot_t *frame, int newnum, entity_state_t *old, unsigned byteMask ) {
-	entity_state_t *state;
+static void SNAP_ParseDeltaEntity( msg_t *msg, snapshot_t *frame, int newnum, SyncEntityState *old, unsigned byteMask ) {
+	SyncEntityState *state;
 
 	state = &frame->parsedEntities[frame->numEntities & ( MAX_PARSE_ENTITIES - 1 )];
 	frame->numEntities++;
@@ -91,7 +91,7 @@ static void SNAP_ParseDeltaEntity( msg_t *msg, snapshot_t *frame, int newnum, en
 /*
 * SNAP_ParseBaseline
 */
-void SNAP_ParseBaseline( msg_t *msg, entity_state_t *baselines ) {
+void SNAP_ParseBaseline( msg_t *msg, SyncEntityState *baselines ) {
 	bool remove;
 	int newnum;
 	unsigned byteMask;
@@ -100,8 +100,8 @@ void SNAP_ParseBaseline( msg_t *msg, entity_state_t *baselines ) {
 	assert( remove == false );
 
 	if( !remove ) {
-		entity_state_t *es;
-		entity_state_t nullstate, tmp;
+		SyncEntityState *es;
+		SyncEntityState nullstate, tmp;
 
 		memset( &nullstate, 0, sizeof( nullstate ) );
 
@@ -116,11 +116,11 @@ void SNAP_ParseBaseline( msg_t *msg, entity_state_t *baselines ) {
 * An svc_packetentities has just been parsed, deal with the
 * rest of the data stream.
 */
-static void SNAP_ParsePacketEntities( msg_t *msg, snapshot_t *oldframe, snapshot_t *newframe, entity_state_t *baselines, int shownet ) {
+static void SNAP_ParsePacketEntities( msg_t *msg, snapshot_t *oldframe, snapshot_t *newframe, SyncEntityState *baselines, int shownet ) {
 	int newnum;
 	bool remove;
 	unsigned byteMask;
-	entity_state_t *oldstate = NULL;
+	SyncEntityState *oldstate = NULL;
 	int oldindex, oldnum;
 
 	newframe->numEntities = 0;
@@ -325,7 +325,7 @@ void SNAP_SkipFrame( msg_t *msg, snapshot_t *header ) {
 /*
 * SNAP_ParseFrame
 */
-snapshot_t *SNAP_ParseFrame( msg_t *msg, snapshot_t *lastFrame, snapshot_t *backup, entity_state_t *baselines, int showNet ) {
+snapshot_t *SNAP_ParseFrame( msg_t *msg, snapshot_t *lastFrame, snapshot_t *backup, SyncEntityState *baselines, int showNet ) {
 	size_t len;
 	snapshot_t  *deltaframe;
 	int numplayers;

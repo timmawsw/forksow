@@ -380,13 +380,13 @@ void G_AddCommand( const char *name, gamecommandfunc_t cmdfunc );
 //
 // g_items.c
 //
-void PrecacheItem( const gsitem_t *it );
+void PrecacheItem( const Item *it );
 void G_PrecacheItems( void );
 void G_FireWeapon( edict_t *ent, int parm );
-const gsitem_t *GetItemByTag( int tag );
-bool Add_Ammo( gclient_t *client, const gsitem_t *item, int count, bool add_it );
-bool G_PickupItem( edict_t *other, const gsitem_t *it, int flags, int count );
-void G_UseItem( struct edict_s *ent, const gsitem_t *item );
+const Item *GetItemByTag( int tag );
+bool Add_Ammo( gclient_t *client, const Item *item, int count, bool add_it );
+bool G_PickupItem( edict_t *other, const Item *it, int flags, int count );
+void G_UseItem( struct edict_s *ent, const Item *item );
 
 //
 // g_utils.c
@@ -465,8 +465,6 @@ void G_ClearPlayerStateEvents( gclient_t *client );
 void G_AnnouncerSound( edict_t *targ, int soundindex, int team, bool queued, edict_t *ignore );
 edict_t *G_PlayerForText( const char *text );
 
-void G_PrecacheWeapondef( int weapon, firedef_t *firedef );
-
 void G_SetBoundsForSpanEntity( edict_t *ent, float size );
 
 //
@@ -519,7 +517,7 @@ void GClip_LinkEntity( edict_t *ent );
 void GClip_UnlinkEntity( edict_t *ent );
 void GClip_TouchTriggers( edict_t *ent );
 void G_PMoveTouchTriggers( pmove_t *pm, vec3_t previous_origin );
-entity_state_t *G_GetEntityStateForDeltaTime( int entNum, int deltaTime );
+SyncEntityState *G_GetEntityStateForDeltaTime( int entNum, int deltaTime );
 int GClip_FindInRadius( vec3_t org, float rad, int *list, int maxcount );
 
 // BoxEdicts() can return a list of either solid or trigger entities
@@ -533,10 +531,10 @@ bool GClip_EntityContact( const vec3_t mins, const vec3_t maxs, edict_t *ent );
 //
 // g_combat.c
 //
-bool G_IsTeamDamage( entity_state_t *targ, entity_state_t *attacker );
+bool G_IsTeamDamage( SyncEntityState *targ, SyncEntityState *attacker );
 void G_Killed( edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, int mod );
 int G_ModToAmmo( int mod );
-void G_SplashFrac( const entity_state_t *s, const entity_shared_t *r, const vec3_t point, float maxradius, vec3_t pushdir, float *frac, bool selfdamage );
+void G_SplashFrac( const SyncEntityState *s, const entity_shared_t *r, const vec3_t point, float maxradius, vec3_t pushdir, float *frac, bool selfdamage );
 void G_Damage( edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t pushdir, const vec3_t dmgdir, const vec3_t point, float damage, float knockback, int dflags, int mod );
 void G_RadiusDamage( edict_t *inflictor, edict_t *attacker, cplane_t *plane, edict_t *ignore, int mod );
 
@@ -570,7 +568,7 @@ edict_t *W_Fire_Plasma( edict_t *self, vec3_t start, vec3_t angles, float damage
 void W_Fire_Electrobolt_FullInstant( edict_t *self, vec3_t start, vec3_t angles, float maxdamage, float mindamage, int maxknockback, int minknockback, int range, int minDamageRange, int timeDelta );
 edict_t *W_Fire_Lasergun( edict_t *self, vec3_t start, vec3_t angles, float damage, int knockback, int timeout, int timeDelta );
 
-void Use_Weapon( edict_t *ent, const gsitem_t *item );
+void Use_Weapon( edict_t *ent, const Item *item );
 
 //
 // g_chasecam	//newgametypes
@@ -683,7 +681,7 @@ void G_Printf( _Printf_format_string_ const char *format, ... );
 void G_Init( unsigned int framemsec );
 void G_Shutdown( void );
 void G_ExitLevel( void );
-game_state_t *G_GetGameState( void );
+SyncGameState *G_GetGameState( void );
 void G_GamestatSetFlag( int flag, bool b );
 void G_Timeout_Reset( void );
 
@@ -780,7 +778,7 @@ typedef struct {
 
 	int64_t timeStamp; // last time it was reset
 
-	// player_state_t event
+	// SyncPlayerState event
 	int events[MAX_CLIENT_EVENTS];
 	unsigned int eventsCurrent;
 	unsigned int eventsHead;
@@ -824,7 +822,7 @@ typedef struct {
 
 struct gclient_s {
 	// known to server
-	player_state_t ps;          // communicated by server to clients
+	SyncPlayerState ps;          // communicated by server to clients
 	client_shared_t r;
 
 	// DO NOT MODIFY ANYTHING ABOVE THIS, THE SERVER
@@ -887,7 +885,7 @@ typedef struct snap_edict_s {
 } snap_edict_t;
 
 struct edict_s {
-	entity_state_t s;
+	SyncEntityState s;
 	entity_shared_t r;
 
 	// DO NOT MODIFY ANYTHING ABOVE THIS, THE SERVER
@@ -900,7 +898,7 @@ struct edict_s {
 	// physics grid areas this edict is linked into
 	link_t areagrid[MAX_ENT_AREAS];
 
-	entity_state_t olds; // state in the last sent frame snap
+	SyncEntityState olds; // state in the last sent frame snap
 
 	int movetype;
 	int flags;
@@ -995,7 +993,7 @@ struct edict_s {
 	float light;
 	vec3_t color;
 
-	const gsitem_t *item;       // for bonus items
+	const Item *item;       // for bonus items
 
 	// common data blocks
 	moveinfo_t moveinfo;        // func movers movement

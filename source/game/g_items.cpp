@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 #include "g_local.h"
 
-bool Add_Ammo( gclient_t *client, const gsitem_t *item, int count, bool add_it ) {
+bool Add_Ammo( gclient_t *client, const Item *item, int count, bool add_it ) {
 	int max = 255;
 
 	if( !client || !item ) {
@@ -41,7 +41,7 @@ bool Add_Ammo( gclient_t *client, const gsitem_t *item, int count, bool add_it )
 	return true;
 }
 
-bool G_PickupItem( edict_t *other, const gsitem_t *it, int flags, int count ) {
+bool G_PickupItem( edict_t *other, const Item *it, int flags, int count ) {
 	if( other->r.client && G_ISGHOSTING( other ) ) {
 		return false;
 	}
@@ -54,7 +54,7 @@ bool G_PickupItem( edict_t *other, const gsitem_t *it, int flags, int count ) {
 	return false;
 }
 
-void G_UseItem( edict_t *ent, const gsitem_t *it ) {
+void G_UseItem( edict_t *ent, const Item *it ) {
 	if( it != NULL && it->type & IT_WEAPON ) {
 		Use_Weapon( ent, it );
 	}
@@ -67,7 +67,7 @@ void G_UseItem( edict_t *ent, const gsitem_t *it ) {
 * This will be called for each item spawned in a level,
 * and for each item in each client's inventory.
 */
-void PrecacheItem( const gsitem_t *it ) {
+void PrecacheItem( const Item *it ) {
 	const char *s, *start;
 	char data[MAX_QPATH];
 
@@ -77,7 +77,7 @@ void PrecacheItem( const gsitem_t *it ) {
 
 	// parse everything for its ammo
 	if( it->ammo_tag ) {
-		const gsitem_t * ammo = GS_FindItemByTag( it->ammo_tag );
+		const Item * ammo = GS_FindItemByTag( it->ammo_tag );
 		if( ammo != it ) {
 			PrecacheItem( ammo );
 		}
@@ -127,7 +127,7 @@ void PrecacheItem( const gsitem_t *it ) {
 void G_PrecacheItems() {
 	// precache item names and weapondefs
 	for( int i = 1; i < GS_MAX_ITEM_TAGS; i++ ) {
-		const gsitem_t * item = GS_FindItemByTag( i );
+		const Item * item = GS_FindItemByTag( i );
 		if( !item )
 			break;
 
@@ -137,8 +137,8 @@ void G_PrecacheItems() {
 	}
 
 	// precache items
-	for( int i = WEAP_GUNBLADE; i < WEAP_TOTAL; i++ ) {
-		const gsitem_t * item = GS_FindItemByTag( i );
+	for( int i = Weapon_Knife; i < Weapon_Count; i++ ) {
+		const Item * item = GS_FindItemByTag( i );
 		PrecacheItem( item );
 	}
 }

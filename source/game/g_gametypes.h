@@ -32,10 +32,10 @@ typedef struct {
 	int frags;
 	int suicides;
 
-	int accuracy_shots[AMMO_TOTAL - AMMO_GUNBLADE];
-	int accuracy_hits[AMMO_TOTAL - AMMO_GUNBLADE];
-	int accuracy_damage[AMMO_TOTAL - AMMO_GUNBLADE];
-	int accuracy_frags[AMMO_TOTAL - AMMO_GUNBLADE];
+	int accuracy_shots[ Weapon_Count ];
+	int accuracy_hits[ Weapon_Count ];
+	int accuracy_damage[ Weapon_Count ];
+	int accuracy_frags[ Weapon_Count ];
 	int total_damage_given;
 	int total_damage_received;
 

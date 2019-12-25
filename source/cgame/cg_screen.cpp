@@ -455,7 +455,7 @@ void CG_InitDamageNumbers() {
 	}
 }
 
-void CG_AddDamageNumber( entity_state_t * ent ) {
+void CG_AddDamageNumber( SyncEntityState * ent ) {
 	if( !cg_damageNumbers->integer && ent->damage != MINI_OBITUARY_DAMAGE )
 		return;
 

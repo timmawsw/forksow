@@ -63,7 +63,7 @@ static char cl_connectChain[MAX_STRING_CHARS];
 client_static_t cls;
 client_state_t cl;
 
-entity_state_t cl_baselines[MAX_EDICTS];
+SyncEntityState cl_baselines[MAX_EDICTS];
 
 static bool cl_initialized = false;
 

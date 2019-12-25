@@ -421,9 +421,9 @@ static int CG_RenderFlags( void ) {
 /*
 * CG_InterpolatePlayerState
 */
-static void CG_InterpolatePlayerState( player_state_t *playerState ) {
+static void CG_InterpolatePlayerState( SyncPlayerState *playerState ) {
 	int i;
-	player_state_t *ps, *ops;
+	SyncPlayerState *ps, *ops;
 	bool teleported;
 
 	ps = &cg.frame.playerState;

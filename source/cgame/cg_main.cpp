@@ -148,7 +148,7 @@ static int CG_GS_PointContents( const vec3_t point, int timeDelta ) {
 /*
 * CG_GS_GetEntityState
 */
-static entity_state_t *CG_GS_GetEntityState( int entNum, int deltaTime ) {
+static SyncEntityState *CG_GS_GetEntityState( int entNum, int deltaTime ) {
 	centity_t *cent;
 
 	if( entNum == -1 ) {
@@ -262,7 +262,7 @@ static void CG_RegisterModels( void ) {
 
 		if( name[0] == '#' ) {
 			// special player weapon model
-			if( cgs.numWeaponModels >= WEAP_TOTAL ) {
+			if( cgs.numWeaponModels >= Weapon_Count ) {
 				continue;
 			}
 
@@ -476,57 +476,6 @@ static void CG_RegisterVariables( void ) {
 }
 
 /*
-* CG_OverrideWeapondef
-*
-* Compares name and tag against the itemlist to make sure cgame and game lists match
-*/
-void CG_OverrideWeapondef( int index, const char *cstring ) {
-	int weapon, i;
-	gs_weapon_definition_t *weapondef;
-	firedef_t *firedef;
-
-	weapon = index;
-	if( index >= ( MAX_WEAPONDEFS / 2 ) ) {
-		weapon -= ( MAX_WEAPONDEFS / 2 );
-	}
-
-	weapondef = GS_GetWeaponDef( weapon );
-	if( !weapondef ) {
-		CG_Error( "CG_OverrideWeapondef: Invalid weapon index\n" );
-	}
-
-	firedef = &weapondef->firedef;
-
-	i = sscanf( cstring, "%7i %7i %7u %7u %7u %7u %7i %7i %7i",
-				&firedef->usage_count,
-				&firedef->projectile_count,
-				&firedef->weaponup_time,
-				&firedef->weapondown_time,
-				&firedef->reload_time,
-				&firedef->timeout,
-				&firedef->speed,
-				&firedef->spread,
-				&firedef->v_spread
-				);
-
-	if( i != 9 ) {
-		CG_Error( "CG_OverrideWeapondef: Bad configstring: %s \"%s\" (%i)\n", weapondef->name, cstring, i );
-	}
-}
-
-/*
-* CG_ValidateItemList
-*/
-static void CG_ValidateItemList( void ) {
-	for( int i = 0; i < MAX_WEAPONDEFS; i++ ) {
-		int cs = CS_WEAPONDEFS + i;
-		if( cgs.configStrings[cs][0] ) {
-			CG_OverrideWeapondef( i, cgs.configStrings[cs] );
-		}
-	}
-}
-
-/*
 * CG_Precache
 */
 void CG_Precache( void ) {
@@ -684,8 +633,6 @@ void CG_Init( const char *serverName, unsigned int playerNum,
 	cgs.white_material = FindMaterial( "$whiteimage" );
 
 	CG_RegisterCGameCommands();
-
-	CG_ValidateItemList();
 
 	CG_InitHUD();
 

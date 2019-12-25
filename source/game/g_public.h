@@ -151,7 +151,7 @@ typedef struct {
 	void ( *SnapFrame )( void );
 	void ( *ClearSnap )( void );
 
-	game_state_t *( *GetGameState )( void );
+	SyncGameState *( *GetGameState )( void );
 } game_export_t;
 
 game_export_t * GetGameAPI( game_import_t * import );

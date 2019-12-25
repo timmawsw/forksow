@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gameshared/q_cvar.h"
 #include "gameshared/q_comref.h"
 #include "gameshared/q_collision.h"
+#include "gameshared/gs_public.h"
 
 #include "application.h"
 #include "qfiles.h"
@@ -114,8 +115,8 @@ void MSG_WriteString( msg_t *sb, const char *s );
 #define MSG_WriteAngle16( sb, f ) ( MSG_WriteInt16( ( sb ), ANGLE2SHORT( ( f ) ) ) )
 void MSG_WriteDeltaUsercmd( msg_t *sb, const struct usercmd_s *from, struct usercmd_s *cmd );
 void MSG_WriteDeltaEntity( msg_t *msg, const struct entity_state_s *from, const struct entity_state_s *to, bool force );
-void MSG_WriteDeltaPlayerState( msg_t *msg, const player_state_t *ops, const player_state_t *ps );
-void MSG_WriteDeltaGameState( msg_t *msg, const game_state_t *from, const game_state_t *to );
+void MSG_WriteDeltaPlayerState( msg_t *msg, const SyncPlayerState *ops, const SyncPlayerState *ps );
+void MSG_WriteDeltaGameState( msg_t *msg, const SyncGameState *from, const SyncGameState *to );
 void MSG_WriteDir( msg_t *sb, vec3_t vector );
 void MSG_WriteDeltaStruct( msg_t *msg, const void *from, const void *to, const msg_field_t *fields, size_t numFields );
 
@@ -135,9 +136,9 @@ char *MSG_ReadStringLine( msg_t *sb );
 #define MSG_ReadAngle16( sb ) ( SHORT2ANGLE( MSG_ReadInt16( ( sb ) ) ) )
 void MSG_ReadDeltaUsercmd( msg_t *sb, const struct usercmd_s *from, struct usercmd_s *cmd );
 int MSG_ReadEntityNumber( msg_t *msg, bool *remove, unsigned *byteMask );
-void MSG_ReadDeltaEntity( msg_t *msg, const entity_state_t *from, entity_state_t *to, int number, unsigned byteMask );
-void MSG_ReadDeltaPlayerState( msg_t *msg, const player_state_t *ops, player_state_t *ps );
-void MSG_ReadDeltaGameState( msg_t *msg, const game_state_t *from, game_state_t *to );
+void MSG_ReadDeltaEntity( msg_t *msg, const SyncEntityState *from, SyncEntityState *to, int number, unsigned byteMask );
+void MSG_ReadDeltaPlayerState( msg_t *msg, const SyncPlayerState *ops, SyncPlayerState *ps );
+void MSG_ReadDeltaGameState( msg_t *msg, const SyncGameState *from, SyncGameState *to );
 void MSG_ReadDir( msg_t *sb, vec3_t vector );
 void MSG_ReadData( msg_t *sb, void *buffer, size_t length );
 void MSG_ReadDeltaStruct( msg_t *msg, const void *from, void *to, size_t size, const msg_field_t *fields, size_t numFields );
@@ -149,17 +150,17 @@ void MSG_ReadDeltaStruct( msg_t *msg, const void *from, void *to, size_t size, c
 // define this 0 to disable compression of demo files
 #define SNAP_DEMO_GZ                    FS_GZ
 
-void SNAP_ParseBaseline( msg_t *msg, entity_state_t *baselines );
+void SNAP_ParseBaseline( msg_t *msg, SyncEntityState *baselines );
 void SNAP_SkipFrame( msg_t *msg, struct snapshot_s *header );
-struct snapshot_s *SNAP_ParseFrame( msg_t *msg, struct snapshot_s *lastFrame, struct snapshot_s *backup, entity_state_t *baselines, int showNet );
+struct snapshot_s *SNAP_ParseFrame( msg_t *msg, struct snapshot_s *lastFrame, struct snapshot_s *backup, SyncEntityState *baselines, int showNet );
 
 void SNAP_WriteFrameSnapToClient( struct ginfo_s *gi, struct client_s *client, msg_t *msg, int64_t frameNum, int64_t gameTime,
-								  entity_state_t *baselines, struct client_entities_s *client_entities,
+								  SyncEntityState *baselines, struct client_entities_s *client_entities,
 								  int numcmds, gcommand_t *commands, const char *commandsData );
 
 void SNAP_BuildClientFrameSnap( struct cmodel_state_s *cms, struct ginfo_s *gi, int64_t frameNum, int64_t timeStamp,
 								struct client_s *client,
-								game_state_t *gameState, struct client_entities_s *client_entities,
+								SyncGameState *gameState, struct client_entities_s *client_entities,
 								bool relay, struct mempool_s *mempool );
 
 void SNAP_FreeClientFrames( struct client_s *client );
@@ -168,7 +169,7 @@ void SNAP_RecordDemoMessage( int demofile, msg_t *msg, int offset );
 int SNAP_ReadDemoMessage( int demofile, msg_t *msg );
 void SNAP_BeginDemoRecording( int demofile, unsigned int spawncount, unsigned int snapFrameTime,
 							  const char *sv_name, unsigned int sv_bitflags,
-							  char *configstrings, entity_state_t *baselines );
+							  char *configstrings, SyncEntityState *baselines );
 void SNAP_StopDemoRecording( int demofile );
 void SNAP_WriteDemoMetaData( const char *filename, const char *meta_data, size_t meta_data_realsize );
 size_t SNAP_ClearDemoMeta( char *meta_data, size_t meta_data_max_size );
@@ -218,7 +219,7 @@ PROTOCOL
 
 //=========================================
 
-#define UPDATE_BACKUP   32  // copies of entity_state_t to keep buffered
+#define UPDATE_BACKUP   32  // copies of SyncEntityState to keep buffered
 // must be power of two
 
 #define UPDATE_MASK ( UPDATE_BACKUP - 1 )

@@ -33,9 +33,9 @@ void W_Plasma_Backtrace( edict_t *ent, const vec3_t start );
 /*
 * Use_Weapon
 */
-void Use_Weapon( edict_t *ent, const gsitem_t *item ) {
+void Use_Weapon( edict_t *ent, const Item *item ) {
 	// invalid weapon item
-	if( item->tag < WEAP_NONE || item->tag >= WEAP_TOTAL ) {
+	if( item->tag < WEAP_NONE || item->tag >= Weapon_Count ) {
 		return;
 	}
 
@@ -253,7 +253,7 @@ static void G_Fire_Bolt( vec3_t origin, vec3_t angles, firedef_t *firedef, edict
 * G_FireWeapon
 */
 void G_FireWeapon( edict_t *ent, int parm ) {
-	gs_weapon_definition_t *weapondef;
+	WeaponDef *weapondef;
 	firedef_t *firedef;
 	vec3_t origin, angles;
 	vec3_t viewoffset = { 0, 0, 0 };
@@ -280,35 +280,35 @@ void G_FireWeapon( edict_t *ent, int parm ) {
 		case WEAP_NONE:
 			break;
 
-		case WEAP_GUNBLADE:
+		case Weapon_Knife:
 			G_Fire_Gunblade_Knife( origin, angles, firedef, ent );
 			break;
 
-		case WEAP_MACHINEGUN:
+		case Weapon_MachineGun:
 			G_Fire_Machinegun( origin, angles, firedef, ent );
 			break;
 
-		case WEAP_RIOTGUN:
+		case Weapon_Shotgun:
 			G_Fire_Riotgun( origin, angles, firedef, ent );
 			break;
 
-		case WEAP_GRENADELAUNCHER:
+		case Weapon_GrenadeLauncher:
 			projectile = G_Fire_Grenade( origin, angles, firedef, ent );
 			break;
 
-		case WEAP_ROCKETLAUNCHER:
+		case Weapon_RocketLauncher:
 			projectile = G_Fire_Rocket( origin, angles, firedef, ent );
 			break;
 
-		case WEAP_PLASMAGUN:
+		case Weapon_Plasma:
 			projectile = G_Fire_Plasma( origin, angles, firedef, ent );
 			break;
 
-		case WEAP_LASERGUN:
+		case Weapon_Laser:
 			projectile = G_Fire_Lasergun( origin, angles, firedef, ent );
 			break;
 
-		case WEAP_ELECTROBOLT:
+		case Weapon_Railgun:
 			G_Fire_Bolt( origin, angles, firedef, ent );
 			break;
 	}

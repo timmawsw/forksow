@@ -147,7 +147,7 @@ static void Cmd_GameOperator_f( edict_t *ent ) {
 * Use an inventory item
 */
 static void Cmd_Use_f( edict_t *ent ) {
-	const gsitem_t *it;
+	const Item *it;
 
 	assert( ent && ent->r.client );
 
@@ -737,8 +737,8 @@ char *G_StatsMessage( edict_t *ent ) {
 	// message header
 	snprintf( entry, sizeof( entry ), "%d", PLAYERNUM( ent ) );
 
-	for( int i = WEAP_GUNBLADE; i < WEAP_TOTAL; i++ ) {
-		const gsitem_t * item = GS_FindItemByTag( i );
+	for( int i = Weapon_Knife; i < Weapon_Count; i++ ) {
+		const Item * item = GS_FindItemByTag( i );
 		assert( item );
 
 		int hit = 0;

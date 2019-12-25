@@ -900,7 +900,7 @@ void MSG_ReadDeltaStruct( msg_t *msg, const void *from, void *to, size_t size, c
 // DELTA ENTITIES
 //==================================================
 
-#define ESOFS( x ) offsetof( entity_state_t,x )
+#define ESOFS( x ) offsetof( SyncEntityState,x )
 
 static const msg_field_t ent_state_fields[] = {
 	{ ESOFS( events[0] ), 32, 1, WIRE_UBASE128 },
@@ -976,7 +976,7 @@ static void MSG_WriteEntityNumber( msg_t *msg, int number, bool remove, unsigned
 * Writes part of a packetentities message.
 * Can delta from either a baseline or a previous packet_entity
 */
-void MSG_WriteDeltaEntity( msg_t *msg, const entity_state_t *from, const entity_state_t *to, bool force ) {
+void MSG_WriteDeltaEntity( msg_t *msg, const SyncEntityState *from, const SyncEntityState *to, bool force ) {
 	int number;
 	unsigned byteMask;
 	uint8_t fieldMask[32] = { 0 };
@@ -1044,7 +1044,7 @@ int MSG_ReadEntityNumber( msg_t *msg, bool *remove, unsigned *byteMask ) {
 *
 * Can go from either a baseline or a previous packet_entity
 */
-void MSG_ReadDeltaEntity( msg_t *msg, const entity_state_t *from, entity_state_t *to, int number, unsigned byteMask ) {
+void MSG_ReadDeltaEntity( msg_t *msg, const SyncEntityState *from, SyncEntityState *to, int number, unsigned byteMask ) {
 	uint8_t fieldMask[32] = { 0 };
 	const msg_field_t *fields = ent_state_fields;
 	int numFields = ARRAY_COUNT( ent_state_fields );
@@ -1102,7 +1102,7 @@ void MSG_ReadDeltaUsercmd( msg_t *msg, const usercmd_t *from, usercmd_t *move ) 
 // DELTA PLAYER STATES
 //==================================================
 
-#define PSOFS( x ) offsetof( player_state_t,x )
+#define PSOFS( x ) offsetof( SyncPlayerState,x )
 
 static const msg_field_t player_state_msg_fields[] = {
 	{ PSOFS( pmove.pm_type ), 32, 1, WIRE_UBASE128 },
@@ -1155,8 +1155,8 @@ static const msg_field_t player_state_msg_fields[] = {
 /*
 * MSG_WriteDeltaPlayerstate
 */
-void MSG_WriteDeltaPlayerState( msg_t *msg, const player_state_t *ops, const player_state_t *ps ) {
-	static player_state_t dummy;
+void MSG_WriteDeltaPlayerState( msg_t *msg, const SyncPlayerState *ops, const SyncPlayerState *ps ) {
+	static SyncPlayerState dummy;
 
 	if( !ops ) {
 		ops = &dummy;
@@ -1168,22 +1168,22 @@ void MSG_WriteDeltaPlayerState( msg_t *msg, const player_state_t *ops, const pla
 /*
 * MSG_ReadDeltaPlayerstate
 */
-void MSG_ReadDeltaPlayerState( msg_t *msg, const player_state_t *ops, player_state_t *ps ) {
-	static player_state_t dummy;
+void MSG_ReadDeltaPlayerState( msg_t *msg, const SyncPlayerState *ops, SyncPlayerState *ps ) {
+	static SyncPlayerState dummy;
 
 	if( !ops ) {
 		ops = &dummy;
 	}
-	memcpy( ps, ops, sizeof( player_state_t ) );
+	memcpy( ps, ops, sizeof( SyncPlayerState ) );
 
-	MSG_ReadDeltaStruct( msg, ops, ps, sizeof( player_state_t ), player_state_msg_fields, ARRAY_COUNT( player_state_msg_fields ) );
+	MSG_ReadDeltaStruct( msg, ops, ps, sizeof( SyncPlayerState ), player_state_msg_fields, ARRAY_COUNT( player_state_msg_fields ) );
 }
 
 //==================================================
 // DELTA GAME STATES
 //==================================================
 
-#define GSOFS( x ) offsetof( game_state_t,x )
+#define GSOFS( x ) offsetof( SyncGameState,x )
 
 static const msg_field_t game_state_msg_fields[] = {
 	{ GSOFS( stats ), 64, MAX_GAME_STATS, WIRE_BASE128 },
@@ -1192,8 +1192,8 @@ static const msg_field_t game_state_msg_fields[] = {
 /*
 * MSG_WriteDeltaGameState
 */
-void MSG_WriteDeltaGameState( msg_t *msg, const game_state_t *from, const game_state_t *to ) {
-	static game_state_t dummy;
+void MSG_WriteDeltaGameState( msg_t *msg, const SyncGameState *from, const SyncGameState *to ) {
+	static SyncGameState dummy;
 
 	if( !from ) {
 		from = &dummy;
@@ -1205,12 +1205,12 @@ void MSG_WriteDeltaGameState( msg_t *msg, const game_state_t *from, const game_s
 /*
 * MSG_ReadDeltaGameState
 */
-void MSG_ReadDeltaGameState( msg_t *msg, const game_state_t *from, game_state_t *to ) {
-	static game_state_t dummy;
+void MSG_ReadDeltaGameState( msg_t *msg, const SyncGameState *from, SyncGameState *to ) {
+	static SyncGameState dummy;
 
 	if( !from ) {
 		from = &dummy;
 	}
 
-	MSG_ReadDeltaStruct( msg, from, to, sizeof( game_state_t ), game_state_msg_fields, ARRAY_COUNT( game_state_msg_fields ) );
+	MSG_ReadDeltaStruct( msg, from, to, sizeof( SyncGameState ), game_state_msg_fields, ARRAY_COUNT( game_state_msg_fields ) );
 }

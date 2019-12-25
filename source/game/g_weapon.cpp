@@ -187,7 +187,7 @@ void W_Fire_MG( edict_t *self, vec3_t start, vec3_t angles, int range, int hspre
 	edict_t *event = G_SpawnEvent( EV_FIRE_MG, 0, start );
 	event->s.ownerNum = ENTNUM( self );
 	VectorScale( dir, 4096, event->s.origin2 ); // DirToByte is too inaccurate
-	event->s.weapon = WEAP_MACHINEGUN;
+	event->s.weapon = Weapon_MachineGun;
 
 	vec3_t right, up;
 	ViewVectors( dir, right, up );
@@ -245,7 +245,7 @@ void W_Fire_Riotgun( edict_t *self, vec3_t start, vec3_t angles, int range, int 
 	event = G_SpawnEvent( EV_FIRE_RIOTGUN, 0, start );
 	event->s.ownerNum = ENTNUM( self );
 	VectorScale( dir, 4096, event->s.origin2 ); // DirToByte is too inaccurate
-	event->s.weapon = WEAP_RIOTGUN;
+	event->s.weapon = Weapon_Shotgun;
 
 	G_Fire_SunflowerPattern( self, start, dir, count, hspread, vspread,
 		range, damage, knockback, dmgflags, timeDelta );
@@ -619,7 +619,7 @@ static void G_Laser_Think( edict_t *ent ) {
 
 	owner = &game.edicts[ent->s.ownerNum];
 
-	if( G_ISGHOSTING( owner ) || owner->s.weapon != WEAP_LASERGUN ||
+	if( G_ISGHOSTING( owner ) || owner->s.weapon != Weapon_Laser ||
 		trap_GetClientState( PLAYERNUM( owner ) ) < CS_SPAWNED ||
 		owner->r.client->ps.weaponState != WEAPON_STATE_REFIRE ) {
 		G_HideLaser( ent );

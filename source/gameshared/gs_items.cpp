@@ -38,7 +38,7 @@ const Item * GS_FindItemByName( const char * name ) {
 	return NULL;
 }
 
-bool GS_CanEquip( const player_state_t * playerState, ItemType type ) {
+bool GS_CanEquip( const SyncPlayerState * playerState, ItemType type ) {
 	if( !playerState->inventory[ type ] ) {
 		return false;
 	}

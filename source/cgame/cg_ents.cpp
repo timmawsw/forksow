@@ -64,7 +64,7 @@ static void CG_FixVolumeCvars( void ) {
 
 static bool CG_UpdateLinearProjectilePosition( centity_t *cent ) {
 	vec3_t origin;
-	entity_state_t *state;
+	SyncEntityState *state;
 	int moveTime;
 	int64_t serverTime;
 #define MIN_DRAWDISTANCE_FIRSTPERSON 86
@@ -117,7 +117,7 @@ static bool CG_UpdateLinearProjectilePosition( centity_t *cent ) {
 /*
 * CG_NewPacketEntityState
 */
-static void CG_NewPacketEntityState( entity_state_t *state ) {
+static void CG_NewPacketEntityState( SyncEntityState *state ) {
 	centity_t *cent;
 
 	cent = &cg_entities[state->number];
@@ -862,7 +862,7 @@ static void CG_UpdateSpikes( centity_t *cent ) {
 //		PACKET ENTITIES
 //==========================================================================
 
-void CG_EntityLoopSound( entity_state_t *state, float attenuation ) {
+void CG_EntityLoopSound( SyncEntityState *state, float attenuation ) {
 	if( !state->sound ) {
 		return;
 	}
@@ -877,7 +877,7 @@ void CG_EntityLoopSound( entity_state_t *state, float attenuation ) {
 void CG_AddEntities( void ) {
 	ZoneScoped;
 
-	entity_state_t *state;
+	SyncEntityState *state;
 	int pnum;
 	centity_t *cent;
 	bool canLight;
@@ -996,7 +996,7 @@ void CG_LerpEntities( void ) {
 	ZoneScoped;
 
 	for( int pnum = 0; pnum < cg.frame.numEntities; pnum++ ) {
-		entity_state_t * state = &cg.frame.parsedEntities[pnum & ( MAX_PARSE_ENTITIES - 1 )];
+		SyncEntityState * state = &cg.frame.parsedEntities[pnum & ( MAX_PARSE_ENTITIES - 1 )];
 		int number = state->number;
 		centity_t * cent = &cg_entities[number];
 
@@ -1059,7 +1059,7 @@ void CG_LerpEntities( void ) {
 void CG_UpdateEntities( void ) {
 	ZoneScoped;
 
-	entity_state_t *state;
+	SyncEntityState *state;
 	int pnum;
 	centity_t *cent;
 
@@ -1177,7 +1177,7 @@ void CG_GetEntitySpatilization( int entNum, vec3_t origin, vec3_t velocity ) {
 /*
 * CG_BBoxForEntityState
 */
-void CG_BBoxForEntityState( const entity_state_t * state, vec3_t mins, vec3_t maxs ) {
+void CG_BBoxForEntityState( const SyncEntityState * state, vec3_t mins, vec3_t maxs ) {
 	if( state->solid == SOLID_BMODEL ) {
 		CG_Error( "CG_BBoxForEntityState: called for a brush model\n" );
 	} else { // encoded bbox

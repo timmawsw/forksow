@@ -126,7 +126,7 @@ static void PlayerTouchWall( int nbTestDir, float maxZnormal, vec3_t *normal ) {
 	int i, j;
 	trace_t trace;
 	float dist = 1.0;
-	entity_state_t *state;
+	SyncEntityState *state;
 
 	for( i = 0; i < nbTestDir; i++ ) {
 		dir[0] = pml.origin[0] + ( pm->maxs[0]*cosf( ( PI*2.0f /nbTestDir )*i ) + pml.velocity[0] * 0.015f );

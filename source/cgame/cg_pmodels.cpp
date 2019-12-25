@@ -402,17 +402,17 @@ static int CG_MoveFlagsToUpperAnimation( uint32_t moveflags, int carried_weapon 
 	switch( carried_weapon ) {
 		case WEAP_NONE:
 			return TORSO_HOLD_BLADE; // fixme: a special animation should exist
-		case WEAP_GUNBLADE:
+		case Weapon_Knife:
 			return TORSO_HOLD_BLADE;
-		case WEAP_LASERGUN:
+		case Weapon_Laser:
 			return TORSO_HOLD_PISTOL;
-		case WEAP_RIOTGUN:
-		case WEAP_PLASMAGUN:
+		case Weapon_Shotgun:
+		case Weapon_Plasma:
 			return TORSO_HOLD_LIGHTWEAPON;
-		case WEAP_ROCKETLAUNCHER:
-		case WEAP_GRENADELAUNCHER:
+		case Weapon_RocketLauncher:
+		case Weapon_GrenadeLauncher:
 			return TORSO_HOLD_HEAVYWEAPON;
-		case WEAP_ELECTROBOLT:
+		case Weapon_Railgun:
 			return TORSO_HOLD_AIMWEAPON;
 	}
 
@@ -464,7 +464,7 @@ static int CG_MoveFlagsToLowerAnimation( uint32_t moveflags ) {
 	return LEGS_STAND_IDLE;
 }
 
-static PlayerModelAnimationSet CG_GetBaseAnims( entity_state_t *state, const vec3_t velocity ) {
+static PlayerModelAnimationSet CG_GetBaseAnims( SyncEntityState *state, const vec3_t velocity ) {
 	constexpr float MOVEDIREPSILON = 0.3f;
 	constexpr float WALKEPSILON = 5.0f;
 	constexpr float RUNEPSILON = 220.0f;

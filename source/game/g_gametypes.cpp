@@ -37,7 +37,7 @@ cvar_t *g_scorelimit;
 /*
 * G_GetGameState
 */
-game_state_t *G_GetGameState( void ) {
+SyncGameState *G_GetGameState( void ) {
 	return &server_gs.gameState;
 }
 

@@ -825,7 +825,7 @@ static void GameMenu() {
 		int hovered = WEAP_NONE;
 
 		int cash = MAX_CASH;
-		for( int i = 0; i < WEAP_TOTAL; i++ ) {
+		for( int i = 0; i < Weapon_Count; i++ ) {
 			if( selected_weapons[ i ] ) {
 				cash -= GS_FindItemByTag( i )->cost;
 			}
@@ -855,9 +855,9 @@ static void GameMenu() {
 			ImGui::NextColumn();
 
 			constexpr int weapon_order[] = {
-				WEAP_ELECTROBOLT, WEAP_ROCKETLAUNCHER, WEAP_LASERGUN,
-				WEAP_MACHINEGUN, WEAP_RIOTGUN, WEAP_PLASMAGUN,
-				WEAP_GRENADELAUNCHER
+				Weapon_Railgun, Weapon_RocketLauncher, Weapon_Laser,
+				Weapon_MachineGun, Weapon_Shotgun, Weapon_Plasma,
+				Weapon_GrenadeLauncher
 			};
 
 			// weapon grid
@@ -918,7 +918,7 @@ static void GameMenu() {
 				if( hovered != WEAP_NONE ) {
 					ImGui::PushStyleColor( ImGuiCol_ChildBg, IM_COL32( 0, 0, 0, 225 ) );
 
-					const gsitem_t * item = GS_FindItemByTag( hovered );
+					const Item * item = GS_FindItemByTag( hovered );
 					const Material * icon = cgs.media.shaderWeaponIcon[ hovered - 1 ];
 					Vec2 half_pixel = 0.5f / Vec2( icon->texture->width, icon->texture->height );
 					firedef_t weap_def = GS_GetWeaponDef( hovered )->firedef;

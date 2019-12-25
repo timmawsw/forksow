@@ -271,7 +271,7 @@ extern cvar_t *cl_downloads_from_web_timeout;
 extern cvar_t *cl_devtools;
 
 // delta from this if not from a previous frame
-extern entity_state_t cl_baselines[MAX_EDICTS];
+extern SyncEntityState cl_baselines[MAX_EDICTS];
 
 //=============================================================================
 

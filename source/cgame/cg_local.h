@@ -60,8 +60,8 @@ enum {
 };
 
 typedef struct {
-	entity_state_t current;
-	entity_state_t prev;        // will always be valid, but might just be a copy of current
+	SyncEntityState current;
+	SyncEntityState prev;        // will always be valid, but might just be a copy of current
 
 	int serverFrame;            // if not current, this ent isn't in the frame
 	int64_t fly_stoptime;
@@ -207,7 +207,7 @@ typedef struct {
 
 	const Material * shaderTick;
 
-	const Material * shaderWeaponIcon[ Item_WeaponCount ];
+	const Material * shaderWeaponIcon[ Weapon_Count ];
 	const Material * shaderKeyIcon[KEYICON_TOTAL];
 
 	const Material * shaderAlive;
@@ -298,9 +298,9 @@ typedef struct {
 	char configStrings[MAX_CONFIGSTRINGS][MAX_CONFIGSTRING_CHARS];
 	char baseConfigStrings[MAX_CONFIGSTRINGS][MAX_CONFIGSTRING_CHARS];
 
-	char weaponModels[ Item_WeaponCount ][MAX_QPATH];
+	char weaponModels[ Weapon_Count ][MAX_QPATH];
 	int numWeaponModels;
-	weaponinfo_t *weaponInfos[ Item_WeaponCount ];    // indexed list of weapon model infos
+	weaponinfo_t *weaponInfos[ Weapon_Count ];    // indexed list of weapon model infos
 	orientation_t weaponItemTag;
 
 	cg_clientInfo_t clientInfo[MAX_CLIENTS];
@@ -347,14 +347,14 @@ typedef struct {
 	int64_t predictingTimeStamp;
 	int64_t predictedEventTimes[PREDICTABLE_EVENTS_MAX];
 	vec3_t predictionError;
-	player_state_t predictedPlayerState;     // current in use, predicted or interpolated
+	SyncPlayerState predictedPlayerState;     // current in use, predicted or interpolated
 	int predictedWeaponSwitch;              // inhibit shooting prediction while a weapon change is expected
 	int predictedGroundEntity;
 
 	// prediction optimization (don't run all ucmds in not needed)
 	int64_t predictFrom;
-	entity_state_t predictFromEntityState;
-	player_state_t predictFromPlayerState;
+	SyncEntityState predictFromEntityState;
+	SyncPlayerState predictFromPlayerState;
 
 	int lastWeapon;
 
@@ -426,7 +426,7 @@ void CG_AddEntities( void );
 void CG_GetEntitySpatilization( int entNum, vec3_t origin, vec3_t velocity );
 void CG_LerpEntities( void );
 void CG_LerpGenericEnt( centity_t *cent );
-void CG_BBoxForEntityState( const entity_state_t * state, vec3_t mins, vec3_t maxs );
+void CG_BBoxForEntityState( const SyncEntityState * state, vec3_t mins, vec3_t maxs );
 
 void CG_AddOutline( entity_t *ent, int effects, RGBA8 color );
 
@@ -498,7 +498,7 @@ void CG_DrawNet( int x, int y, int w, int h, Alignment alignment, Vec4 color );
 void CG_ClearPointedNum( void );
 
 void CG_InitDamageNumbers();
-void CG_AddDamageNumber( entity_state_t * ent );
+void CG_AddDamageNumber( SyncEntityState * ent );
 void CG_DrawDamageNumbers();
 
 void CG_AddBombHudEntity( centity_t * cent );
@@ -593,7 +593,6 @@ void CG_UseItem( const char *name );
 void CG_RegisterCGameCommands( void );
 void CG_UnregisterCGameCommands( void );
 void CG_AddAward( const char *str );
-void CG_OverrideWeapondef( int index, const char *cstring );
 
 void CG_StartBackgroundTrack( void );
 
@@ -668,7 +667,7 @@ void CG_BladeImpact( const vec3_t pos, const vec3_t dir );
 void CG_PModel_SpawnTeleportEffect( centity_t * cent, MatrixPalettes temp_pose );
 void CG_LaserGunImpact( const vec3_t pos, float radius, const vec3_t laser_dir, RGBA8 color );
 
-void CG_Dash( const entity_state_t *state );
+void CG_Dash( const SyncEntityState *state );
 void CG_Explosion_Puff_2( const vec3_t pos, const vec3_t vel, int radius );
 void CG_DustCircle( const vec3_t pos, const vec3_t dir, float radius, int count );
 void CG_ExplosionsDust( const vec3_t pos, const vec3_t dir, float radius );
@@ -701,7 +700,7 @@ void CG_ViewWeapon_RefreshAnimation( cg_viewweapon_t *viewweapon );
 // cg_events.c
 //
 void CG_FireEvents( bool early );
-void CG_EntityEvent( entity_state_t *ent, int ev, int parm, bool predicted );
+void CG_EntityEvent( SyncEntityState *ent, int ev, int parm, bool predicted );
 void CG_AddAnnouncerEvent( const SoundEffect *sound, bool queued );
 void CG_ReleaseAnnouncerEvents( void );
 void CG_ClearAnnouncerEvents( void );

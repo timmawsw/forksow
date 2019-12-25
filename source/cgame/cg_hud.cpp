@@ -81,14 +81,14 @@ static const constant_numeric_t cg_numeric_constants[] = {
 	{ "MATCH_STATE_WAITEXIT", MATCH_STATE_WAITEXIT },
 
 	// weapon
-	{ "WEAP_GUNBLADE", WEAP_GUNBLADE },
-	{ "WEAP_MACHINEGUN", WEAP_MACHINEGUN },
-	{ "WEAP_RIOTGUN", WEAP_RIOTGUN },
-	{ "WEAP_GRENADELAUNCHER", WEAP_GRENADELAUNCHER },
-	{ "WEAP_ROCKETLAUNCHER", WEAP_ROCKETLAUNCHER },
-	{ "WEAP_PLASMAGUN", WEAP_PLASMAGUN },
-	{ "WEAP_LASERGUN", WEAP_LASERGUN },
-	{ "WEAP_ELECTROBOLT", WEAP_ELECTROBOLT },
+	{ "Weapon_Knife", Weapon_Knife },
+	{ "Weapon_MachineGun", Weapon_MachineGun },
+	{ "Weapon_Shotgun", Weapon_Shotgun },
+	{ "Weapon_GrenadeLauncher", Weapon_GrenadeLauncher },
+	{ "Weapon_RocketLauncher", Weapon_RocketLauncher },
+	{ "Weapon_Plasma", Weapon_Plasma },
+	{ "Weapon_Laser", Weapon_Laser },
+	{ "Weapon_Railgun", Weapon_Railgun },
 
 	{ "CS_CALLVOTE", CS_CALLVOTE },
 	{ "CS_CALLVOTE_REQUIRED_VOTES", CS_CALLVOTE_REQUIRED_VOTES },
@@ -197,9 +197,9 @@ static int CG_GetCvar( const void *parameter ) {
  */
 static bool CG_IsWeaponInList( int weapon ) {
 	bool hasWeapon = cg.predictedPlayerState.inventory[weapon] != 0;
-	bool hasAmmo = cg.predictedPlayerState.inventory[weapon - WEAP_GUNBLADE + AMMO_GUNBLADE];
+	bool hasAmmo = cg.predictedPlayerState.inventory[weapon - Weapon_Knife + AMMO_GUNBLADE];
 
-	if( weapon == WEAP_GUNBLADE ) { // gunblade always has 1 ammo when it's strong, but the player doesn't necessarily have it
+	if( weapon == Weapon_Knife ) { // gunblade always has 1 ammo when it's strong, but the player doesn't necessarily have it
 		return hasWeapon;
 	}
 
@@ -1085,7 +1085,7 @@ void CG_SC_Obituary( void ) {
 }
 
 static const Material * CG_GetWeaponIcon( int weapon ) {
-	return cgs.media.shaderWeaponIcon[ weapon - WEAP_GUNBLADE ];
+	return cgs.media.shaderWeaponIcon[ weapon - Weapon_Knife ];
 }
 
 static void CG_DrawObituaries(
@@ -1156,34 +1156,34 @@ static void CG_DrawObituaries(
 		const Material *pic;
 		switch( obr->mod ) {
 			case MOD_GUNBLADE:
-				pic = CG_GetWeaponIcon( WEAP_GUNBLADE );
+				pic = CG_GetWeaponIcon( Weapon_Knife );
 				break;
 			case MOD_MACHINEGUN:
-				pic = CG_GetWeaponIcon( WEAP_MACHINEGUN );
+				pic = CG_GetWeaponIcon( Weapon_MachineGun );
 				break;
 			case MOD_RIOTGUN:
-				pic = CG_GetWeaponIcon( WEAP_RIOTGUN );
+				pic = CG_GetWeaponIcon( Weapon_Shotgun );
 				break;
 			case MOD_GRENADE:
 			case MOD_GRENADE_SPLASH:
-				pic = CG_GetWeaponIcon( WEAP_GRENADELAUNCHER );
+				pic = CG_GetWeaponIcon( Weapon_GrenadeLauncher );
 				break;
 			case MOD_ROCKET:
 			case MOD_ROCKET_SPLASH:
-				pic = CG_GetWeaponIcon( WEAP_ROCKETLAUNCHER );
+				pic = CG_GetWeaponIcon( Weapon_RocketLauncher );
 				break;
 			case MOD_PLASMA:
 			case MOD_PLASMA_SPLASH:
-				pic = CG_GetWeaponIcon( WEAP_PLASMAGUN );
+				pic = CG_GetWeaponIcon( Weapon_Plasma );
 				break;
 			case MOD_ELECTROBOLT:
-				pic = CG_GetWeaponIcon( WEAP_ELECTROBOLT );
+				pic = CG_GetWeaponIcon( Weapon_Railgun );
 				break;
 			case MOD_LASERGUN:
-				pic = CG_GetWeaponIcon( WEAP_LASERGUN );
+				pic = CG_GetWeaponIcon( Weapon_Laser );
 				break;
 			default:
-				pic = CG_GetWeaponIcon( WEAP_GUNBLADE ); // FIXME
+				pic = CG_GetWeaponIcon( Weapon_Knife ); // FIXME
 				break;
 		}
 
@@ -1526,7 +1526,7 @@ constexpr float SEL_WEAP_X_OFFSET = 0.25f;
 
 static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih, Alignment alignment, float font_size ) {
 	int num_weapons = 0;
-	for( int i = WEAP_GUNBLADE; i < WEAP_TOTAL; i++ ) {
+	for( int i = Weapon_Knife; i < Weapon_Count; i++ ) {
 		if( CG_IsWeaponInList( i ) ) {
 			num_weapons++;
 		}
@@ -1539,7 +1539,7 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 
 	int drawn_weapons = 0;
 	bool selected_found = false;
-	for( int i = WEAP_GUNBLADE; i < WEAP_TOTAL; i++ ) {
+	for( int i = Weapon_Knife; i < Weapon_Count; i++ ) {
 		if( !CG_IsWeaponInList( i ) )
 			continue;
 
@@ -1556,13 +1556,13 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 
 		Vec4 color = Vec4( 1.0f );
 		Vec4 color_bg = Vec4( 0.5f );
-		// if ( i != WEAP_GUNBLADE ) {
-		int ammo = cg.predictedPlayerState.inventory[ AMMO_GUNBLADE + i - WEAP_GUNBLADE ];
+		// if ( i != Weapon_Knife ) {
+		int ammo = cg.predictedPlayerState.inventory[ AMMO_GUNBLADE + i - Weapon_Knife ];
 
 		int ammo_in_clip = 0;
 
 
-		if ( i != WEAP_GUNBLADE ) {
+		if ( i != Weapon_Knife ) {
 			int capacity = GS_FindItemByTag( i )->capacity;
 			int clips = GS_FindItemByTag( i )->clips;
 			int ammo_max =  clips * capacity;
@@ -1586,7 +1586,7 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 		Draw2DBox( curx + roundf( curiw * 0.03f ), cury + roundf ( curih * 0.03f ), roundf( curiw * 0.95f ), roundf( curih * 0.95f ), cgs.white_material, color_bg );
 		Draw2DBox( curx + roundf( curiw * 0.16f ), cury + roundf ( curih * 0.16f ), roundf( curiw * 0.69f ), roundf( curiw * 0.69f ), CG_GetWeaponIcon( i ), color );
 
-		if( i != WEAP_GUNBLADE ) {
+		if( i != Weapon_Knife ) {
 			DrawText( GetHUDFont(), font_size + (curiw - iw)/4, va( "%i", ammo_in_clip ), Alignment_LeftBottom, curx + curiw*0.15f, cury + curih*0.85f, layout_cursor_color, layout_cursor_font_border );
 		}
 

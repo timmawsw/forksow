@@ -104,12 +104,12 @@ void GS_TraceLaserBeam( const gs_state_t * gs, trace_t *trace, vec3_t origin, ve
 /*
 * GS_SelectBestWeapon
 */
-int GS_SelectBestWeapon( player_state_t *playerState ) {
+int GS_SelectBestWeapon( SyncPlayerState *playerState ) {
 	int weap, weap_chosen = WEAP_NONE;
-	gs_weapon_definition_t *weapondef;
+	WeaponDef *weapondef;
 
 	//find with strong ammos
-	for( weap = WEAP_TOTAL - 1; weap >= WEAP_GUNBLADE; weap-- ) {
+	for( weap = Weapon_Count - 1; weap >= Weapon_Knife; weap-- ) {
 		if( !playerState->inventory[weap] ) {
 			continue;
 		}
@@ -129,7 +129,7 @@ found:
 /*
 * GS_CheckAmmoInWeapon
 */
-bool GS_CheckAmmoInWeapon( player_state_t *playerState, int checkweapon ) {
+bool GS_CheckAmmoInWeapon( SyncPlayerState *playerState, int checkweapon ) {
 	if( checkweapon != WEAP_NONE && !playerState->inventory[checkweapon] ) {
 		return false;
 	}
@@ -145,11 +145,11 @@ bool GS_CheckAmmoInWeapon( player_state_t *playerState, int checkweapon ) {
 /*
 * GS_ThinkPlayerWeapon
 */
-int GS_ThinkPlayerWeapon( const gs_state_t * gs, player_state_t *playerState, int buttons, int msecs, int timeDelta ) {
+int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState *playerState, int buttons, int msecs, int timeDelta ) {
 	firedef_t *firedef;
 	bool refire = false;
 
-	assert( playerState->stats[STAT_PENDING_WEAPON] >= 0 && playerState->stats[STAT_PENDING_WEAPON] < WEAP_TOTAL );
+	assert( playerState->stats[STAT_PENDING_WEAPON] >= 0 && playerState->stats[STAT_PENDING_WEAPON] < Weapon_Count );
 
 	if( GS_MatchPaused( gs ) ) {
 		return playerState->stats[STAT_WEAPON];
@@ -269,7 +269,7 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, player_state_t *playerState, in
 			gs->api.PredictedEvent( playerState->POVnum, EV_FIREWEAPON, parm );
 		}
 
-		if( !GS_InfiniteAmmo( gs ) && playerState->stats[STAT_WEAPON] != WEAP_GUNBLADE ) {
+		if( !GS_InfiniteAmmo( gs ) && playerState->stats[STAT_WEAPON] != Weapon_Knife ) {
 			if( firedef->ammo_id != AMMO_NONE && firedef->usage_count ) {
 				playerState->inventory[firedef->ammo_id] -= firedef->usage_count;
 				if( playerState->inventory[firedef->ammo_id] == 0 ) {

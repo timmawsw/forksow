@@ -47,7 +47,7 @@ int G_ModToAmmo( int mod ) {
 	}
 }
 
-bool G_IsTeamDamage( entity_state_t *targ, entity_state_t *attacker ) {
+bool G_IsTeamDamage( SyncEntityState *targ, SyncEntityState *attacker ) {
 	if( !GS_TeamBasedGametype( &server_gs ) )
 		return false;
 	return targ->number != attacker->number && targ->team == attacker->team;
@@ -320,13 +320,13 @@ void G_Damage( edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_
 			if( level.gametype.selfDamage ) {
 				switch( mod ) {
 				case MOD_PLASMA_SPLASH:
-					take = damage * GS_GetWeaponDef( WEAP_PLASMAGUN )->firedef.selfdamage;
+					take = damage * GS_GetWeaponDef( Weapon_Plasma )->firedef.selfdamage;
 					break;
 				case MOD_GRENADE_SPLASH:
-					take = damage * GS_GetWeaponDef( WEAP_GRENADELAUNCHER )->firedef.selfdamage;
+					take = damage * GS_GetWeaponDef( Weapon_GrenadeLauncher )->firedef.selfdamage;
 					break;
 				case MOD_ROCKET_SPLASH:
-					take = damage * GS_GetWeaponDef( WEAP_ROCKETLAUNCHER )->firedef.selfdamage;
+					take = damage * GS_GetWeaponDef( Weapon_RocketLauncher )->firedef.selfdamage;
 					break;
 				default:
 					take = damage * 0.75f;
@@ -437,7 +437,7 @@ void G_Damage( edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_
 /*
 * G_SplashFrac
 */
-void G_SplashFrac( const entity_state_t *s, const entity_shared_t *r, const vec3_t point, float maxradius, vec3_t pushdir, float *frac, bool selfdamage ) {
+void G_SplashFrac( const SyncEntityState *s, const entity_shared_t *r, const vec3_t point, float maxradius, vec3_t pushdir, float *frac, bool selfdamage ) {
 	const vec3_t & origin = s->origin;
 	const vec3_t & mins = r->mins;
 	const vec3_t & maxs = r->maxs;
