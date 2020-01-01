@@ -139,11 +139,7 @@ static void CL_RefreshUcmd( usercmd_t *ucmd, int msec, bool ready ) {
 * CL_WriteUcmdsToMessage
 */
 void CL_WriteUcmdsToMessage( msg_t *msg ) {
-	usercmd_t *cmd;
-	usercmd_t *oldcmd;
-	usercmd_t nullcmd;
 	unsigned int resendCount;
-	unsigned int i;
 	unsigned int ucmdFirst;
 	unsigned int ucmdHead;
 
@@ -184,7 +180,7 @@ void CL_WriteUcmdsToMessage( msg_t *msg ) {
 	// move the start backwards to the resend point
 	ucmdFirst = ( ucmdFirst > resendCount ) ? ucmdFirst - resendCount : ucmdFirst;
 
-	if( ( ucmdHead - ucmdFirst ) > CMD_MASK ) { // ran out of updates, seduce the send to try to recover activity
+	if( ucmdHead - ucmdFirst > CMD_MASK ) { // ran out of updates, seduce the send to try to recover activity
 		ucmdFirst = ucmdHead - 3;
 	}
 
@@ -206,17 +202,14 @@ void CL_WriteUcmdsToMessage( msg_t *msg ) {
 	MSG_WriteInt32( msg, ucmdHead );
 	MSG_WriteUint8( msg, (uint8_t)( ucmdHead - ucmdFirst ) );
 
+	usercmd_t nullcmd = { };
+	const usercmd_t * oldcmd = &nullcmd;
+
 	// write the ucmds
-	for( i = ucmdFirst; i < ucmdHead; i++ ) {
-		if( i == ucmdFirst ) { // first one isn't delta-compressed
-			cmd = &cl.cmds[i & CMD_MASK];
-			memset( &nullcmd, 0, sizeof( nullcmd ) );
-			MSG_WriteDeltaUsercmd( msg, &nullcmd, cmd );
-		} else {   // delta compress to previous written
-			cmd = &cl.cmds[i & CMD_MASK];
-			oldcmd = &cl.cmds[( i - 1 ) & CMD_MASK];
-			MSG_WriteDeltaUsercmd( msg, oldcmd, cmd );
-		}
+	for( unsigned int i = ucmdFirst; i < ucmdHead; i++ ) {
+		const usercmd_t * cmd = &cl.cmds[i & CMD_MASK];
+		MSG_WriteDeltaUsercmd( msg, oldcmd, cmd );
+		oldcmd = cmd;
 	}
 
 	cls.ucmdSent = i;

@@ -1,4 +1,5 @@
 #include "qcommon/base.h"
+#include "gameshared/gs_public.h"
 
 #define INSTANT 0
 
