@@ -17,42 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-#include "g_local.h"
-
-bool Add_Ammo( gclient_t *client, const Item *item, int count, bool add_it ) {
-	int max = 255;
-
-	if( !client || !item ) {
-		return false;
-	}
-
-	if( (int)client->ps.inventory[item->tag] >= max ) {
-		return false;
-	}
-
-	if( add_it ) {
-		client->ps.inventory[item->tag] += count;
-
-		if( (int)client->ps.inventory[item->tag] > max ) {
-			client->ps.inventory[item->tag] = max;
-		}
-	}
-
-	return true;
-}
-
-bool G_PickupItem( edict_t *other, const Item *it, int flags, int count ) {
-	if( other->r.client && G_ISGHOSTING( other ) ) {
-		return false;
-	}
-
-	if( it->type & IT_WEAPON ) {
-		other->r.client->ps.inventory[it->tag] = 1;
-		return true;
-	}
-
-	return false;
-}
+#include "game/g_local.h"
 
 void G_UseItem( edict_t *ent, const Item *it ) {
 	if( it != NULL && it->type & IT_WEAPON ) {
@@ -60,85 +25,41 @@ void G_UseItem( edict_t *ent, const Item *it ) {
 	}
 }
 
-/*
-* PrecacheItem
-*
-* Precaches all data needed for a given item.
-* This will be called for each item spawned in a level,
-* and for each item in each client's inventory.
-*/
-void PrecacheItem( const Item *it ) {
-	const char *s, *start;
+static void PrecacheAssets( const char * s, int precache( const char * ) ) {
 	char data[MAX_QPATH];
 
-	if( !it ) {
-		return;
-	}
+	while( *s ) {
+		const char * start = s;
+		while( *s && *s != ' ' )
+			s++;
 
-	// parse everything for its ammo
-	if( it->ammo_tag ) {
-		const Item * ammo = GS_FindItemByTag( it->ammo_tag );
-		if( ammo != it ) {
-			PrecacheItem( ammo );
+		int len = s - start;
+		if( len >= MAX_QPATH || len < 5 ) {
+			Com_Error( ERR_DROP, "PrecacheItem: %d has bad precache string", it->tag );
+			return;
 		}
-	}
-
-	// parse the space separated precache string for other items
-	for( int i = 0; i < 3; i++ ) {
-		if( i == 0 ) {
-			s = it->precache_models;
-		} else if( i == 1 ) {
-			s = it->precache_sounds;
-		} else {
-			s = it->precache_images;
+		memcpy( data, start, len );
+		data[len] = 0;
+		if( *s ) {
+			s++;
 		}
 
-		if( !s || !s[0] ) {
-			continue;
-		}
-
-		while( *s ) {
-			start = s;
-			while( *s && *s != ' ' )
-				s++;
-
-			int len = s - start;
-			if( len >= MAX_QPATH || len < 5 ) {
-				Com_Error( ERR_DROP, "PrecacheItem: %d has bad precache string", it->tag );
-				return;
-			}
-			memcpy( data, start, len );
-			data[len] = 0;
-			if( *s ) {
-				s++;
-			}
-
-			if( i == 0 ) {
-				trap_ModelIndex( data );
-			} else if( i == 1 ) {
-				trap_SoundIndex( data );
-			} else {
-				trap_ImageIndex( data );
-			}
-		}
+		precache( data );
 	}
 }
 
 void G_PrecacheItems() {
-	// precache item names and weapondefs
-	for( int i = 1; i < GS_MAX_ITEM_TAGS; i++ ) {
-		const Item * item = GS_FindItemByTag( i );
-		if( !item )
-			break;
-
-		if( item->type & IT_WEAPON && GS_GetWeaponDef( item->tag ) ) {
-			G_PrecacheWeapondef( i, &GS_GetWeaponDef( item->tag )->firedef );
-		}
+	for( int i = 0; i < Weapon_Count; i++ ) {
+		const WeaponDef * weapon = GS_GetWeaponDef( i );
+		PrecacheAssets( weapon->precache_models, trap_ModelIndex );
+		PrecacheAssets( weapon->precache_sounds, trap_SoundIndex );
+		PrecacheAssets( weapon->precache_images, trap_ImageIndex );
 	}
 
-	// precache items
-	for( int i = Weapon_Knife; i < Weapon_Count; i++ ) {
+	for( int i = 0; i < Item_Count; i++ ) {
 		const Item * item = GS_FindItemByTag( i );
-		PrecacheItem( item );
+		PrecacheAssets( item->precache_models, trap_ModelIndex );
+		PrecacheAssets( item->precache_sounds, trap_SoundIndex );
+		PrecacheAssets( item->precache_images, trap_ImageIndex );
 	}
 }

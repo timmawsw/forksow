@@ -790,7 +790,7 @@ struct WeaponDef {
 	unsigned int weaponup_time;
 	unsigned int weapondown_time;
 	unsigned int reload_time;
-	unsigned int timeout;
+	unsigned int range;
 	bool smooth_refire;
 
 	float damage;

@@ -385,8 +385,8 @@ void G_GhostClient( edict_t *ent ) {
 	ent->viewheight = 0;
 	ent->takedamage = DAMAGE_NO;
 
-	// clear inventory
-	memset( ent->r.client->ps.inventory, 0, sizeof( ent->r.client->ps.inventory ) );
+	ent->r.client->ps.weapons = { };
+	ent->r.client->ps.items = { };
 
 	ent->r.client->ps.stats[STAT_WEAPON] = ent->r.client->ps.stats[STAT_PENDING_WEAPON] = WEAP_NONE;
 	ent->r.client->ps.weaponState = WEAPON_STATE_READY;

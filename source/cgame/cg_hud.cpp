@@ -197,15 +197,8 @@ static int CG_GetCvar( const void *parameter ) {
  * @param weapon weapon item ID
  * @return whether to display the weapon
  */
-static bool CG_IsWeaponInList( int weapon ) {
-	bool hasWeapon = cg.predictedPlayerState.inventory[weapon] != 0;
-	bool hasAmmo = cg.predictedPlayerState.inventory[weapon - Weapon_Knife + AMMO_GUNBLADE];
-
-	if( weapon == Weapon_Knife ) { // gunblade always has 1 ammo when it's strong, but the player doesn't necessarily have it
-		return hasWeapon;
-	}
-
-	return hasWeapon || hasAmmo;
+static bool CG_IsWeaponInList( WeaponType weapon ) {
+	return cg.predictedPlayerState.weapons[ weapon ].owned;
 }
 
 static int CG_IsDemoPlaying( const void *parameter ) {
@@ -1087,7 +1080,7 @@ void CG_SC_Obituary( void ) {
 }
 
 static const Material * CG_GetWeaponIcon( int weapon ) {
-	return cgs.media.shaderWeaponIcon[ weapon - Weapon_Knife ];
+	return cgs.media.shaderWeaponIcon[ weapon ];
 }
 
 static void CG_DrawObituaries(
@@ -1528,7 +1521,7 @@ constexpr float SEL_WEAP_X_OFFSET = 0.25f;
 
 static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih, Alignment alignment, float font_size ) {
 	int num_weapons = 0;
-	for( int i = Weapon_Knife; i < Weapon_Count; i++ ) {
+	for( int i = 0; i < Weapon_Count; i++ ) {
 		if( CG_IsWeaponInList( i ) ) {
 			num_weapons++;
 		}
@@ -1541,7 +1534,7 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 
 	int drawn_weapons = 0;
 	bool selected_found = false;
-	for( int i = Weapon_Knife; i < Weapon_Count; i++ ) {
+	for( int i = 0; i < Weapon_Count; i++ ) {
 		if( !CG_IsWeaponInList( i ) )
 			continue;
 
@@ -1559,7 +1552,7 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 		Vec4 color = Vec4( 1.0f );
 		Vec4 color_bg = Vec4( 0.5f );
 		// if ( i != Weapon_Knife ) {
-		int ammo = cg.predictedPlayerState.inventory[ AMMO_GUNBLADE + i - Weapon_Knife ];
+		int ammo = cg.predictedPlayerState.weapons[ i ].ammo;
 
 		int ammo_in_clip = 0;
 

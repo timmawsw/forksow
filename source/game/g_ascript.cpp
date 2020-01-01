@@ -196,9 +196,8 @@ static const asEnumVal_t asPMoveFeaturesVals[] =
 	ASLIB_ENUM_VAL_NULL
 };
 
-static const asEnumVal_t asWeaponTagEnumVals[] =
+static const asEnumVal_t asWeaponTypeEnumVals[] =
 {
-	ASLIB_ENUM_VAL( WEAP_NONE ),
 	ASLIB_ENUM_VAL( Weapon_Knife ),
 	ASLIB_ENUM_VAL( Weapon_MachineGun ),
 	ASLIB_ENUM_VAL( Weapon_Shotgun ),
@@ -207,23 +206,18 @@ static const asEnumVal_t asWeaponTagEnumVals[] =
 	ASLIB_ENUM_VAL( Weapon_Plasma ),
 	ASLIB_ENUM_VAL( Weapon_Laser ),
 	ASLIB_ENUM_VAL( Weapon_Railgun ),
+
 	ASLIB_ENUM_VAL( Weapon_Count ),
 
 	ASLIB_ENUM_VAL_NULL
 };
 
-static const asEnumVal_t asAmmoTagEnumVals[] =
+static const asEnumVal_t asItemTypeEnumVals[] =
 {
-	ASLIB_ENUM_VAL( AMMO_NONE ),
-	ASLIB_ENUM_VAL( AMMO_GUNBLADE ),
-	ASLIB_ENUM_VAL( AMMO_BULLETS ),
-	ASLIB_ENUM_VAL( AMMO_SHELLS ),
-	ASLIB_ENUM_VAL( AMMO_GRENADES ),
-	ASLIB_ENUM_VAL( AMMO_ROCKETS ),
-	ASLIB_ENUM_VAL( AMMO_PLASMA ),
-	ASLIB_ENUM_VAL( AMMO_LASERS ),
-	ASLIB_ENUM_VAL( AMMO_BOLTS ),
-	ASLIB_ENUM_VAL( AMMO_TOTAL ),
+	ASLIB_ENUM_VAL( Item_Bomb ),
+	ASLIB_ENUM_VAL( Item_FakeBomb ),
+
+	ASLIB_ENUM_VAL( Item_Count ),
 
 	ASLIB_ENUM_VAL_NULL
 };
@@ -438,8 +432,8 @@ static const asEnum_t asGameEnums[] =
 	{ "solid_e", asSolidEnumVals },
 	{ "pmovefeats_e", asPMoveFeaturesVals },
 
-	{ "weapon_tag_e", asWeaponTagEnumVals },
-	{ "ammo_tag_e", asAmmoTagEnumVals },
+	{ "WeaponType", asWeaponTypeEnumVals },
+	{ "ItemType", asItemTypeEnumVals },
 
 	{ "client_statest_e", asClientStateEnumVals },
 	{ "sound_channels_e", asSoundChannelEnumVals },
@@ -915,12 +909,7 @@ static void objectGameClient_InventorySetCount( int index, int newcount, gclient
 }
 
 static void objectGameClient_InventoryGiveItemExt( int index, int count, gclient_t *self ) {
-	if( index < 0 || index >= MAX_ITEMS ) {
-		return;
-	}
-
-	const Item * it = GS_FindItemByTag( index );
-	if( !it ) {
+	if( index < 0 || index >= Item_Count ) {
 		return;
 	}
 
@@ -929,7 +918,7 @@ static void objectGameClient_InventoryGiveItemExt( int index, int count, gclient
 		return;
 	}
 
-	G_PickupItem( PLAYERENT( playerNum ), it, 0, count );
+	PLAYERENT( playerNum );->r.client->ps.items[ index ] = true;
 }
 
 static void objectGameClient_InventoryGiveItem( int index, gclient_t *self ) {

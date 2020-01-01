@@ -383,8 +383,6 @@ void PrecacheItem( const Item *it );
 void G_PrecacheItems( void );
 void G_FireWeapon( edict_t *ent, int parm );
 const Item *GetItemByTag( int tag );
-bool Add_Ammo( gclient_t *client, const Item *item, int count, bool add_it );
-bool G_PickupItem( edict_t *other, const Item *it, int flags, int count );
 void G_UseItem( struct edict_s *ent, const Item *item );
 
 //

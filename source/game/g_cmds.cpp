@@ -737,17 +737,9 @@ char *G_StatsMessage( edict_t *ent ) {
 	// message header
 	snprintf( entry, sizeof( entry ), "%d", PLAYERNUM( ent ) );
 
-	for( int i = Weapon_Knife; i < Weapon_Count; i++ ) {
-		const Item * item = GS_FindItemByTag( i );
-		assert( item );
-
-		int hit = 0;
-		int shot = 0;
-
-		if( item->ammo_tag != AMMO_NONE ) {
-			hit = client->level.stats.accuracy_hits[item->ammo_tag - AMMO_GUNBLADE];
-			shot = client->level.stats.accuracy_shots[item->ammo_tag - AMMO_GUNBLADE];
-		}
+	for( int i = 0; i < Weapon_Count; i++ ) {
+		int hit = client->level.stats.accuracy_hits[ i ];
+		int shot = client->level.stats.accuracy_shots[ i ];
 
 		Q_strncatz( entry, va( " %d", shot ), sizeof( entry ) );
 		if( shot < 1 ) {
