@@ -22,17 +22,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "gs_qrespath.h"
 
-// shared callbacks
-
-typedef struct {
-	void ( *Trace )( trace_t *t, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int ignore, int contentmask, int timeDelta );
-	entity_state_t *( *GetEntityState )( int entNum, int deltaTime );
-	int ( *PointContents )( const vec3_t point, int timeDelta );
-	void ( *PredictedEvent )( int entNum, int ev, int parm );
-	void ( *PMoveTouchTriggers )( pmove_t *pm, vec3_t previous_origin );
-	const char *( *GetConfigString )( int index );
-} gs_module_api_t;
-
 //===============================================================
 //		WARSOW player AAboxes sizes
 
@@ -278,14 +267,6 @@ typedef struct {
 } pmove_t;
 
 typedef struct {
-#ifndef _MSC_VER
-	void ( *Printf )( const char *format, ... ) __attribute__( ( format( printf, 1, 2 ) ) );
-	void ( *Error )( const char *format, ... ) __attribute__( ( format( printf, 1, 2 ) ) ) __attribute__( ( noreturn ) );
-#else
-	void ( *Printf )( _Printf_format_string_ const char *format, ... );
-	void ( *Error )( _Printf_format_string_ const char *format, ... );
-#endif
-
 	void ( *Trace )( trace_t *t, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int ignore, int contentmask, int timeDelta );
 	SyncEntityState *( *GetEntityState )( int entNum, int deltaTime );
 	int ( *PointContents )( const vec3_t point, int timeDelta );
