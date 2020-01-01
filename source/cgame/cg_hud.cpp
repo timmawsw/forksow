@@ -20,6 +20,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "qcommon/base.h"
+#include "qcommon/assets.h"
+#include "qcommon/string.h"
 #include "cgame/cg_local.h"
 
 static int layout_cursor_x = 400;
@@ -1672,7 +1674,7 @@ static bool CG_LFuncAlignment( struct cg_layoutnode_s *argumentnode, int numArgu
 		layout_cursor_alignment.x = XAlignment_Right;
 	}
 	else {
-		CG_Printf( "WARNING 'CG_LFuncAlignment' Unknown alignment '%s'", x );
+		Com_Printf( "WARNING 'CG_LFuncAlignment' Unknown alignment '%s'", x );
 		return false;
 	}
 
@@ -1686,7 +1688,7 @@ static bool CG_LFuncAlignment( struct cg_layoutnode_s *argumentnode, int numArgu
 		layout_cursor_alignment.y = YAlignment_Bottom;
 	}
 	else {
-		CG_Printf( "WARNING 'CG_LFuncAlignment' Unknown alignment '%s'", y );
+		Com_Printf( "WARNING 'CG_LFuncAlignment' Unknown alignment '%s'", y );
 		return false;
 	}
 
@@ -1732,7 +1734,7 @@ static bool CG_LFuncFontStyle( struct cg_layoutnode_s *argumentnode, int numArgu
 		layout_cursor_font_style = FontStyle_BoldItalic;
 	}
 	else {
-		CG_Printf( "WARNING 'CG_LFuncFontStyle' Unknown font style '%s'", fontstyle );
+		Com_Printf( "WARNING 'CG_LFuncFontStyle' Unknown font style '%s'", fontstyle );
 		return false;
 	}
 
@@ -1780,7 +1782,7 @@ static bool CG_LFuncDrawPlayerIcons( struct cg_layoutnode_s *argumentnode, int n
 	int total_index = int( CG_GetNumericArg( &argumentnode ) );
 
 	if( total_index < 0 || alive_index < 0 || total_index >= MAX_CONFIGSTRINGS || alive_index >= MAX_CONFIGSTRINGS ) {
-		CG_Printf( "WARNING 'CG_LFuncDrawPlayerIcons' configstring out of range" );
+		Com_Printf( "WARNING 'CG_LFuncDrawPlayerIcons' configstring out of range" );
 		return false;
 	}
 
@@ -2159,7 +2161,7 @@ static const char *CG_GetStringArg( struct cg_layoutnode_s **argumentsnode ) {
 	struct cg_layoutnode_s *anode = *argumentsnode;
 
 	if( !anode || anode->type == LNODE_COMMAND ) {
-		CG_Error( "'CG_LayoutGetStringArg': bad arg count" );
+		Com_Error( ERR_DROP, "'CG_LayoutGetStringArg': bad arg count" );
 	}
 
 	// we can return anything as string
@@ -2176,11 +2178,11 @@ static float CG_GetNumericArg( struct cg_layoutnode_s **argumentsnode ) {
 	float value;
 
 	if( !anode || anode->type == LNODE_COMMAND ) {
-		CG_Error( "'CG_LayoutGetNumericArg': bad arg count" );
+		Com_Error( ERR_DROP, "'CG_LayoutGetNumericArg': bad arg count" );
 	}
 
 	if( anode->type != LNODE_NUMERIC && anode->type != LNODE_REFERENCE_NUMERIC ) {
-		CG_Printf( "WARNING: 'CG_LayoutGetNumericArg': arg %s is not numeric", anode->string );
+		Com_Printf( "WARNING: 'CG_LayoutGetNumericArg': arg %s is not numeric", anode->string );
 	}
 
 	*argumentsnode = anode->next;
@@ -2260,7 +2262,7 @@ static cg_layoutnode_t *CG_LayoutParseArgumentNode( const char *token ) {
 			}
 		}
 		if( cg_numeric_references[i].name == NULL ) {
-			CG_Printf( "Warning: HUD: %s is not valid numeric reference\n", valuetok );
+			Com_Printf( "Warning: HUD: %s is not valid numeric reference\n", valuetok );
 			valuetok--;
 			valuetok = "0";
 		}
@@ -2277,7 +2279,7 @@ static cg_layoutnode_t *CG_LayoutParseArgumentNode( const char *token ) {
 			}
 		}
 		if( cg_numeric_constants[i].name == NULL ) {
-			CG_Printf( "Warning: HUD: %s is not valid numeric constant\n", valuetok );
+			Com_Printf( "Warning: HUD: %s is not valid numeric constant\n", valuetok );
 			valuetok = "0";
 		}
 
@@ -2304,7 +2306,7 @@ static cg_layoutnode_t *CG_LayoutParseArgumentNode( const char *token ) {
 /*
 * CG_LayoutCathegorizeToken
 */
-static int CG_LayoutCathegorizeToken( char *token ) {
+static int CG_LayoutCathegorizeToken( const char *token ) {
 	int i = 0;
 
 	for( i = 0; cg_LayoutCommands[i].name; i++ ) {
@@ -2388,7 +2390,7 @@ static bool CG_LayoutFixCommasInToken( char **ptr, char **backptr ) {
 		}
 
 		if( *token != *back ) {
-			CG_Printf( "Token and Back mismatch %c - %c\n", *token, *back );
+			Com_Printf( "Token and Back mismatch %c - %c\n", *token, *back );
 		}
 
 		if( *back == ',' ) {
@@ -2452,11 +2454,11 @@ static cg_layoutnode_t *CG_RecurseParseLayoutScript( char **ptr, int level ) {
 		// if it's an operator, we don't create a node, but add the operation to the last one
 		if( CG_OperatorFuncForArgument( token ) != NULL ) {
 			if( !node ) {
-				CG_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i): \"%s\" Operator hasn't any prior argument\n", level, token );
+				Com_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i): \"%s\" Operator hasn't any prior argument\n", level, token );
 				continue;
 			}
 			if( node->type == LNODE_COMMAND || node->type == LNODE_STRING ) {
-				CG_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i): \"%s\" Operator was assigned to a command node\n", level, token );
+				Com_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i): \"%s\" Operator was assigned to a command node\n", level, token );
 			} else {
 				expecArgs++; // we now expect one extra argument (not counting the operator one)
 
@@ -2474,13 +2476,13 @@ static cg_layoutnode_t *CG_RecurseParseLayoutScript( char **ptr, int level ) {
 					break;
 				case LNODE_COMMAND:
 				{
-					CG_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i): \"%s\" is not a valid argument for \"%s\"\n", level, token, command ? command->string : "" );
+					Com_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i): \"%s\" is not a valid argument for \"%s\"\n", level, token, command ? command->string : "" );
 					continue;
 				}
 				break;
 				default:
 				{
-					CG_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i) skip and continue: Unrecognized token \"%s\"\n", level, token );
+					Com_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i) skip and continue: Unrecognized token \"%s\"\n", level, token );
 					continue;
 				}
 				break;
@@ -2488,7 +2490,7 @@ static cg_layoutnode_t *CG_RecurseParseLayoutScript( char **ptr, int level ) {
 		} else {
 			if( token_type != LNODE_COMMAND ) {
 				// we are expecting a command
-				CG_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i): unrecognized command \"%s\"\n", level, token );
+				Com_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i): unrecognized command \"%s\"\n", level, token );
 				continue;
 			}
 
@@ -2516,7 +2518,7 @@ static cg_layoutnode_t *CG_RecurseParseLayoutScript( char **ptr, int level ) {
 			{
 				node = CG_LayoutParseArgumentNode( token );
 				if( !node ) {
-					CG_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i): \"%s\" is not a valid argument for \"%s\"\n", level, token, command ? command->string : "" );
+					Com_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i): \"%s\" is not a valid argument for \"%s\"\n", level, token, command ? command->string : "" );
 					break;
 				}
 				numArgs++;
@@ -2527,7 +2529,7 @@ static cg_layoutnode_t *CG_RecurseParseLayoutScript( char **ptr, int level ) {
 			{
 				node = CG_LayoutParseCommandNode( token );
 				if( !node ) {
-					CG_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i): \"%s\" is not a valid command\n", level, token );
+					Com_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i): \"%s\" is not a valid command\n", level, token );
 					break; // skip and continue
 				}
 
@@ -2564,7 +2566,7 @@ static cg_layoutnode_t *CG_RecurseParseLayoutScript( char **ptr, int level ) {
 	}
 
 	if( level > 0 ) {
-		CG_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i): If without endif\n", level );
+		Com_Printf( "WARNING 'CG_RecurseParseLayoutScript'(level %i): If without endif\n", level );
 	}
 
 	return rootnode;
@@ -2628,7 +2630,7 @@ static void CG_RecurseExecuteLayoutThread( cg_layoutnode_t *rootnode ) {
 
 		// Execute the command node
 		if( commandnode->integer != numArguments ) {
-			CG_Printf( "ERROR: Layout command %s: invalid argument count (expecting %i, found %i)\n", commandnode->string, commandnode->integer, numArguments );
+			Com_Printf( "ERROR: Layout command %s: invalid argument count (expecting %i, found %i)\n", commandnode->string, commandnode->integer, numArguments );
 			return;
 		}
 		if( commandnode->func ) {
@@ -2663,191 +2665,56 @@ void CG_ExecuteLayoutProgram( struct cg_layoutnode_s *rootnode ) {
 
 //=============================================================================
 
-//=============================================================================
+static bool LoadHUDFile( const char * path, DynamicString & script ) {
+	Span< const char > contents = AssetString( StringHash( path ) );
+	const char * cursor = contents.ptr;
 
-
-
-/*
-* CG_LoadHUDFile
-*/
-
-// Loads the HUD-file recursively. Recursive includes now supported
-// Also processes "preload" statements for graphics pre-loading
-#define HUD_MAX_LVL 16 // maximum levels of recursive file loading
-static char *CG_LoadHUDFile( const char *path ) {
-	char *rec_fn[HUD_MAX_LVL]; // Recursive filenames...
-	char *rec_buf[HUD_MAX_LVL]; // Recursive file contents buffers
-	char *rec_ptr[HUD_MAX_LVL]; // Recursive file position buffers
-	char *token = NULL, *tmpbuf = NULL, *retbuf = NULL;
-	int rec_lvl = 0, rec_plvl = -1;
-	int retuse = 0, retlen = 0;
-	int f, i, len;
-
-	// Check if path is correct
-	if( path == NULL ) {
-		return NULL;
-	}
-	memset( rec_ptr, 0, sizeof( rec_ptr ) );
-	memset( rec_buf, 0, sizeof( rec_buf ) );
-	memset( rec_ptr, 0, sizeof( rec_ptr ) );
-
-	// Copy the path of the file to the first recursive level filename :)
-	rec_fn[rec_lvl] = ( char * )CG_Malloc( strlen( path ) + 1 );
-	Q_strncpyz( rec_fn[rec_lvl], path, strlen( path ) + 1 );
-	while( 1 ) {
-		if( rec_lvl > rec_plvl ) {
-			// We went a recursive level higher, our filename should have been filled in :)
-			if( !rec_fn[rec_lvl] ) {
-				rec_lvl--;
-			} else if( rec_fn[rec_lvl][0] == '\0' ) {
-				CG_Free( rec_fn[rec_lvl] );
-				rec_fn[rec_lvl] = NULL;
-				rec_lvl--;
-			} else {
-				// First check if this file hadn't been included already by one of the previous files
-				// in the current file-stack to prevent problems :)
-				for( i = 0; i < rec_lvl; i++ ) {
-					if( !Q_stricmp( rec_fn[rec_lvl], rec_fn[i] ) ) {
-						// Recursive file loading detected!!
-						CG_Printf( "HUD: WARNING: Detected recursive file inclusion: %s\n", rec_fn[rec_lvl] );
-						CG_Free( rec_fn[rec_lvl] );
-						rec_fn[rec_lvl] = NULL;
-					}
-				}
-			}
-
-			// File was OK :)
-			if( rec_fn[rec_lvl] != NULL ) {
-				len = FS_FOpenFile( rec_fn[rec_lvl], &f, FS_READ );
-				if( len > 0 ) {
-					rec_plvl = rec_lvl;
-					rec_buf[rec_lvl] = ( char * )CG_Malloc( len + 1 );
-					rec_buf[rec_lvl][len] = '\0';
-					rec_ptr[rec_lvl] = rec_buf[rec_lvl];
-
-					// Now read the file
-					if( FS_Read( rec_buf[rec_lvl], len, f ) <= 0 ) {
-						if( rec_lvl > 0 ) {
-							CG_Printf( "HUD: WARNING: Read error while loading file: %s\n", rec_fn[rec_lvl] );
-						}
-						CG_Free( rec_fn[rec_lvl] );
-						CG_Free( rec_buf[rec_lvl] );
-						rec_fn[rec_lvl] = NULL;
-						rec_buf[rec_lvl] = NULL;
-						rec_lvl--;
-					}
-					FS_FCloseFile( f );
-				} else {
-					if( !len ) {
-						// File was empty - still have to close
-						FS_FCloseFile( f );
-					} else if( rec_lvl > 0 ) {
-						CG_Printf( "HUD: WARNING: Could not include file: %s\n", rec_fn[rec_lvl] );
-					}
-					CG_Free( rec_fn[rec_lvl] );
-					rec_fn[rec_lvl] = NULL;
-					rec_lvl--;
-				}
-			} else {
-				// Skip this file, go down one level
-				rec_lvl--;
-			}
-			rec_plvl = rec_lvl;
-		} else if( rec_lvl < rec_plvl ) {
-			// Free previous level buffer
-			if( rec_fn[rec_plvl] ) {
-				CG_Free( rec_fn[rec_plvl] );
-			}
-			if( rec_buf[rec_plvl] ) {
-				CG_Free( rec_buf[rec_plvl] );
-			}
-			rec_buf[rec_plvl] = NULL;
-			rec_ptr[rec_plvl] = NULL;
-			rec_fn[rec_plvl] = NULL;
-			rec_plvl = rec_lvl;
-			if( rec_lvl < 0 ) {
-				// Break - end of recursive looping
-				if( retbuf == NULL ) {
-					CG_Printf( "HUD: ERROR: Could not load empty HUD-script: %s\n", path );
-				}
-				break;
-			}
-		}
-		if( rec_lvl < 0 ) {
+	while( true ) {
+		const char * before_include = strstr( cursor, "#include" );
+		if( before_include == NULL )
 			break;
-		}
-		token = COM_ParseExt2( ( const char ** )&rec_ptr[rec_lvl], true, false );
-		if( !Q_stricmp( "include", token ) ) {
-			// Handle include
-			token = COM_ParseExt2( ( const char ** )&rec_ptr[rec_lvl], false, false );
-			if( ( ( rec_lvl + 1 ) < HUD_MAX_LVL ) && ( rec_ptr[rec_lvl] ) && ( token ) && ( token[0] != '\0' ) ) {
-				// Go to next recursive level and prepare it's filename :)
-				rec_lvl++;
-				i = strlen( "huds/" ) + strlen( token ) + strlen( ".hud" ) + 1;
-				rec_fn[rec_lvl] = ( char * )CG_Malloc( i );
-				snprintf( rec_fn[rec_lvl], i, "huds/%s", token );
-				COM_DefaultExtension( rec_fn[rec_lvl], ".hud", i );
-				if( FS_FOpenFile( rec_fn[rec_lvl], NULL, FS_READ ) < 0 ) {
-					// File doesn't exist!
-					CG_Free( rec_fn[rec_lvl] );
-					i = strlen( "huds/inc/" ) + strlen( token ) + strlen( ".hud" ) + 1;
-					rec_fn[rec_lvl] = ( char * )CG_Malloc( i );
-					snprintf( rec_fn[rec_lvl], i, "huds/inc/%s", token );
-					COM_DefaultExtension( rec_fn[rec_lvl], ".hud", i );
-					if( FS_FOpenFile( rec_fn[rec_lvl], NULL, FS_READ ) < 0 ) {
-						CG_Free( rec_fn[rec_lvl] );
-						rec_fn[rec_lvl] = NULL;
-						rec_lvl--;
-					}
-				}
-			}
-		} else if( ( len = strlen( token ) ) > 0 ) {
-			// Normal token, add to token-pool.
-			if( ( retuse + len + 1 ) >= retlen ) {
-				// Enlarge token buffer by 1kb
-				retlen += 1024;
-				tmpbuf = ( char * )CG_Malloc( retlen );
-				if( retbuf ) {
-					memcpy( tmpbuf, retbuf, retuse );
-					CG_Free( retbuf );
-				}
-				retbuf = tmpbuf;
-				retbuf[retuse] = '\0';
-			}
-			strcat( &retbuf[retuse], token );
-			retuse += len;
-			strcat( &retbuf[retuse], " " );
-			retuse++;
-			retbuf[retuse] = '\0';
+
+		script.append_raw( cursor, before_include - cursor );
+		cursor = before_include + strlen( "#include" );
+
+		Span< const char > include = ParseToken( &cursor, Parse_StopOnNewLine );
+		if( include == "" ) {
+			Com_Printf( "HUD: WARNING: Missing file after #include\n" );
+			return false;
 		}
 
-		// Detect "end-of-file" of included files and go down 1 level.
-		if( ( rec_lvl <= rec_plvl ) && ( !rec_ptr[rec_lvl] ) ) {
-			rec_plvl = rec_lvl;
-			rec_lvl--;
+		u64 hash = Hash64( "huds/inc/" );
+		hash = Hash64( include.ptr, include.n, hash );
+		hash = Hash64( ".hud", strlen( ".hud" ), hash );
+
+		Span< const char > include_contents = AssetString( StringHash( hash ) );
+		if( include_contents == "" ) {
+			Com_GGPrint( "HUD: Couldn't include huds/inc/{}.hud", include );
+			return false;
 		}
+
+		// TODO: AssetString includes the trailing '\0' and we don't
+		// want to add that to the script
+		script.append_raw( include_contents.ptr, include_contents.n - 1 );
 	}
-	if( retbuf == NULL ) {
-		CG_Printf( "HUD: ERROR: Could not load file: %s\n", path );
-	}
-	return retbuf;
+
+	script += cursor;
+
+	return true;
 }
 
 static void CG_LoadHUD() {
+	TempAllocator temp = cls.frame_arena.temp();
 	const char * path = "huds/default.hud";
-	char * opt = CG_LoadHUDFile( path );
-	if( opt == NULL ) {
-		CG_Printf( "HUD: failed to load %s file\n", path );
+
+	DynamicString script( &temp );
+	if( !LoadHUDFile( path, script ) ) {
+		Com_Printf( "HUD: failed to load %s file\n", path );
 		return;
 	}
 
-	// load the new status bar program
-	CG_ParseLayoutScript( opt, cg.statusBar );
+	CG_ParseLayoutScript( const_cast< char * >( script.c_str() ), cg.statusBar );
 
-	// Free the opt buffer!
-	CG_Free( opt );
-
-	// set up layout font as default system font
 	layout_cursor_font_style = FontStyle_Normal;
 	layout_cursor_font_size = cgs.textSizeSmall;
 }

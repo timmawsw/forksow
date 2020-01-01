@@ -325,7 +325,6 @@ static void CL_Connect( const char *servername, socket_type_t type, netadr_t *ad
 static void CL_Connect_Cmd_f( socket_type_t socket ) {
 	netadr_t serveraddress;
 	char *servername, password[64];
-	const char *extension;
 	char *connectstring, *connectstring_base;
 	const char *tmp;
 	const char *serverchain;
@@ -343,8 +342,7 @@ static void CL_Connect_Cmd_f( socket_type_t socket ) {
 		connectstring += strlen( APP_URI_SCHEME );
 	}
 
-	extension = COM_FileExtension( connectstring );
-	if( extension && !Q_stricmp( extension, APP_DEMO_EXTENSION_STR ) ) {
+	if( FileExtension( connectstring ) == APP_DEMO_EXTENSION_STR ) {
 		char *temp;
 		size_t temp_size;
 		const char *http_scheme = "http://";
@@ -1209,7 +1207,7 @@ void CL_RequestNextDownload( void ) {
 		}
 		while( precache_check < CS_SOUNDS + MAX_SOUNDS && cl.configstrings[precache_check][0] ) {
 			Q_strncpyz( tempname, cl.configstrings[precache_check++], sizeof( tempname ) );
-			if( !COM_FileExtension( tempname ) ) {
+			if( FileExtension( tempname ).n == 0 ) {
 				Q_strncatz( tempname, ".ogg", sizeof( tempname ) );
 			}
 			if( !CL_CheckOrDownloadFile( tempname ) ) {
@@ -1290,24 +1288,19 @@ void CL_Precache_f( void ) {
 */
 static void CL_WriteConfiguration( const char *name ) {
 	int file;
-
 	if( FS_FOpenFile( name, &file, FS_WRITE ) == -1 ) {
 		Com_Printf( "Couldn't write %s.\n", name );
 		return;
 	}
 
-	FS_Printf( file, "\r\n// key bindings\r\n" );
+	FS_Printf( file, "// key bindings\r\n" );
 	Key_WriteBindings( file );
 
 	FS_Printf( file, "\r\n// variables\r\n" );
 	Cvar_WriteVariables( file );
 
-	FS_Printf( file, "\r\n// aliases\r\n" );
-	Cmd_WriteAliases( file );
-
 	FS_FCloseFile( file );
 }
-
 
 /*
 * CL_WriteConfig_f
@@ -2054,8 +2047,6 @@ void CL_Init( void ) {
 
 	CL_InitServerList();
 
-	ML_Init();
-
 	Mem_DebugCheckSentinelsGlobal();
 }
 
@@ -2072,7 +2063,6 @@ void CL_Shutdown( void ) {
 
 	S_StopAllSounds( true );
 
-	ML_Shutdown();
 	CL_ShutDownServerList();
 
 	CL_WriteConfiguration( "config.cfg" );

@@ -24,6 +24,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // shared callbacks
 
+typedef struct {
+	void ( *Trace )( trace_t *t, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int ignore, int contentmask, int timeDelta );
+	entity_state_t *( *GetEntityState )( int entNum, int deltaTime );
+	int ( *PointContents )( const vec3_t point, int timeDelta );
+	void ( *PredictedEvent )( int entNum, int ev, int parm );
+	void ( *PMoveTouchTriggers )( pmove_t *pm, vec3_t previous_origin );
+	const char *( *GetConfigString )( int index );
+} gs_module_api_t;
+
 //===============================================================
 //		WARSOW player AAboxes sizes
 
@@ -151,7 +160,6 @@ struct SyncEntityState {
 	int eventParms[2];
 
 	int counterNum;                 // ET_GENERIC
-	int itemNum;                    // for ET_ITEM
 	int damage;                     // EV_BLOOD
 	int targetNum;                  // ET_EVENT specific
 	int colorRGBA;                  // ET_BEAM, ET_EVENT specific

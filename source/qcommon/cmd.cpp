@@ -458,7 +458,7 @@ static void Cmd_Exec_f( void ) {
 /*
 * CL_CompleteExecBuildList
 */
-static char **CL_CompleteExecBuildList( const char *partial ) {
+static const char **CL_CompleteExecBuildList( const char *partial ) {
 	return Cmd_CompleteFileList( partial, "", ".cfg", true );
 }
 
@@ -627,29 +627,6 @@ static void Cmd_UnaliasAll_f( void ) {
 	}
 	Trie_FreeDump( dump );
 	Trie_Clear( cmd_alias_trie );
-}
-
-/*
-* Cmd_WriteAliases
-*
-* Write lines containing "aliasa alias value" for all aliases
-* with the archive flag set to true
-*/
-void Cmd_WriteAliases( int file ) {
-	struct trie_dump_s *dump = NULL;
-	unsigned int i;
-
-	// Vic: Why on earth this line was written _below_ aliases?
-	// It was kinda dumb, I think 'cause it undid everything above
-	FS_Printf( file, "unaliasall\r\n" );
-
-	assert( cmd_alias_trie );
-	Trie_DumpIf( cmd_alias_trie, "", TRIE_DUMP_VALUES, Cmd_Archive, NULL, &dump );
-	for( i = 0; i < dump->size; ++i ) {
-		cmd_alias_t *const a = (cmd_alias_t *) dump->key_value_vector[i].value;
-		FS_Printf( file, "aliasa %s \"%s\"\r\n", a->name, a->value );
-	}
-	Trie_FreeDump( dump );
 }
 
 /*
@@ -889,15 +866,15 @@ int Cmd_CompleteCountPossible( const char *partial ) {
 /*
 * Cmd_CompleteBuildList
 */
-char **Cmd_CompleteBuildList( const char *partial ) {
+const char **Cmd_CompleteBuildList( const char *partial ) {
 	struct trie_dump_s *dump;
-	char **buf;
+	const char **buf;
 	unsigned int i;
 
 	assert( cmd_function_trie );
 	assert( partial );
 	Trie_Dump( cmd_function_trie, partial, TRIE_DUMP_VALUES, &dump );
-	buf = (char **) Mem_TempMalloc( sizeof( char * ) * ( dump->size + 1 ) );
+	buf = (const char **) Mem_TempMalloc( sizeof( char * ) * ( dump->size + 1 ) );
 	for( i = 0; i < dump->size; ++i )
 		buf[i] = ( (cmd_function_t *) ( dump->key_value_vector[i].value ) )->name;
 	buf[dump->size] = NULL;
@@ -910,7 +887,7 @@ char **Cmd_CompleteBuildList( const char *partial ) {
 *
 * Find a possible single matching command
 */
-char **Cmd_CompleteBuildArgListExt( const char *command, const char *arguments ) {
+const char **Cmd_CompleteBuildArgListExt( const char *command, const char *arguments ) {
 	cmd_function_t *cmd = NULL;
 
 	if( Trie_Find( cmd_function_trie, command, TRIE_EXACT_MATCH, (void **)&cmd ) != TRIE_OK ) {
@@ -927,7 +904,7 @@ char **Cmd_CompleteBuildArgListExt( const char *command, const char *arguments )
 *
 * Find a possible single matching command
 */
-char **Cmd_CompleteBuildArgList( const char *partial ) {
+const char **Cmd_CompleteBuildArgList( const char *partial ) {
 	const char *p;
 
 	p = strstr( partial, " " );
@@ -944,7 +921,7 @@ char **Cmd_CompleteBuildArgList( const char *partial ) {
 *
 * Find matching files
 */
-char **Cmd_CompleteFileList( const char *partial, const char *basedir, const char *extension, bool subdirectories ) {
+const char **Cmd_CompleteFileList( const char *partial, const char *basedir, const char *extension, bool subdirectories ) {
 	const char *p;
 	char dir[MAX_QPATH];
 	char subdir[MAX_QPATH];
@@ -955,7 +932,7 @@ char **Cmd_CompleteFileList( const char *partial, const char *basedir, const cha
 	size_t size;
 	size_t buf_size;
 	size_t total_size;
-	char **buf;
+	const char **buf;
 	char *list;
 	char *ext;
 	int i, j, len;
@@ -1022,7 +999,7 @@ char **Cmd_CompleteFileList( const char *partial, const char *basedir, const cha
 	buf_size =  ( total + 1 ) * sizeof( char * )    // resulting pointer list with NULL ending
 			   + total_size                         // actual strings
 			   + total * subdir_length;             // extra space to prepend subdirs
-	buf = ( char ** )Mem_TempMalloc( buf_size );
+	buf = ( const char ** )Mem_TempMalloc( buf_size );
 	list = ( char * )buf + ( total + 1 ) * sizeof( char * );
 
 	// get all files in the directory
@@ -1122,15 +1099,15 @@ int Cmd_CompleteAliasCountPossible( const char *partial ) {
 /*
 Cmd_CompleteAliasBuildList
 */
-char **Cmd_CompleteAliasBuildList( const char *partial ) {
+const char **Cmd_CompleteAliasBuildList( const char *partial ) {
 	struct trie_dump_s *dump;
-	char **buf;
+	const char **buf;
 	unsigned int i;
 
 	assert( cmd_alias_trie );
 	assert( partial );
 	Trie_Dump( cmd_alias_trie, partial, TRIE_DUMP_VALUES, &dump );
-	buf = (char **) Mem_TempMalloc( sizeof( char * ) * ( dump->size + 1 ) );
+	buf = (const char **) Mem_TempMalloc( sizeof( char * ) * ( dump->size + 1 ) );
 	for( i = 0; i < dump->size; ++i )
 		buf[i] = ( (cmd_alias_t *) ( dump->key_value_vector[i].value ) )->name;
 	buf[dump->size] = NULL;

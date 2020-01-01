@@ -208,7 +208,6 @@ void Com_Printf( const char *format, ... ) {
 	QMutex_Unlock( com_print_mutex );
 }
 
-
 /*
 * Com_DPrintf
 *
@@ -288,6 +287,7 @@ void Com_DeferQuit( void ) {
 void Com_Quit( void ) {
 	SV_Shutdown( "Server quit\n" );
 	CL_Shutdown();
+	ShutdownMapList();
 
 	Sys_Quit();
 }
@@ -619,6 +619,8 @@ void Qcommon_Init( int argc, char **argv ) {
 	Netchan_Init();
 
 	CM_Init();
+
+	InitMapList();
 
 	SV_Init();
 	CL_Init();

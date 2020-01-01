@@ -234,10 +234,6 @@ void _SHOWNET( msg_t *msg, const char *s, int shownet );
 // server to client
 //
 enum svc_ops_e {
-	svc_bad,
-
-	// the rest are private to the client and server
-	svc_nop,
 	svc_servercmd,          // [string] string
 	svc_serverdata,         // [int] protocol ...
 	svc_spawnbaseline,
@@ -316,7 +312,7 @@ then searches for a command or variable that matches the first token.
 */
 
 typedef void ( *xcommand_t )( void );
-typedef char ** ( *xcompletionf_t )( const char *partial );
+typedef const char ** ( *xcompletionf_t )( const char *partial );
 
 void        Cmd_PreInit( void );
 void        Cmd_Init( void );
@@ -325,16 +321,15 @@ void        Cmd_AddCommand( const char *cmd_name, xcommand_t function );
 void        Cmd_RemoveCommand( const char *cmd_name );
 bool    Cmd_Exists( const char *cmd_name );
 bool    Cmd_CheckForCommand( char *text );
-void        Cmd_WriteAliases( int file );
 int         Cmd_CompleteAliasCountPossible( const char *partial );
-char        **Cmd_CompleteAliasBuildList( const char *partial );
+const char  **Cmd_CompleteAliasBuildList( const char *partial );
 int         Cmd_CompleteCountPossible( const char *partial );
-char        **Cmd_CompleteBuildList( const char *partial );
-char        **Cmd_CompleteBuildArgList( const char *partial );
-char        **Cmd_CompleteBuildArgListExt( const char *command, const char *arguments );
-char        **Cmd_CompleteFileList( const char *partial, const char *basedir, const char *extension, bool subdirectories );
+const char  **Cmd_CompleteBuildList( const char *partial );
+const char  **Cmd_CompleteBuildArgList( const char *partial );
+const char  **Cmd_CompleteBuildArgListExt( const char *command, const char *arguments );
+const char  **Cmd_CompleteFileList( const char *partial, const char *basedir, const char *extension, bool subdirectories );
 int         Cmd_Argc( void );
-const char        *Cmd_Argv( int arg );
+const char  *Cmd_Argv( int arg );
 char        *Cmd_Args( void );
 void        Cmd_TokenizeString( const char *text );
 void        Cmd_ExecuteString( const char *text );
@@ -634,6 +629,15 @@ __declspec( noreturn ) void Com_Error( com_error_code_t code, _Printf_format_str
 __declspec( noreturn ) void Com_Quit( void );
 #endif
 
+template< typename... Rest >
+void Com_GGPrintNL( const char * fmt, const Rest & ... rest ) {
+	char buf[ 4096 ];
+	ggformat( buf, sizeof( buf ), fmt, rest... );
+	Com_Printf( "%s", buf );
+}
+
+#define Com_GGPrint( fmt, ... ) Com_GGPrintNL( fmt "\n", #__VA_ARGS__ )
+
 void        Com_DeferQuit( void );
 
 int         Com_ClientState( void );        // this should have just been a cvar...
@@ -794,17 +798,15 @@ MAPLIST SUBSYSTEM
 
 ==============================================================
 */
-void ML_Init( void );
-void ML_Shutdown( void );
-bool ML_Update( void );
 
-size_t ML_GetMapByNum( int num, char *out, size_t size );
+void InitMapList();
+void ShutdownMapList();
 
-bool ML_FilenameExists( const char *filename );
+void RefreshMapList();
+Span< const char * > GetMapList();
+bool MapExists( const char * name );
 
-bool ML_ValidateFilename( const char *filename );
-
-char **ML_CompleteBuildList( const char *partial );
+const char ** CompleteMapName( const char * prefix );
 
 /*
 ==============================================================
