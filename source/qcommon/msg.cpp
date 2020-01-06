@@ -651,7 +651,7 @@ void MSG_WriteDeltaEntity( msg_t *msg, const SyncEntityState * from, const SyncE
 *
 * Can go from either a baseline or a previous packet_entity
 */
-void MSG_ReadDeltaEntity( msg_t *msg, const SyncEntityState * from, SyncEntityState * to, int number ) {
+void MSG_ReadDeltaEntity( msg_t *msg, const SyncEntityState * from, SyncEntityState * to ) {
 	DeltaBuffer delta = MSG_StartReadingDeltaBuffer( msg );
 
 	to->number = number;

@@ -18,33 +18,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-// g_combat.c
+#include "game/g_local.h"
 
-#include "g_local.h"
-
-/*
-*
-*/
-int G_ModToAmmo( int mod ) {
-	if( mod == MOD_GUNBLADE ) {
-		return AMMO_GUNBLADE;
-	} else if( mod == MOD_MACHINEGUN ) {
-		return AMMO_BULLETS;
-	} else if( mod == MOD_RIOTGUN ) {
-		return AMMO_SHELLS;
-	} else if( mod == MOD_GRENADE || mod == MOD_GRENADE_SPLASH ) {
-		return AMMO_GRENADES;
-	} else if( mod == MOD_ROCKET || mod == MOD_ROCKET_SPLASH ) {
-		return AMMO_ROCKETS;
-	} else if( mod == MOD_PLASMA || mod == MOD_PLASMA_SPLASH ) {
-		return AMMO_PLASMA;
-	} else if( mod == MOD_ELECTROBOLT ) {
-		return AMMO_BOLTS;
-	} else if( mod == MOD_LASERGUN ) {
-		return AMMO_LASERS;
-	} else {
-		return AMMO_NONE;
+static int G_MODToWeapon( int mod ) {
+	switch( mod ) {
+		case MOD_GUNBLADE: return Weapon_Knife;
+		case MOD_MACHINEGUN: return Weapon_MachineGun;
+		case MOD_RIOTGUN: return Weapon_Shotgun;
+		case MOD_GRENADE:
+		case MOD_GRENADE_SPLASH: return Weapon_GrenadeLauncher;
+		case MOD_ROCKET:
+		case MOD_ROCKET_SPLASH: return Weapon_RocketLauncher;
+		case MOD_PLASMA:
+		case MOD_PLASMA_SPLASH: return Weapon_Plasma;
+		case MOD_ELECTROBOLT: return Weapon_Railgun;
+		case MOD_LASERGUN: return Weapon_Laser;
 	}
+
+	return Weapon_Count;
 }
 
 bool G_IsTeamDamage( SyncEntityState *targ, SyncEntityState *attacker ) {
@@ -125,13 +116,6 @@ static bool G_CanSplashDamage( edict_t *targ, edict_t *inflictor, cplane_t *plan
 	if( trace.fraction >= 1.0 - SPLASH_DAMAGE_TRACE_FRAC_EPSILON || trace.ent == ENTNUM( targ ) ) {
 		return true;
 	}
-/*
-    VectorCopy( targ->s.origin, dest );
-    origin[2] += 9;
-    G_Trace4D( &trace, origin, vec3_origin, vec3_origin, targ->s.origin, inflictor, solidmask, inflictor->timeDelta );
-    if( trace.fraction >= 1.0-SPLASH_DAMAGE_TRACE_FRAC_EPSILON || trace.ent == ENTNUM( targ ) )
-        return true;
-*/
 
 	return false;
 }
@@ -158,14 +142,11 @@ void G_Killed( edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage,
 	// count stats
 	if( GS_MatchState( &server_gs ) == MATCH_STATE_PLAYTIME ) {
 		targ->r.client->level.stats.deaths++;
-		teamlist[targ->s.team].stats.deaths++;
 
 		if( !attacker || !attacker->r.client || attacker == targ || attacker == world ) {
-		targ->r.client->level.stats.suicides++;
-			teamlist[targ->s.team].stats.suicides++;
+			targ->r.client->level.stats.suicides++;
 		} else {
 			attacker->r.client->level.stats.frags++;
-			teamlist[attacker->s.team].stats.frags++;
 		}
 	}
 
@@ -353,7 +334,6 @@ void G_Damage( edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_
 	// adding damage given/received to stats
 	if( statDmg && attacker->r.client && !targ->deadflag && targ->movetype != MOVETYPE_PUSH && targ->s.type != ET_CORPSE ) {
 		attacker->r.client->level.stats.total_damage_given += take;
-		teamlist[attacker->s.team].stats.total_damage_given += take;
 
 		// RG calls G_Damage for every bullet, so we accumulate damage
 		// in G_Fire_SunflowerPattern and show one number there instead
@@ -369,7 +349,6 @@ void G_Damage( edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_
 
 	if( statDmg && client ) {
 		client->level.stats.total_damage_received += take;
-		teamlist[targ->s.team].stats.total_damage_received += take;
 	}
 
 	// accumulate received damage for snapshot effects
@@ -404,11 +383,9 @@ void G_Damage( edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_
 	targ->health = targ->health - take;
 
 	// add damage done to stats
-	if( statDmg && G_ModToAmmo( mod ) != AMMO_NONE && client && attacker->r.client ) {
-		attacker->r.client->level.stats.accuracy_hits[G_ModToAmmo( mod ) - AMMO_GUNBLADE]++;
-		attacker->r.client->level.stats.accuracy_damage[G_ModToAmmo( mod ) - AMMO_GUNBLADE] += damage;
-		teamlist[attacker->s.team].stats.accuracy_hits[G_ModToAmmo( mod ) - AMMO_GUNBLADE]++;
-		teamlist[attacker->s.team].stats.accuracy_damage[G_ModToAmmo( mod ) - AMMO_GUNBLADE] += damage;
+	if( statDmg && G_MODToWeapon( mod ) != Weapon_Count && client && attacker->r.client ) {
+		attacker->r.client->level.stats.accuracy_hits[ G_MODToWeapon( mod ) ]++;
+		attacker->r.client->level.stats.accuracy_damage[ G_MODToWeapon( mod ) ] += damage;
 	}
 
 	// accumulate given damage for hit sounds
