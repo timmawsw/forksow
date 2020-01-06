@@ -78,12 +78,12 @@ static void SNAP_ParsePlayerstate( msg_t *msg, const SyncPlayerState *oldstate, 
 *
 * Parses deltas from the given base and adds the resulting entity to the current frame
 */
-static void SNAP_ParseDeltaEntity( msg_t *msg, snapshot_t *frame, int newnum, SyncEntityState *old, unsigned byteMask ) {
+static void SNAP_ParseDeltaEntity( msg_t *msg, snapshot_t *frame, int newnum, SyncEntityState *old ) {
 	SyncEntityState *state;
 
 	state = &frame->parsedEntities[frame->numEntities & ( MAX_PARSE_ENTITIES - 1 )];
 	frame->numEntities++;
-	MSG_ReadDeltaEntity( msg, old, state, newnum, byteMask );
+	MSG_ReadDeltaEntity( msg, old, state, newnum );
 }
 
 /*
@@ -91,20 +91,12 @@ static void SNAP_ParseDeltaEntity( msg_t *msg, snapshot_t *frame, int newnum, Sy
 */
 void SNAP_ParseBaseline( msg_t *msg, SyncEntityState *baselines ) {
 	bool remove;
-	int newnum;
-	unsigned byteMask;
-
-	newnum = MSG_ReadEntityNumber( msg, &remove, &byteMask );
-	assert( remove == false );
+	int newnum = MSG_ReadEntityNumber( msg, &remove );
+	assert( !remove );
 
 	if( !remove ) {
-		SyncEntityState *es;
-		SyncEntityState nullstate, tmp;
-
-		memset( &nullstate, 0, sizeof( nullstate ) );
-
-		es = ( baselines ? &baselines[newnum] : &tmp );
-		MSG_ReadDeltaEntity( msg, &nullstate, es, newnum, byteMask );
+		SyncEntityState nullstate = { };
+		MSG_ReadDeltaEntity( msg, &nullstate, &baselines[newnum], newnum );
 	}
 }
 
@@ -117,7 +109,6 @@ void SNAP_ParseBaseline( msg_t *msg, SyncEntityState *baselines ) {
 static void SNAP_ParsePacketEntities( msg_t *msg, snapshot_t *oldframe, snapshot_t *newframe, SyncEntityState *baselines, int shownet ) {
 	int newnum;
 	bool remove;
-	unsigned byteMask;
 	SyncEntityState *oldstate = NULL;
 	int oldindex, oldnum;
 
@@ -135,7 +126,7 @@ static void SNAP_ParsePacketEntities( msg_t *msg, snapshot_t *oldframe, snapshot
 	}
 
 	while( true ) {
-		newnum = MSG_ReadEntityNumber( msg, &remove, &byteMask );
+		newnum = MSG_ReadEntityNumber( msg, &remove );
 		if( newnum >= MAX_EDICTS ) {
 			Com_Error( ERR_DROP, "CL_ParsePacketEntities: bad number:%i", newnum );
 		}
@@ -153,7 +144,8 @@ static void SNAP_ParsePacketEntities( msg_t *msg, snapshot_t *oldframe, snapshot
 				Com_Printf( "   unchanged: %i\n", oldnum );
 			}
 
-			SNAP_ParseDeltaEntity( msg, newframe, oldnum, oldstate, 0 );
+			newframe->parsedEntities[newframe->numEntities & ( MAX_PARSE_ENTITIES - 1 )] = *oldstate;
+			newframe->numEntities++;
 
 			oldindex++;
 			if( oldindex >= oldframe->numEntities ) {
@@ -176,7 +168,7 @@ static void SNAP_ParsePacketEntities( msg_t *msg, snapshot_t *oldframe, snapshot
 				Com_Printf( "   baseline: %i\n", newnum );
 			}
 
-			SNAP_ParseDeltaEntity( msg, newframe, newnum, &baselines[newnum], byteMask );
+			SNAP_ParseDeltaEntity( msg, newframe, newnum, &baselines[newnum] );
 			continue;
 		}
 
@@ -206,7 +198,7 @@ static void SNAP_ParsePacketEntities( msg_t *msg, snapshot_t *oldframe, snapshot
 				Com_Printf( "   delta: %i\n", newnum );
 			}
 
-			SNAP_ParseDeltaEntity( msg, newframe, newnum, oldstate, byteMask );
+			SNAP_ParseDeltaEntity( msg, newframe, newnum, oldstate );
 
 			oldindex++;
 			if( oldindex >= oldframe->numEntities ) {
@@ -226,7 +218,8 @@ static void SNAP_ParsePacketEntities( msg_t *msg, snapshot_t *oldframe, snapshot
 			Com_Printf( "   unchanged: %i\n", oldnum );
 		}
 
-		SNAP_ParseDeltaEntity( msg, newframe, oldnum, oldstate, 0 );
+		newframe->parsedEntities[newframe->numEntities & ( MAX_PARSE_ENTITIES - 1 )] = *oldstate;
+		newframe->numEntities++;
 
 		oldindex++;
 		if( oldindex >= oldframe->numEntities ) {

@@ -189,27 +189,6 @@ typedef enum {
 
 //==============================================
 
-// primitive encoding types for network messages
-
-typedef enum {
-	WIRE_BOOL,					// a of value of 'true' is represented by a single bit in the header
-
-	WIRE_FIXED_INT8,				// 8-bit integer
-	WIRE_FIXED_INT16,			// 16-bit integer
-	WIRE_FIXED_INT32,			// 32-bit integer
-	WIRE_FIXED_INT64,			// 64-bit integer
-
-	WIRE_FLOAT,					// 32-bit floating point value
-	WIRE_HALF_FLOAT,				// 16-bit floating point value
-
-	WIRE_ANGLE,					// 32-bit float angle value, normalized to [0..360], transmitted at half-precision
-
-	WIRE_BASE128,				// base-128 encoded unsigned integer
-	WIRE_UBASE128				// base-128 encoded signed integer
-} wireType_t;
-
-//==============================================
-
 enum connstate_t {
 	CA_UNINITIALIZED,
 	CA_DISCONNECTED,                    // not talking to a server

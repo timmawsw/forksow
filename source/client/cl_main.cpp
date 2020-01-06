@@ -250,10 +250,6 @@ static void CL_CheckForResend( void ) {
 	}
 
 	if( cls.state == CA_CONNECTING && cls.reliable ) {
-		if( realtime - cls.connect_time < 3000 ) {
-			return;
-		}
-
 		if( realtime - cls.connect_time < 10000 ) {
 			return;
 		}
@@ -1019,8 +1015,8 @@ static bool CL_ProcessPacket( netchan_t *netchan, msg_t *msg ) {
 * CL_ReadPackets
 */
 void CL_ReadPackets( void ) {
-	static msg_t msg;
-	static uint8_t msgData[MAX_MSGLEN];
+	msg_t msg;
+	uint8_t msgData[MAX_MSGLEN];
 	int ret;
 	socket_t *socket;
 	netadr_t address;

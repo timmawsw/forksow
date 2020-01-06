@@ -89,20 +89,6 @@ void G_Match_Autorecord_AltStart( void ) {
 }
 
 /*
-* G_Match_Autorecord_Stats
-*/
-void G_Match_Autorecord_Stats( void ) {
-	edict_t *ent;
-
-	for( ent = game.edicts + 1; PLAYERNUM( ent ) < server_gs.maxclients; ent++ ) {
-		if( !ent->r.inuse || ent->s.team == TEAM_SPECTATOR || ( ent->r.svflags & SVF_FAKECLIENT ) ) {
-			continue;
-		}
-		trap_GameCmd( ent, va( "plstats \"%s\"", G_StatsMessage( ent ) ) );
-	}
-}
-
-/*
 * G_Match_Autorecord_Stop
 */
 void G_Match_Autorecord_Stop( void ) {
@@ -210,9 +196,9 @@ void G_Match_LaunchState( int matchState ) {
 			advance_queue = false;
 			level.forceStart = false;
 
-			server_gs.gameState.stats[GAMESTAT_MATCHSTATE] = MATCH_STATE_WARMUP;
-			server_gs.gameState.stats[GAMESTAT_MATCHDURATION] = (int64_t)( Abs( g_warmup_timelimit->value * 60 ) * 1000 );
-			server_gs.gameState.stats[GAMESTAT_MATCHSTART] = svs.gametime;
+			server_gs.gameState.match_state = MATCH_STATE_WARMUP;
+			server_gs.gameState.match_duration = (int64_t)( Abs( g_warmup_timelimit->value * 60 ) * 1000 );
+			server_gs.gameState.match_start = svs.gametime;
 
 			break;
 		}
@@ -221,9 +207,9 @@ void G_Match_LaunchState( int matchState ) {
 		{
 			advance_queue = true;
 
-			server_gs.gameState.stats[GAMESTAT_MATCHSTATE] = MATCH_STATE_COUNTDOWN;
-			server_gs.gameState.stats[GAMESTAT_MATCHDURATION] = 5000;
-			server_gs.gameState.stats[GAMESTAT_MATCHSTART] = svs.gametime;
+			server_gs.gameState.match_state = MATCH_STATE_COUNTDOWN;
+			server_gs.gameState.match_duration = 5000;
+			server_gs.gameState.match_start = svs.gametime;
 
 			break;
 		}
@@ -235,23 +221,21 @@ void G_Match_LaunchState( int matchState ) {
 			advance_queue = true; // shouldn't be needed here
 			level.forceStart = false;
 
-			server_gs.gameState.stats[GAMESTAT_MATCHSTATE] = MATCH_STATE_PLAYTIME;
-			server_gs.gameState.stats[GAMESTAT_MATCHDURATION] = 0;
-			server_gs.gameState.stats[GAMESTAT_MATCHSTART] = svs.gametime;
+			server_gs.gameState.match_state = MATCH_STATE_PLAYTIME;
+			server_gs.gameState.match_duration = 0;
+			server_gs.gameState.match_start = svs.gametime;
 		}
 		break;
 
 		case MATCH_STATE_POSTMATCH:
 		{
-			server_gs.gameState.stats[GAMESTAT_MATCHSTATE] = MATCH_STATE_POSTMATCH;
-			server_gs.gameState.stats[GAMESTAT_MATCHDURATION] = 4000; // postmatch time in seconds
-			server_gs.gameState.stats[GAMESTAT_MATCHSTART] = svs.gametime;
+			server_gs.gameState.match_state = MATCH_STATE_POSTMATCH;
+			server_gs.gameState.match_duration = 4000; // postmatch time in seconds
+			server_gs.gameState.match_start = svs.gametime;
 
 			G_Timeout_Reset();
 			level.teamlock = false;
 			level.forceExit = false;
-
-			G_Match_Autorecord_Stats();
 		}
 		break;
 
@@ -262,9 +246,9 @@ void G_Match_LaunchState( int matchState ) {
 				advance_queue = true;
 			}
 
-			server_gs.gameState.stats[GAMESTAT_MATCHSTATE] = MATCH_STATE_WAITEXIT;
-			server_gs.gameState.stats[GAMESTAT_MATCHDURATION] = 3000;
-			server_gs.gameState.stats[GAMESTAT_MATCHSTART] = svs.gametime;
+			server_gs.gameState.match_state = MATCH_STATE_WAITEXIT;
+			server_gs.gameState.match_duration = 3000;
+			server_gs.gameState.match_start = svs.gametime;
 
 			level.exitNow = false;
 		}
@@ -697,7 +681,6 @@ void G_Gametype_SetDefaults( void ) {
 	level.gametype.matchAbortDisabled = false;
 	level.gametype.shootingDisabled = false;
 	level.gametype.infiniteAmmo = false;
-	level.gametype.canForceModels = true;
 	level.gametype.customDeadBodyCam = false;
 	level.gametype.removeInactivePlayers = true;
 	level.gametype.selfDamage = true;

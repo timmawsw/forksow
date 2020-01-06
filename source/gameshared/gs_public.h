@@ -54,7 +54,7 @@ constexpr int playerbox_gib_viewheight = 8;
 
 //==================================================================
 
-enum {
+enum MatchState {
 	MATCH_STATE_NONE,
 	MATCH_STATE_WARMUP,
 	MATCH_STATE_COUNTDOWN,
@@ -90,17 +90,6 @@ enum {
 	GS_MODULE_CGAME,
 };
 
-enum {
-	GAMESTAT_FLAGS,
-	GAMESTAT_MATCHSTATE,
-	GAMESTAT_MATCHSTART,
-	GAMESTAT_MATCHDURATION,
-	GAMESTAT_CLOCKOVERRIDE,
-	GAMESTAT_MAXPLAYERSINTEAM,
-};
-
-#define MAX_GAME_STATS  64
-
 #define GAMESTAT_FLAG_PAUSED ( 1 << 0LL )
 #define GAMESTAT_FLAG_WAITING ( 1 << 1LL )
 #define GAMESTAT_FLAG_HASCHALLENGERS ( 1 << 2LL )
@@ -110,10 +99,14 @@ enum {
 #define GAMESTAT_FLAG_COUNTDOWN ( 1 << 6LL )
 #define GAMESTAT_FLAG_SELFDAMAGE ( 1 << 7LL )
 #define GAMESTAT_FLAG_INFINITEAMMO ( 1 << 8LL )
-#define GAMESTAT_FLAG_CANFORCEMODELS ( 1 << 9LL )
 
 struct SyncGameState {
-	int64_t stats[MAX_GAME_STATS];
+	u32 flags;
+	int match_state;
+	int64_t match_start;
+	int64_t match_duration;
+	int64_t clock_override;
+	u8 max_team_players;
 };
 
 struct SyncEntityState {
@@ -282,24 +275,23 @@ typedef struct {
 	gs_module_api_t api;
 } gs_state_t;
 
-#define GS_ShootingDisabled( gs ) ( ( ( gs )->gameState.stats[GAMESTAT_FLAGS] & GAMESTAT_FLAG_INHIBITSHOOTING ) ? true : false )
-#define GS_HasChallengers( gs ) ( ( ( gs )->gameState.stats[GAMESTAT_FLAGS] & GAMESTAT_FLAG_HASCHALLENGERS ) ? true : false )
-#define GS_TeamBasedGametype( gs ) ( ( ( gs )->gameState.stats[GAMESTAT_FLAGS] & GAMESTAT_FLAG_ISTEAMBASED ) ? true : false )
-#define GS_RaceGametype( gs ) ( ( ( gs )->gameState.stats[GAMESTAT_FLAGS] & GAMESTAT_FLAG_ISRACE ) ? true : false )
-#define GS_MatchPaused( gs ) ( ( ( gs )->gameState.stats[GAMESTAT_FLAGS] & GAMESTAT_FLAG_PAUSED ) ? true : false )
-#define GS_MatchWaiting( gs ) ( ( ( gs )->gameState.stats[GAMESTAT_FLAGS] & GAMESTAT_FLAG_WAITING ) ? true : false )
-#define GS_Countdown( gs ) ( ( ( gs )->gameState.stats[GAMESTAT_FLAGS] & GAMESTAT_FLAG_COUNTDOWN ) ? true : false )
-#define GS_InfiniteAmmo( gs ) ( ( ( gs )->gameState.stats[GAMESTAT_FLAGS] & GAMESTAT_FLAG_INFINITEAMMO ) ? true : false )
-#define GS_CanForceModels( gs ) ( ( ( gs )->gameState.stats[GAMESTAT_FLAGS] & GAMESTAT_FLAG_CANFORCEMODELS ) ? true : false )
+#define GS_ShootingDisabled( gs ) ( ( ( gs )->gameState.flags & GAMESTAT_FLAG_INHIBITSHOOTING ) != 0 )
+#define GS_HasChallengers( gs ) ( ( ( gs )->gameState.flags & GAMESTAT_FLAG_HASCHALLENGERS ) != 0 )
+#define GS_TeamBasedGametype( gs ) ( ( ( gs )->gameState.flags & GAMESTAT_FLAG_ISTEAMBASED ) != 0 )
+#define GS_RaceGametype( gs ) ( ( ( gs )->gameState.flags & GAMESTAT_FLAG_ISRACE ) != 0 )
+#define GS_MatchPaused( gs ) ( ( ( gs )->gameState.flags & GAMESTAT_FLAG_PAUSED ) != 0 )
+#define GS_MatchWaiting( gs ) ( ( ( gs )->gameState.flags & GAMESTAT_FLAG_WAITING ) != 0 )
+#define GS_Countdown( gs ) ( ( ( gs )->gameState.flags & GAMESTAT_FLAG_COUNTDOWN ) != 0 )
+#define GS_InfiniteAmmo( gs ) ( ( ( gs )->gameState.flags & GAMESTAT_FLAG_INFINITEAMMO ) != 0 )
 
-#define GS_MatchState( gs ) ( ( gs )->gameState.stats[GAMESTAT_MATCHSTATE] )
-#define GS_MaxPlayersInTeam( gs ) ( ( gs )->gameState.stats[GAMESTAT_MAXPLAYERSINTEAM] )
+#define GS_MatchState( gs ) ( ( gs )->gameState.match_state )
+#define GS_MaxPlayersInTeam( gs ) ( ( gs )->gameState.max_team_players )
 #define GS_IndividualGameType( gs ) ( GS_MaxPlayersInTeam( gs ) == 1 )
 
-#define GS_MatchDuration( gs ) ( ( gs )->gameState.stats[GAMESTAT_MATCHDURATION] )
-#define GS_MatchStartTime( gs ) ( ( gs )->gameState.stats[GAMESTAT_MATCHSTART] )
-#define GS_MatchEndTime( gs ) ( ( gs )->gameState.stats[GAMESTAT_MATCHDURATION] ? ( gs )->gameState.stats[GAMESTAT_MATCHSTART] + ( gs )->gameState.stats[GAMESTAT_MATCHDURATION] : 0 )
-#define GS_MatchClockOverride( gs ) ( ( gs )->gameState.stats[GAMESTAT_CLOCKOVERRIDE] )
+#define GS_MatchDuration( gs ) ( ( gs )->gameState.match_duration )
+#define GS_MatchStartTime( gs ) ( ( gs )->gameState.match_start )
+#define GS_MatchEndTime( gs ) ( ( gs )->gameState.match_duration ? ( gs )->gameState.match_start + ( gs )->gameState.match_duration : 0 )
+#define GS_MatchClockOverride( gs ) ( ( gs )->gameState.clock_override )
 
 //==================================================================
 
@@ -810,8 +802,6 @@ bool GS_CheckAmmoInWeapon( SyncPlayerState *playerState, int checkweapon );
 int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState *playerState, int buttons, int msecs, int timeDelta );
 trace_t *GS_TraceBullet( const gs_state_t * gs, trace_t *trace, vec3_t start, vec3_t dir, vec3_t right, vec3_t up, float r, float u, int range, int ignore, int timeDelta );
 void GS_TraceLaserBeam( const gs_state_t * gs, trace_t *trace, vec3_t origin, vec3_t angles, float range, int ignore, int timeDelta, void ( *impact )( trace_t *tr, vec3_t dir ) );
-
-//==============================================
 
 //==============================================
 
