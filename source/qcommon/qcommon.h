@@ -105,9 +105,15 @@ void MSG_WriteIntBase128( msg_t *msg, int64_t c );
 void MSG_WriteString( msg_t *sb, const char *s );
 void MSG_WriteDeltaUsercmd( msg_t * msg, const usercmd_s * baseline , const usercmd_s * cmd );
 void MSG_WriteEntityNumber( msg_t * msg, int number, bool remove );
+<<<<<<< HEAD
 void MSG_WriteDeltaEntity( msg_t * msg, const SyncEntityState * baseline, const SyncEntityState * ent, bool force );
 void MSG_WriteDeltaPlayerState( msg_t * msg, const SyncPlayerState * baseline, const SyncPlayerState * player );
 void MSG_WriteDeltaGameState( msg_t * msg, const SyncGameState * baseline, const SyncGameState * state );
+=======
+void MSG_WriteDeltaEntity( msg_t * msg, const entity_state_t * baseline, const entity_state_t * ent, bool force );
+void MSG_WriteDeltaPlayerState( msg_t * msg, const player_state_t * baseline, const player_state_t * player );
+void MSG_WriteDeltaGameState( msg_t * msg, const game_state_t * baseline, const game_state_t * state );
+>>>>>>> master
 
 void MSG_BeginReading( msg_t *sb );
 int MSG_ReadInt8( msg_t *msg );
@@ -122,9 +128,15 @@ char *MSG_ReadString( msg_t *sb );
 char *MSG_ReadStringLine( msg_t *sb );
 void MSG_ReadDeltaUsercmd( msg_t * msg, const usercmd_s * baseline, usercmd_s * cmd );
 int MSG_ReadEntityNumber( msg_t * msg, bool * remove );
+<<<<<<< HEAD
 void MSG_ReadDeltaEntity( msg_t * msg, const SyncEntityState * baseline, SyncEntityState * ent );
 void MSG_ReadDeltaPlayerState( msg_t * msg, const SyncPlayerState * baseline, SyncPlayerState * player );
 void MSG_ReadDeltaGameState( msg_t * msg, const SyncGameState * baseline, SyncGameState * state );
+=======
+void MSG_ReadDeltaEntity( msg_t * msg, const entity_state_t * baseline, entity_state_t * ent );
+void MSG_ReadDeltaPlayerState( msg_t * msg, const player_state_t * baseline, player_state_t * player );
+void MSG_ReadDeltaGameState( msg_t * msg, const game_state_t * baseline, game_state_t * state );
+>>>>>>> master
 void MSG_ReadData( msg_t *sb, void *buffer, size_t length );
 
 //============================================================================

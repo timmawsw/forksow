@@ -78,12 +78,18 @@ static void SNAP_ParsePlayerstate( msg_t *msg, const SyncPlayerState *oldstate, 
 *
 * Parses deltas from the given base and adds the resulting entity to the current frame
 */
+<<<<<<< HEAD
 static void SNAP_ParseDeltaEntity( msg_t *msg, snapshot_t *frame, int newnum, SyncEntityState *old ) {
 	SyncEntityState *state;
 
 	state = &frame->parsedEntities[frame->numEntities & ( MAX_PARSE_ENTITIES - 1 )];
+=======
+static void SNAP_ParseDeltaEntity( msg_t *msg, snapshot_t *frame, int newnum, entity_state_t *old ) {
+	entity_state_t * state = &frame->parsedEntities[frame->numEntities & ( MAX_PARSE_ENTITIES - 1 )];
+>>>>>>> master
 	frame->numEntities++;
-	MSG_ReadDeltaEntity( msg, old, state, newnum );
+	MSG_ReadDeltaEntity( msg, old, state );
+	state->number = newnum;
 }
 
 /*
@@ -95,8 +101,14 @@ void SNAP_ParseBaseline( msg_t *msg, SyncEntityState *baselines ) {
 	assert( !remove );
 
 	if( !remove ) {
+<<<<<<< HEAD
 		SyncEntityState nullstate = { };
 		MSG_ReadDeltaEntity( msg, &nullstate, &baselines[newnum], newnum );
+=======
+		entity_state_t nullstate = { };
+		MSG_ReadDeltaEntity( msg, &nullstate, &baselines[newnum] );
+		baselines[ newnum ].number = newnum;
+>>>>>>> master
 	}
 }
 
