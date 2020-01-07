@@ -20,7 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #pragma once
 
-#include "q_arch.h"
+#include "gameshared/q_arch.h"
 
 //
 // button bits
@@ -46,23 +46,6 @@ enum {
 // user command communications
 #define CMD_BACKUP  64  // allow a lot of command backups for very fast systems
 #define CMD_MASK    ( CMD_BACKUP - 1 )
-
-#define MAX_PM_STATS 16
-
-enum {
-	PM_STAT_FEATURES,
-	PM_STAT_NOUSERCONTROL,
-	PM_STAT_KNOCKBACK,
-	PM_STAT_CROUCHTIME,
-	PM_STAT_ZOOMTIME,
-	PM_STAT_DASHTIME,
-	PM_STAT_WJTIME,
-	PM_STAT_MAXSPEED,
-	PM_STAT_JUMPSPEED,
-	PM_STAT_DASHSPEED,
-
-	PM_STAT_SIZE = MAX_PM_STATS
-};
 
 // pmove_state_t is the information necessary for client side movement
 // prediction
@@ -90,23 +73,11 @@ typedef enum {
 #define PMF_DOUBLEJUMPED    ( 1 << 9 )  // DJ stat flag
 #define PMF_JUMPPAD_TIME    ( 1 << 10 ) // temporarily disables fall damage
 
-#define MAXTOUCH    32
-
-//==========================================================
-//
-//  ELEMENTS COMMUNICATED ACROSS THE NET
-//
-//==========================================================
-
-
 // note that Q_rint was causing problems here
 // (spawn looking straight up\down at delta_angles wrapping)
 
 #define ANGLE2SHORT( x )    ( (int)( ( x ) * 65536 / 360 ) & 65535 )
 #define SHORT2ANGLE( x )    ( ( x ) * ( 360.0 / 65536 ) )
-
-#define ANGLE2BYTE( x )     ( (int)( ( x ) * 256 / 360 ) & 255 )
-#define BYTE2ANGLE( x )     ( ( x ) * ( 360.0 / 256 ) )
 
 #define MAX_GAMECOMMANDS    256     // command names for command completion
 #define MAX_WEAPONDEFS      MAX_ITEMS
@@ -184,7 +155,6 @@ typedef enum {
 // entity events are for effects that take place relative
 // to an existing entities origin. Very network efficient.
 
-#define EVENT_ENTITIES_START    96 // entity types above this index will get event treatment
 #define ISEVENTENTITY( x ) ( ( (SyncEntityState *)x )->type >= EVENT_ENTITIES_START )
 
 //==============================================

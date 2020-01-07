@@ -20,7 +20,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #pragma once
 
-#include "gs_qrespath.h"
+#include "gameshared/gs_qrespath.h"
+#include "gameshared/q_math.h"
 
 //===============================================================
 //		WARSOW player AAboxes sizes
@@ -100,13 +101,25 @@ enum {
 #define GAMESTAT_FLAG_SELFDAMAGE ( 1 << 7LL )
 #define GAMESTAT_FLAG_INFINITEAMMO ( 1 << 8LL )
 
+struct SyncBombGameState {
+	RoundType round_type;
+	u8 alpha_score;
+	u8 beta_score;
+	u8 alpha_players_alive;
+	u8 alpha_players_total;
+	u8 beta_players_alive;
+	u8 beta_players_total;
+};
+
 struct SyncGameState {
-	u32 flags;
+	u16 flags;
 	int match_state;
 	int64_t match_start;
 	int64_t match_duration;
 	int64_t clock_override;
 	u8 max_team_players;
+
+	SyncBombGameState bomb;
 };
 
 struct SyncEntityState {
@@ -175,7 +188,21 @@ struct SyncEntityState {
 // to rendered a view.  There will only be 10 SyncPlayerState sent each second,
 // but the number of pmove_state_t changes will be relative to client
 // frame rates
-#define PS_MAX_STATS            64
+#define PS_MAX_STATS 64
+#define MAX_PM_STATS 16
+
+enum {
+	PM_STAT_FEATURES,
+	PM_STAT_NOUSERCONTROL,
+	PM_STAT_KNOCKBACK,
+	PM_STAT_CROUCHTIME,
+	PM_STAT_ZOOMTIME,
+	PM_STAT_DASHTIME,
+	PM_STAT_WJTIME,
+	PM_STAT_MAXSPEED,
+	PM_STAT_JUMPSPEED,
+	PM_STAT_DASHSPEED,
+};
 
 typedef struct {
 	int pm_type;
@@ -185,7 +212,7 @@ typedef struct {
 
 	int pm_flags;               // ducked, jump_held, etc
 	int pm_time;                // each unit = 8 ms
-	short stats[PM_STAT_SIZE];  // Kurim : timers for knockback, doublejump, walljump
+	short stats[MAX_PM_STATS];  // Kurim : timers for knockback, doublejump, walljump
 	int gravity;
 	short delta_angles[3];      // add to command angles to get view direction
 	                            // changed by spawns, rotating objects, and teleporters
@@ -219,9 +246,29 @@ struct SyncPlayerState {
 	WeaponInfo weapons[ Weapon_Count ];
 	bool items[ Item_Count ];
 
-	short stats[PS_MAX_STATS];  // fast status bar updates
 	uint32_t plrkeys;           // infos on the pressed keys of chased player (self if not chasing)
 	uint8_t weaponState;
+
+	bool show_scoreboard;
+	bool ready;
+	bool voted;
+	bool can_change_loadout;
+	bool can_plant;
+	bool carrying_bomb;
+
+	s16 health;
+
+	WeaponType weapon;
+	WeaponType pending_weapon;
+
+	int team;
+	int realteam;
+
+	BombProgress progress_type;
+	s16 progress;
+
+	int last_killer;
+	int pointed_teamplayer;
 };
 
 // usercmd_t is sent to the server each client frame
@@ -232,6 +279,8 @@ typedef struct usercmd_s {
 	int16_t angles[3];
 	int8_t forwardmove, sidemove, upmove;
 } usercmd_t;
+
+#define MAXTOUCH    32
 
 typedef struct {
 	// state (in / out)
@@ -377,14 +426,10 @@ struct Item {
 	ItemType type;
 
 	const char * name;
-	const char * shortname;
+	const char * short_name;
 	RGB8 color;
 	const char * description;
 	int cost;
-
-	const char * precache_models;
-	const char * precache_sounds;
-	const char * precache_images;
 };
 
 const Item *GS_FindItemByTag( const int tag );
@@ -395,7 +440,7 @@ const Item *GS_Cmd_PrevWeapon_f( const gs_state_t * gs, SyncPlayerState *playerS
 
 const Item * GS_FindItemByType( ItemType type );
 const Item * GS_FindItemByName( const char * name );
-bool GS_CanEquip( const SyncPlayerState * playerState, ItemType type );
+bool GS_CanEquip( const SyncPlayerState * player, WeaponType weapon );
 
 //===================
 //	GAMETYPES
@@ -452,54 +497,6 @@ int GS_WaterLevel( const gs_state_t * gs, SyncEntityState *state, vec3_t mins, v
 #define PMFEAT_ALL              ( 0xFFFF )
 #define PMFEAT_DEFAULT          ( PMFEAT_ALL & ~PMFEAT_GHOSTMOVE & ~PMFEAT_TEAMGHOST )
 
-enum {
-	STAT_LAYOUTS = 0,
-	STAT_HEALTH,
-	STAT_WEAPON,
-	STAT_WEAPON_TIME,
-	STAT_PENDING_WEAPON,
-
-	STAT_SCORE,
-	STAT_TEAM,
-	STAT_REALTEAM,
-	STAT_NEXT_RESPAWN,
-
-	STAT_POINTED_PLAYER,
-	STAT_POINTED_TEAMPLAYER,
-
-	STAT_TEAM_ALPHA_SCORE,
-	STAT_TEAM_BETA_SCORE,
-
-	STAT_LAST_KILLER,
-
-	// the stats below this point are set by the gametype scripts
-	GS_GAMETYPE_STATS_START = 32,
-
-	STAT_PROGRESS = GS_GAMETYPE_STATS_START,
-	STAT_PROGRESS_TYPE,
-
-	STAT_ROUND_TYPE,
-
-	STAT_CARRYING_BOMB,
-	STAT_CAN_PLANT_BOMB,
-	STAT_CAN_CHANGE_LOADOUT,
-
-	STAT_ALPHA_PLAYERS_ALIVE,
-	STAT_ALPHA_PLAYERS_TOTAL,
-	STAT_BETA_PLAYERS_ALIVE,
-	STAT_BETA_PLAYERS_TOTAL,
-
-	STAT_TIME_SELF,
-	STAT_TIME_BEST,
-	STAT_TIME_RECORD,
-	STAT_TIME_ALPHA,
-	STAT_TIME_BETA,
-
-	GS_GAMETYPE_STATS_END = PS_MAX_STATS,
-
-	MAX_STATS = PS_MAX_STATS, // 64
-};
-
 #define ISGAMETYPESTAT( x ) ( ( x >= GS_GAMETYPE_STATS_START ) && ( x < GS_GAMETYPE_STATS_END ) )
 
 static constexpr const char *gs_keyicon_names[] = {
@@ -512,16 +509,6 @@ static constexpr const char *gs_keyicon_names[] = {
 	"crouch",
 	"special"
 };
-
-// STAT_LAYOUTS flag bits meanings
-#define STAT_LAYOUT_INSTANTRESPAWN  ( 1 << 1 )
-#define STAT_LAYOUT_SCOREBOARD      ( 1 << 2 )
-#define STAT_LAYOUT_TEAMTAB         ( 1 << 3 )
-#define STAT_LAYOUT_CHALLENGER      ( 1 << 4 ) // player is in challengers queue (used for ingame menu)
-#define STAT_LAYOUT_READY           ( 1 << 5 ) // player is ready (used for ingame menu)
-#define STAT_LAYOUT_VOTED           ( 1 << 6 )
-
-#define STAT_NOTSET                 -9999 // used for stats that don't have meaningful value atm.
 
 //===============================================================
 
@@ -708,6 +695,8 @@ enum BombProgress {
 
 //===============================================================
 
+#define EVENT_ENTITIES_START    96 // entity types above this index will get event treatment
+
 // SyncEntityState->type values
 enum {
 	ET_GENERIC,
@@ -765,7 +754,7 @@ enum {
 
 struct WeaponDef {
 	const char * name;
-	const char * shortname;
+	const char * short_name;
 
 	RGB8 color;
 	const char * description;
@@ -775,7 +764,6 @@ struct WeaponDef {
 	const char * precache_sounds;
 	const char * precache_images;
 
-	int usage_count;
 	int projectile_count;
 	int clip_size;
 
@@ -796,9 +784,8 @@ struct WeaponDef {
 	int spread;
 };
 
-const WeaponDef *GS_GetWeaponDef( int weapon );
-int GS_SelectBestWeapon( SyncPlayerState *playerState );
-bool GS_CheckAmmoInWeapon( SyncPlayerState *playerState, int checkweapon );
+const WeaponDef * GS_GetWeaponDef( int weapon );
+WeaponType GS_SelectBestWeapon( const SyncPlayerState * player );
 int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState *playerState, int buttons, int msecs, int timeDelta );
 trace_t *GS_TraceBullet( const gs_state_t * gs, trace_t *trace, vec3_t start, vec3_t dir, vec3_t right, vec3_t up, float r, float u, int range, int ignore, int timeDelta );
 void GS_TraceLaserBeam( const gs_state_t * gs, trace_t *trace, vec3_t origin, vec3_t angles, float range, int ignore, int timeDelta, void ( *impact )( trace_t *tr, vec3_t dir ) );

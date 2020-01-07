@@ -377,15 +377,6 @@ void G_PrecacheGameCommands( void );
 void G_AddCommand( const char *name, gamecommandfunc_t cmdfunc );
 
 //
-// g_items.c
-//
-void PrecacheItem( const Item *it );
-void G_PrecacheItems( void );
-void G_FireWeapon( edict_t *ent, int parm );
-const Item *GetItemByTag( int tag );
-void G_UseItem( struct edict_s *ent, const Item *item );
-
-//
 // g_utils.c
 //
 #define G_LEVELPOOL_BASE_SIZE   45 * 1024 * 1024
@@ -556,15 +547,15 @@ void SP_model( edict_t *ent );
 // g_weapon.c
 //
 void W_Fire_Blade( edict_t *self, int range, vec3_t start, vec3_t angles, float damage, int knockback, int timeDelta );
-void W_Fire_MG( edict_t *self, vec3_t start, vec3_t angles, int range, int hspread, int vspread, float damage, int knockback, int timeDelta );
-void W_Fire_Riotgun( edict_t *self, vec3_t start, vec3_t angles, int range, int hspread, int vspread, int count, float damage, int knockback, int timeDelta );
+void W_Fire_MG( edict_t *self, vec3_t start, vec3_t angles, int range, int spread, float damage, int knockback, int timeDelta );
+void W_Fire_Riotgun( edict_t *self, vec3_t start, vec3_t angles, int range, int spread, int count, float damage, int knockback, int timeDelta );
 edict_t *W_Fire_Grenade( edict_t *self, vec3_t start, vec3_t angles, int speed, float damage, int minKnockback, int maxKnockback, int minDamage, float radius, int timeout, int timeDelta, bool aim_up );
 edict_t *W_Fire_Rocket( edict_t *self, vec3_t start, vec3_t angles, int speed, float damage, int minKnockback, int maxKnockback, int minDamage, int radius, int timeout, int timeDelta );
 edict_t *W_Fire_Plasma( edict_t *self, vec3_t start, vec3_t angles, float damage, int minKnockback, int maxKnockback, int minDamage, int radius, int speed, int timeout, int timeDelta );
-void W_Fire_Electrobolt_FullInstant( edict_t *self, vec3_t start, vec3_t angles, float maxdamage, float mindamage, int maxknockback, int minknockback, int range, int minDamageRange, int timeDelta );
-edict_t *W_Fire_Lasergun( edict_t *self, vec3_t start, vec3_t angles, float damage, int knockback, int timeout, int timeDelta );
+void W_Fire_Electrobolt( edict_t *self, vec3_t start, vec3_t angles, float damage, int knockback, int range, int timeDelta );
+edict_t *W_Fire_Lasergun( edict_t *self, vec3_t start, vec3_t angles, float damage, int knockback, int range, int timeDelta );
 
-void Use_Weapon( edict_t *ent, const Item *item );
+void G_FireWeapon( edict_t *ent, int parm );
 
 //
 // g_chasecam	//newgametypes

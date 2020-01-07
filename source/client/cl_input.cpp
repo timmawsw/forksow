@@ -212,7 +212,7 @@ void CL_WriteUcmdsToMessage( msg_t *msg ) {
 		oldcmd = cmd;
 	}
 
-	cls.ucmdSent = i;
+	cls.ucmdSent = ucmdHead;
 }
 
 /*

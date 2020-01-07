@@ -146,17 +146,14 @@ static void Cmd_GameOperator_f( edict_t *ent ) {
 * Cmd_Use_f
 * Use an inventory item
 */
-static void Cmd_Use_f( edict_t *ent ) {
-	const Item *it;
+static void Cmd_Use_f( edict_t * ent ) {
+	const char * name = Cmd_Args();
 
-	assert( ent && ent->r.client );
-
-	it = GS_Cmd_UseItem( &server_gs, &ent->r.client->ps, Cmd_Args(), 0 );
-	if( !it ) {
-		return;
+	const char * err = NULL;
+	int num = strtonum( err, 0, Weapon_Count, &err );
+	if( err == NULL ) {
+		ent->r.client->ps.stats[STAT_PENDING_WEAPON] = num;
 	}
-
-	G_UseItem( ent, it );
 }
 
 /*
@@ -863,12 +860,7 @@ void G_AddCommand( const char *name, gamecommandfunc_t callback ) {
 * G_InitGameCommands
 */
 void G_InitGameCommands( void ) {
-	int i;
-
-	for( i = 0; i < MAX_GAMECOMMANDS; i++ ) {
-		g_Commands[i].func = NULL;
-		g_Commands[i].name[0] = 0;
-	}
+	memset( g_Commands, 0, sizeof( g_Commands ) );
 
 	G_AddCommand( "position", Cmd_Position_f );
 	G_AddCommand( "players", Cmd_Players_f );

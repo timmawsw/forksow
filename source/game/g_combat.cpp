@@ -299,30 +299,12 @@ void G_Damage( edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_
 		}
 		else if( attacker == targ ) {
 			if( level.gametype.selfDamage ) {
-				switch( mod ) {
-				case MOD_PLASMA_SPLASH:
-					take = damage * GS_GetWeaponDef( Weapon_Plasma )->firedef.selfdamage;
-					break;
-				case MOD_GRENADE_SPLASH:
-					take = damage * GS_GetWeaponDef( Weapon_GrenadeLauncher )->firedef.selfdamage;
-					break;
-				case MOD_ROCKET_SPLASH:
-					take = damage * GS_GetWeaponDef( Weapon_RocketLauncher )->firedef.selfdamage;
-					break;
-				default:
-					take = damage * 0.75f;
-					break;
-				}
+				take = damage * GS_GetWeaponDef( G_MODToWeapon( mod ) )->selfdamage;
 				save = damage - take;
 			}
 			else {
 				take = save = 0;
 			}
-		}
-		// don't get damage from players in race
-		else if( ( GS_RaceGametype( &server_gs ) ) && attacker->r.client && targ->r.client &&
-				 ( attacker->r.client != targ->r.client ) ) {
-			take = save = 0;
 		}
 	}
 

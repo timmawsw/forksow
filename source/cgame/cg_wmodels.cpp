@@ -390,17 +390,6 @@ struct weaponinfo_s *CG_CreateWeaponZeroModel( char *filename ) {
 //======================================================================
 
 /*
-* CG_GetWeaponInfo
-*/
-struct weaponinfo_s *CG_GetWeaponInfo( int weapon ) {
-	if( weapon < 0 || ( weapon >= Weapon_Count ) ) {
-		weapon = WEAP_NONE;
-	}
-
-	return cgs.weaponInfos[weapon] ? cgs.weaponInfos[weapon] : cgs.weaponInfos[WEAP_NONE];
-}
-
-/*
 * CG_AddWeaponFlashOnTag
 */
 static void CG_AddWeaponFlashOnTag( entity_t *weapon, const weaponinfo_t *weaponInfo,
@@ -488,10 +477,7 @@ static void CG_AddWeaponBarrelOnTag( entity_t *weapon, const weaponinfo_t *weapo
 */
 void CG_AddWeaponOnTag( entity_t *ent, const orientation_t *tag, int weaponid, int effects,
 	orientation_t *projectionSource, int64_t flash_time, int64_t barrel_time ) {
-	const weaponinfo_t * weaponInfo = CG_GetWeaponInfo( weaponid );
-	if( !weaponInfo ) {
-		return;
-	}
+	const weaponinfo_t * weaponInfo = cgs.weaponInfos[ weaponid ];
 
 	entity_t weapon = { };
 	weapon.color = rgba8_white;

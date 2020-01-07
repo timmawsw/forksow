@@ -190,17 +190,6 @@ static int CG_GetCvar( const void *parameter ) {
 	return Cvar_Value( (const char *)parameter );
 }
 
-/**
- * Returns whether the weapon should be displayed in the weapon list on the HUD
- * (if the player either has the weapon ammo for it).
- *
- * @param weapon weapon item ID
- * @return whether to display the weapon
- */
-static bool CG_IsWeaponInList( WeaponType weapon ) {
-	return cg.predictedPlayerState.weapons[ weapon ].owned;
-}
-
 static int CG_IsDemoPlaying( const void *parameter ) {
 	return cgs.demoPlaying ? 1 : 0;
 }
@@ -1525,7 +1514,7 @@ constexpr float SEL_WEAP_X_OFFSET = 0.25f;
 static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih, Alignment alignment, float font_size ) {
 	int num_weapons = 0;
 	for( int i = 0; i < Weapon_Count; i++ ) {
-		if( CG_IsWeaponInList( i ) ) {
+		if( cg.predictedPlayerState.weapons[ i ].owned ) {
 			num_weapons++;
 		}
 	}
@@ -1538,7 +1527,7 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 	int drawn_weapons = 0;
 	bool selected_found = false;
 	for( int i = 0; i < Weapon_Count; i++ ) {
-		if( !CG_IsWeaponInList( i ) )
+		if( !cg.predictedPlayerState.weapons[ i ].owned )
 			continue;
 
 		int curx = CG_HorizontalAlignForWidth( x + offx * drawn_weapons, alignment, total_width );
@@ -1554,38 +1543,31 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 
 		Vec4 color = Vec4( 1.0f );
 		Vec4 color_bg = Vec4( 0.5f );
-		// if ( i != Weapon_Knife ) {
+
 		int ammo = cg.predictedPlayerState.weapons[ i ].ammo;
+		int clip_size = GS_GetWeaponDef( i )->clip_size;
 
-		int ammo_in_clip = 0;
-
-
-		if ( i != Weapon_Knife ) {
-			int capacity = GS_FindItemByTag( i )->capacity;
-			int clips = GS_FindItemByTag( i )->clips;
-			int ammo_max =  clips * capacity;
-			ammo_in_clip = capacity - ((ammo_max - ammo) % capacity);
-
+		if( clip_size != 0 ) {
 			color = Vec4( 0.0f, 1.0f, 0.0f, 1.0f );
 			color_bg = Vec4( 0.0f, 0.5f, 0.0f, 1.0f );
 
-			int ammo_in_clip_pct = ( 100  * ammo_in_clip + capacity / 2) /capacity;
-			if ( ammo_in_clip_pct <= 67) {
+			float ammo_frac = float( ammo ) / float( clip_size );
+			if( ammo_frac <= 0.67f ) {
 				color = Vec4( 1.0f, 0.5f, 0.0f, 1.0f );
 				color_bg = Vec4( 0.5f, 0.25f, 0.0f, 1.0f );
 			}
-			if ( ammo_in_clip_pct <= 34) {
+			if( ammo_frac <= 0.34f ) {
 				color = Vec4( 1.0f, 0.0f, 0.0f, 1.0f );
 				color_bg = Vec4( 0.5f, 0.0f, 0.0f, 1.0f );
 			}
 		}
 
 		Draw2DBox( curx, cury, curiw, curih, cgs.white_material, color );
-		Draw2DBox( curx + roundf( curiw * 0.03f ), cury + roundf ( curih * 0.03f ), roundf( curiw * 0.95f ), roundf( curih * 0.95f ), cgs.white_material, color_bg );
-		Draw2DBox( curx + roundf( curiw * 0.16f ), cury + roundf ( curih * 0.16f ), roundf( curiw * 0.69f ), roundf( curiw * 0.69f ), CG_GetWeaponIcon( i ), color );
+		Draw2DBox( curx + roundf( curiw * 0.03f ), cury + roundf( curih * 0.03f ), roundf( curiw * 0.95f ), roundf( curih * 0.95f ), cgs.white_material, color_bg );
+		Draw2DBox( curx + roundf( curiw * 0.16f ), cury + roundf( curih * 0.16f ), roundf( curiw * 0.69f ), roundf( curiw * 0.69f ), CG_GetWeaponIcon( i ), color );
 
-		if( i != Weapon_Knife ) {
-			DrawText( GetHUDFont(), font_size + (curiw - iw)/4, va( "%i", ammo_in_clip ), Alignment_LeftBottom, curx + curiw*0.15f, cury + curih*0.85f, layout_cursor_color, layout_cursor_font_border );
+		if( clip_size != 0 ) {
+			DrawText( GetHUDFont(), font_size + (curiw - iw)/4, va( "%i", ammo ), Alignment_LeftBottom, curx + curiw*0.15f, cury + curih*0.85f, layout_cursor_color, layout_cursor_font_border );
 		}
 
 		drawn_weapons++;

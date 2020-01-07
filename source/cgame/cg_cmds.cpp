@@ -160,7 +160,7 @@ static void CG_SC_PlayerStats() {
 		int hits = ParseIntOr0( &s );
 
 		// name
-		Com_Printf( "%s%2s" S_COLOR_WHITE ": ", ImGuiColorToken( item->color ).token, item->shortname );
+		Com_Printf( "%s%2s" S_COLOR_WHITE ": ", ImGuiColorToken( item->color ).token, item->short_name );
 
 #define STATS_PERCENT( hit, total ) ( ( total ) == 0 ? 0 : ( ( hit ) == ( total ) ? 100 : (float)( hit ) * 100.0f / (float)( total ) ) )
 
@@ -318,7 +318,7 @@ static void CG_SC_ChangeLoadout() {
 
 	for( int i = 0; i < Cmd_Argc() - 1; i++ ) {
 		int weapon = atoi( Cmd_Argv( i + 1 ) );
-		if( weapon <= WEAP_NONE || weapon >= Weapon_Count )
+		if( weapon < 0 || weapon >= Weapon_Count )
 			return;
 		weapons[ n ] = weapon;
 		n++;
@@ -389,25 +389,18 @@ CGAME COMMANDS
 /*
 * CG_UseItem
 */
-void CG_UseItem( const char *name ) {
-	const Item *item;
-
+void CG_UseItem( const char * name ) {
 	if( !cg.frame.valid || cgs.demoPlaying ) {
 		return;
 	}
 
-	if( !name ) {
-		return;
-	}
-
-	item = GS_Cmd_UseItem( &client_gs, &cg.frame.playerState, name, 0 );
-	if( item ) {
-		if( item->type & IT_WEAPON ) {
-			CG_Predict_ChangeWeapon( item->tag );
+	for( int i = 0; i < Weapon_Count; i++ ) {
+		const WeaponDef * weapon = GS_GetWeaponDef( i );
+		if( Q_stricmp( weapon->name, name ) == 0 || Q_stricmp( weapon->short_name, name ) == 0 ) {
+			CG_Predict_ChangeWeapon( i );
 			cg.lastWeapon = cg.predictedPlayerState.stats[STAT_PENDING_WEAPON];
+			Cbuf_ExecuteText( EXEC_NOW, va( "cmd use %i", i ) );
 		}
-
-		Cbuf_ExecuteText( EXEC_NOW, va( "cmd use %i", item->tag ) );
 	}
 }
 
@@ -423,38 +416,30 @@ static void CG_Cmd_UseItem_f( void ) {
 	CG_UseItem( Cmd_Args() );
 }
 
-static const Item * CG_UseWeaponStep( const SyncPlayerState * playerState, bool next, ItemType predicted_equipped_item ) {
-	if( predicted_equipped_item < Item_FirstWeapon || predicted_equipped_item > Item_LastWeapon ) {
-		return GS_FindItemByType( cg.lastWeapon );
-	}
-
-	ItemType weapon = predicted_equipped_item;
+static WeaponType CG_UseWeaponStep( const SyncPlayerState * playerState, bool next, WeaponType predicted_equipped_weapon ) {
+	WeaponType weapon = predicted_equipped_item;
 	while( true ) {
-		weapon += next ? 1 : -1;
-		if( weapon < Item_FirstWeapon ) {
-			weapon += Item_WeaponCount;
-		}
-		if( weapon > Item_LastWeapon ) {
-			weapon -= Item_WeaponCount;
+		weapon = ( weapon + ( next ? 1 : -1 ) ) % Weapon_Count;
+		if( weapon < 0 ) {
+			weapon += Weapon_Count;
 		}
 
-		if( weapon == predicted_equipped_item )
+		if( weapon == predicted_equipped_weapon ) {
 			break;
+		}
 
 		if( GS_CanEquip( playerState, weapon ) ) {
-			return GS_FindItemByType( weapon );
+			return weapon;
 		}
 	}
 
-	return NULL;
+	return Weapon_Count;
 }
 
 /*
 * CG_Cmd_NextWeapon_f
 */
 static void CG_Cmd_NextWeapon_f( void ) {
-	const Item *item;
-
 	if( !cg.frame.valid ) {
 		return;
 	}
@@ -464,10 +449,10 @@ static void CG_Cmd_NextWeapon_f( void ) {
 		return;
 	}
 
-	item = CG_UseWeaponStep( &cg.frame.playerState, 1, cg.predictedWeaponSwitch );
-	if( item ) {
-		CG_Predict_ChangeWeapon( item->tag );
-		Cbuf_ExecuteText( EXEC_NOW, va( "cmd use %i", item->tag ) );
+	WeaponType weapon = CG_UseWeaponStep( &cg.frame.playerState, 1, cg.predictedWeaponSwitch );
+	if( weapon != Weapon_Count ) {
+		CG_Predict_ChangeWeapon( weapon );
+		Cbuf_ExecuteText( EXEC_NOW, va( "cmd use %i", weapon ) );
 		cg.lastWeapon = cg.predictedPlayerState.stats[STAT_PENDING_WEAPON];
 	}
 }
@@ -476,8 +461,6 @@ static void CG_Cmd_NextWeapon_f( void ) {
 * CG_Cmd_PrevWeapon_f
 */
 static void CG_Cmd_PrevWeapon_f( void ) {
-	const Item *item;
-
 	if( !cg.frame.valid ) {
 		return;
 	}
@@ -487,10 +470,10 @@ static void CG_Cmd_PrevWeapon_f( void ) {
 		return;
 	}
 
-	item = CG_UseWeaponStep( &cg.frame.playerState, -1, cg.predictedWeaponSwitch );
-	if( item ) {
-		CG_Predict_ChangeWeapon( item->tag );
-		Cbuf_ExecuteText( EXEC_NOW, va( "cmd use %i", item->tag ) );
+	WeaponType weapon = CG_UseWeaponStep( &cg.frame.playerState, -1, cg.predictedWeaponSwitch );
+	if( weapon != Weapon_Count ) {
+		CG_Predict_ChangeWeapon( weapon );
+		Cbuf_ExecuteText( EXEC_NOW, va( "cmd use %i", weapon ) );
 		cg.lastWeapon = cg.predictedPlayerState.stats[STAT_PENDING_WEAPON];
 	}
 }
@@ -505,16 +488,10 @@ static void CG_Cmd_LastWeapon_f( void ) {
 		return;
 	}
 
-	if( cg.lastWeapon != WEAP_NONE && cg.lastWeapon != cg.predictedPlayerState.stats[STAT_PENDING_WEAPON] ) {
-		item = GS_Cmd_UseItem( &client_gs, &cg.frame.playerState, va( "%i", cg.lastWeapon ), IT_WEAPON );
-		if( item ) {
-			if( item->type & IT_WEAPON ) {
-				CG_Predict_ChangeWeapon( item->tag );
-			}
-
-			Cbuf_ExecuteText( EXEC_NOW, va( "cmd use %i", item->tag ) );
-			cg.lastWeapon = cg.predictedPlayerState.stats[STAT_PENDING_WEAPON];
-		}
+	if( cg.lastWeapon != Weapon_Count && cg.lastWeapon != cg.predictedPlayerState.stats[STAT_PENDING_WEAPON] ) {
+		CG_Predict_ChangeWeapon( cg.lastWeapon );
+		Cbuf_ExecuteText( EXEC_NOW, va( "cmd use %i", cg.lastWeapon ) );
+		cg.lastWeapon = cg.predictedPlayerState.stats[STAT_PENDING_WEAPON];
 	}
 }
 

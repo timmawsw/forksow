@@ -754,6 +754,11 @@ static void Delta( DeltaBuffer * buf, pmove_state_t & pmove, const pmove_state_t
 	Delta( buf, pmove.stats, baseline.stats );
 }
 
+static void Delta( DeltaBuffer * buf, SyncPlayerState::WeaponInfo & weapon, const SyncPlayerState::WeaponInfo & baseline ) {
+	Delta( buf, weapon.owned, baseline.owned );
+	Delta( buf, weapon.ammo, baseline.ammo );
+}
+
 static void Delta( DeltaBuffer * buf, SyncPlayerState & player, const SyncPlayerState & baseline ) {
 	Delta( buf, player.pmove, baseline.pmove );
 
@@ -775,7 +780,8 @@ static void Delta( DeltaBuffer * buf, SyncPlayerState & player, const SyncPlayer
 
 	Delta( buf, player.stats, baseline.stats );
 
-	Delta( buf, player.inventory, baseline.inventory );
+	Delta( buf, player.weapons, baseline.weapons );
+	Delta( buf, player.items, baseline.items );
 }
 
 void MSG_WriteDeltaPlayerState( msg_t * msg, const SyncPlayerState * baseline, const SyncPlayerState * player ) {

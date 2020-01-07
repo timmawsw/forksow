@@ -1,4 +1,5 @@
 #include "qcommon/base.h"
+#include "gameshared/gs_public.h"
 
 const Item itemdefs[] = {
 	{ Item_Bomb },
@@ -10,10 +11,6 @@ const Item itemdefs[] = {
 		RGB8( 255, 100, 255 ),
 		"Hello",
 		100,
-		30,
-		4,
-
-		NULL, NULL, NULL
 	},
 };
 
@@ -27,29 +24,15 @@ const Item * GS_FindItemByType( ItemType type ) {
 
 const Item * GS_FindItemByName( const char * name ) {
 	for( size_t i = 0; i < ARRAY_COUNT( itemdefs ); i++ ) {
-		if( itemdefs[ i ].name == NULL )
-			continue;
 		if( Q_stricmp( name, itemdefs[ i ].name ) == 0 )
 			return &itemdefs[ i ];
-		if( Q_stricmp( name, itemdefs[ i ].shortname ) == 0 )
+		if( Q_stricmp( name, itemdefs[ i ].short_name ) == 0 )
 			return &itemdefs[ i ];
 	}
 
 	return NULL;
 }
 
-bool GS_CanEquip( const SyncPlayerState * playerState, ItemType type ) {
-	if( !playerState->inventory[ type ] ) {
-		return false;
-	}
-
-	if( !( playerState->pmove.stats[ PM_STAT_FEATURES ] & PMFEAT_WEAPONSWITCH ) ) {
-		return false;
-	}
-
-	if( type == playerState->stats[ STAT_PENDING_WEAPON ] ) {
-		return false;
-	}
-
-	return true;
+bool GS_CanEquip( const SyncPlayerState * player, WeaponType weapon ) {
+	return ( player->pmove.stats[ PM_STAT_FEATURES ] & PMFEAT_WEAPONSWITCH ) != 0 && player->weapons[ weapon ].owned;
 }

@@ -711,30 +711,6 @@ static void objectScoreStats_Clear( score_stats_t *obj ) {
 	memset( obj, 0, sizeof( *obj ) );
 }
 
-static int objectScoreStats_AccShots( int ammo, score_stats_t *obj ) {
-	if( ammo < AMMO_GUNBLADE || ammo >= AMMO_TOTAL ) {
-		return 0;
-	}
-
-	return obj->accuracy_shots[ ammo - AMMO_GUNBLADE ];
-}
-
-static int objectScoreStats_AccHits( int ammo, score_stats_t *obj ) {
-	if( ammo < AMMO_GUNBLADE || ammo >= AMMO_TOTAL ) {
-		return 0;
-	}
-
-	return obj->accuracy_hits[ ammo - AMMO_GUNBLADE ];
-}
-
-static int objectScoreStats_AccDamage( int ammo, score_stats_t *obj ) {
-	if( ammo < AMMO_GUNBLADE || ammo >= AMMO_TOTAL ) {
-		return 0;
-	}
-
-	return obj->accuracy_damage[ ammo - AMMO_GUNBLADE ];
-}
-
 static void objectScoreStats_ScoreSet( int newscore, score_stats_t *obj ) {
 	obj->score = newscore;
 }
@@ -758,9 +734,6 @@ static const asMethod_t scorestats_Methods[] =
 	{ ASLIB_FUNCTION_DECL( void, setScore, ( int i ) ), asFUNCTION( objectScoreStats_ScoreSet ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( void, addScore, ( int i ) ), asFUNCTION( objectScoreStats_ScoreAdd ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( void, clear, ( ) ), asFUNCTION( objectScoreStats_Clear ), asCALL_CDECL_OBJLAST },
-	{ ASLIB_FUNCTION_DECL( int, accuracyShots, ( int ammo ) const ), asFUNCTION( objectScoreStats_AccShots ), asCALL_CDECL_OBJLAST },
-	{ ASLIB_FUNCTION_DECL( int, accuracyHits, ( int ammo ) const ), asFUNCTION( objectScoreStats_AccHits ), asCALL_CDECL_OBJLAST },
-	{ ASLIB_FUNCTION_DECL( int, accuracyDamage, ( int ammo ) const ), asFUNCTION( objectScoreStats_AccDamage ), asCALL_CDECL_OBJLAST },
 
 	ASLIB_METHOD_NULL
 };
@@ -864,40 +837,8 @@ static edict_t *objectGameClient_GetEntity( gclient_t *self ) {
 	return PLAYERENT( playerNum );
 }
 
-static int objectGameClient_InventoryCount( int index, gclient_t *self ) {
-	if( index < 0 || index >= MAX_ITEMS ) {
-		return 0;
-	}
-
-	return self->ps.inventory[ index ];
-}
-
-static void objectGameClient_InventorySetCount( int index, int newcount, gclient_t *self ) {
-	const Item *it;
-
-	if( index < 0 || index >= MAX_ITEMS ) {
-		return;
-	}
-
-	it = GS_FindItemByTag( index );
-	if( !it ) {
-		return;
-	}
-
-	if( newcount == 0 && ( it->type & IT_WEAPON ) ) {
-		if( index == self->ps.stats[STAT_PENDING_WEAPON] ) {
-			self->ps.stats[STAT_PENDING_WEAPON] = self->ps.stats[STAT_WEAPON];
-		} else if( index == self->ps.stats[STAT_WEAPON] ) {
-			self->ps.stats[STAT_WEAPON] = self->ps.stats[STAT_PENDING_WEAPON] = WEAP_NONE;
-			self->ps.weaponState = WEAPON_STATE_READY;
-		}
-	}
-
-	self->ps.inventory[ index ] = newcount;
-}
-
-static void objectGameClient_InventoryGiveItemExt( int index, int count, gclient_t *self ) {
-	if( index < 0 || index >= Item_Count ) {
+static void objectGameClient_InventoryGiveWeapon( WeaponType weapon, bool give, gclient_t *self ) {
+	if( weapon < 0 || weapon >= Weapon_Count ) {
 		return;
 	}
 
@@ -906,35 +847,24 @@ static void objectGameClient_InventoryGiveItemExt( int index, int count, gclient
 		return;
 	}
 
-	PLAYERENT( playerNum );->r.client->ps.items[ index ] = true;
-}
-
-static void objectGameClient_InventoryGiveItem( int index, gclient_t *self ) {
-	objectGameClient_InventoryGiveItemExt( index, 1, self );
+	PLAYERENT( playerNum )->r.client->ps.weapons[ weapon ].owned = give;
 }
 
 static void objectGameClient_InventoryClear( gclient_t *self ) {
-	memset( self->ps.inventory, 0, sizeof( self->ps.inventory ) );
+	memset( self->ps.weapons, 0, sizeof( self->ps.weapons ) );
 
-	self->ps.stats[STAT_WEAPON] = self->ps.stats[STAT_PENDING_WEAPON] = WEAP_NONE;
+	self->ps.stats[STAT_WEAPON] = Weapon_Count;
+	self->ps.stats[STAT_PENDING_WEAPON] = Weapon_Count;
 	self->ps.weaponState = WEAPON_STATE_READY;
 }
 
-static bool objectGameClient_CanSelectWeapon( int index, gclient_t *self ) {
-	if( index < WEAP_NONE || index >= Weapon_Count ) {
-		return false;
-	}
-
-	return ( GS_CheckAmmoInWeapon( &self->ps, index ) ) == true;
-}
-
 static void objectGameClient_SelectWeapon( int index, gclient_t *self ) {
-	if( index < WEAP_NONE || index >= Weapon_Count ) {
+	if( index < 0 || index >= Weapon_Count ) {
 		self->ps.stats[STAT_PENDING_WEAPON] = GS_SelectBestWeapon( &self->ps );
 		return;
 	}
 
-	if( GS_CheckAmmoInWeapon( &self->ps, index ) ) {
+	if( self->ps.weapons[ index ].owned ) {
 		self->ps.stats[STAT_PENDING_WEAPON] = index;
 	}
 }
@@ -1115,12 +1045,8 @@ static const asMethod_t gameclient_Methods[] =
 	{ ASLIB_FUNCTION_DECL( void, clearPlayerStateEvents, ( ) ), asFUNCTION( objectGameClient_ClearPlayerStateEvents ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( const String @, get_name, ( ) const ), asFUNCTION( objectGameClient_getName ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( Entity @, getEnt, ( ) const ), asFUNCTION( objectGameClient_GetEntity ), asCALL_CDECL_OBJLAST },
-	{ ASLIB_FUNCTION_DECL( int, inventoryCount, ( int tag ) const ), asFUNCTION( objectGameClient_InventoryCount ), asCALL_CDECL_OBJLAST },
-	{ ASLIB_FUNCTION_DECL( void, inventorySetCount, ( int tag, int count ) ), asFUNCTION( objectGameClient_InventorySetCount ), asCALL_CDECL_OBJLAST },
-	{ ASLIB_FUNCTION_DECL( void, inventoryGiveItem, ( int tag, int count ) ), asFUNCTION( objectGameClient_InventoryGiveItemExt ), asCALL_CDECL_OBJLAST },
-	{ ASLIB_FUNCTION_DECL( void, inventoryGiveItem, ( int tag ) ), asFUNCTION( objectGameClient_InventoryGiveItem ), asCALL_CDECL_OBJLAST },
+	{ ASLIB_FUNCTION_DECL( void, inventoryGiveWeapon, ( WeaponType weapon, bool give ) ), asFUNCTION( objectGameClient_InventoryGiveWeapon ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( void, inventoryClear, ( ) ), asFUNCTION( objectGameClient_InventoryClear ), asCALL_CDECL_OBJLAST },
-	{ ASLIB_FUNCTION_DECL( bool, canSelectWeapon, ( int tag ) const ), asFUNCTION( objectGameClient_CanSelectWeapon ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( void, selectWeapon, ( int tag ) ), asFUNCTION( objectGameClient_SelectWeapon ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( void, addAward, ( const String &in ) ), asFUNCTION( objectGameClient_addAward ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( void, execGameCommand, ( const String &in ) ), asFUNCTION( objectGameClient_execGameCommand ), asCALL_CDECL_OBJLAST },
@@ -1673,57 +1599,6 @@ static const asClassDescriptor_t asTraceClassDescriptor =
 
 //=======================================================================
 
-// CLASS: Item
-static asstring_t *objectGItem_getName( Item *self ) {
-	return game.asExport->asStringFactoryBuffer( self->name, self->name ? strlen( self->name ) : 0 );
-}
-
-static asstring_t *objectGItem_getShortName( Item *self ) {
-	return game.asExport->asStringFactoryBuffer( self->shortname, self->shortname ? strlen( self->shortname ) : 0 );
-}
-
-static const asFuncdef_t asitem_Funcdefs[] =
-{
-	ASLIB_FUNCDEF_NULL
-};
-
-static const asBehavior_t asitem_ObjectBehaviors[] =
-{
-	ASLIB_BEHAVIOR_NULL
-};
-
-static const asMethod_t asitem_Methods[] =
-{
-	{ ASLIB_FUNCTION_DECL( const String @, get_name, ( ) const ), asFUNCTION( objectGItem_getName ), asCALL_CDECL_OBJLAST },
-	{ ASLIB_FUNCTION_DECL( const String @, get_shortName, ( ) const ), asFUNCTION( objectGItem_getShortName ), asCALL_CDECL_OBJLAST },
-
-	ASLIB_METHOD_NULL
-};
-
-static const asProperty_t asitem_Properties[] =
-{
-	{ ASLIB_PROPERTY_DECL( const ItemType, type ), ASLIB_FOFFSET( Item, type ) },
-	{ ASLIB_PROPERTY_DECL( const int, cost ), ASLIB_FOFFSET( Item, cost ) },
-
-	ASLIB_PROPERTY_NULL
-};
-
-static const asClassDescriptor_t asItemClassDescriptor =
-{
-	"Item",                     /* name */
-	asOBJ_REF | asOBJ_NOCOUNT,    /* object type flags */
-	sizeof( Item ),         /* size */
-	asitem_Funcdefs,            /* funcdefs */
-	asitem_ObjectBehaviors,     /* object behaviors */
-	asitem_Methods,             /* methods */
-	asitem_Properties,          /* properties */
-
-	NULL, NULL                  /* string factory hack */
-};
-
-
-//=======================================================================
-
 static const asClassDescriptor_t * const asGameClassesDescriptors[] =
 {
 	&asMatchClassDescriptor,
@@ -1733,7 +1608,6 @@ static const asClassDescriptor_t * const asGameClassesDescriptors[] =
 	&asGameClientDescriptor,
 	&asGameEntityClassDescriptor,
 	&asTraceClassDescriptor,
-	&asItemClassDescriptor,
 
 	NULL
 };
@@ -2025,7 +1899,7 @@ static void asFunc_G_AnnouncerSound( gclient_t *target, int soundindex, int team
 }
 
 static void asFunc_FireBolt( asvec3_t *origin, asvec3_t *angles, int range, int damage, int knockback, edict_t *owner ) {
-	W_Fire_Electrobolt_FullInstant( owner, origin->v, angles->v, damage, damage, knockback, knockback, range, range, 0 );
+	W_Fire_Electrobolt( owner, origin->v, angles->v, damage, knockback, range, 0 );
 }
 
 static edict_t *asFunc_FirePlasma( asvec3_t *origin, asvec3_t *angles, int speed, int radius, int damage, int knockback, edict_t *owner ) {
@@ -2041,11 +1915,11 @@ static edict_t *asFunc_FireGrenade( asvec3_t *origin, asvec3_t *angles, int spee
 }
 
 static void asFunc_FireRiotgun( asvec3_t *origin, asvec3_t *angles, int range, int spread, int count, int damage, int knockback, edict_t *owner ) {
-	W_Fire_Riotgun( owner, origin->v, angles->v, range, spread, spread, count, damage, knockback, 0 );
+	W_Fire_Riotgun( owner, origin->v, angles->v, range, spread, count, damage, knockback, 0 );
 }
 
 static void asFunc_FireBullet( asvec3_t *origin, asvec3_t *angles, int range, int spread, int damage, int knockback, edict_t *owner ) {
-	W_Fire_MG( owner, origin->v, angles->v, range, spread, spread, damage, knockback, 0 );
+	W_Fire_MG( owner, origin->v, angles->v, range, spread, damage, knockback, 0 );
 }
 
 static const asglobfuncs_t asGameGlobFuncs[] =

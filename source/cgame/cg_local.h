@@ -356,7 +356,7 @@ typedef struct {
 	SyncEntityState predictFromEntityState;
 	SyncPlayerState predictFromPlayerState;
 
-	int lastWeapon;
+	WeaponType lastWeapon;
 
 	float lerpfrac;                     // between oldframe and frame
 	float xerpTime;

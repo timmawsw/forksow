@@ -183,7 +183,7 @@ void CG_ViewWeapon_RefreshAnimation( cg_viewweapon_t *viewweapon ) {
 	viewweapon->weapon = cg.predictedPlayerState.stats[STAT_WEAPON];
 
 	// hack cause of missing animation config
-	if( viewweapon->weapon == WEAP_NONE ) {
+	if( viewweapon->weapon == Weapon_Count ) {
 		viewweapon->eventAnim = 0;
 		viewweapon->eventAnimStartTime = 0;
 		return;
@@ -332,7 +332,7 @@ void CG_AddViewWeapon( cg_viewweapon_t *viewweapon ) {
 	orientation_t tag;
 	int64_t flash_time = 0;
 
-	if( !cg.view.drawWeapon || viewweapon->weapon == WEAP_NONE ) {
+	if( !cg.view.drawWeapon || viewweapon->weapon == Weapon_Count ) {
 		return;
 	}
 

@@ -138,7 +138,7 @@ void CG_LaserBeamEffect( centity_t *cent ) {
 		VecToAngles( dir, laserAngles );
 	}
 
-	range = GS_GetWeaponDef( Weapon_Laser )->firedef.timeout;
+	range = GS_GetWeaponDef( Weapon_Laser )->range;
 
 	sfx = cgs.media.sfxLasergunHum;
 
@@ -171,15 +171,15 @@ void CG_LaserBeamEffect( centity_t *cent ) {
 static void CG_Event_LaserBeam( const vec3_t origin, const vec3_t dir, int entNum ) {
 	// lasergun's smooth refire
 	// it appears that 64ms is that maximum allowed time interval between prediction events on localhost
-	unsigned int timeout = Max2( GS_GetWeaponDef( Weapon_Laser )->firedef.reload_time + 10, 65u );
+	unsigned int range = Max2( GS_GetWeaponDef( Weapon_Laser )->reload_time + 10, 65u );
 
 	centity_t *cent = &cg_entities[entNum];
 	VectorCopy( origin, cent->laserOrigin );
-	VectorMA( cent->laserOrigin, GS_GetWeaponDef( Weapon_Laser )->firedef.timeout, dir, cent->laserPoint );
+	VectorMA( cent->laserOrigin, GS_GetWeaponDef( Weapon_Laser )->range, dir, cent->laserPoint );
 
 	VectorCopy( cent->laserOrigin, cent->laserOriginOld );
 	VectorCopy( cent->laserPoint, cent->laserPointOld );
-	cent->localEffects[LOCALEFFECT_LASERBEAM] = cl.serverTime + timeout;
+	cent->localEffects[LOCALEFFECT_LASERBEAM] = cl.serverTime + range;
 }
 
 /*
@@ -230,9 +230,6 @@ static void CG_FireWeaponEvent( int entNum, int weapon ) {
 
 	// add animation to the player model
 	switch( weapon ) {
-		case WEAP_NONE:
-			break;
-
 		case Weapon_Knife:
 			CG_PModel_AddAnimation( entNum, 0, TORSO_SHOOT_BLADE, 0, EVENT_CHANNEL );
 			break;
@@ -322,7 +319,7 @@ static void CG_BulletImpact( trace_t *tr ) {
 static void CG_Event_FireMachinegun( vec3_t origin, vec3_t dir, int owner, int team ) {
 	Vec4 color = CG_TeamColorVec4( team );
 
-	int range = GS_GetWeaponDef( Weapon_MachineGun )->firedef.timeout;
+	int range = GS_GetWeaponDef( Weapon_MachineGun )->range;
 
 	vec3_t right, up;
 	ViewVectors( dir, right, up );
@@ -384,22 +381,17 @@ static void CG_Event_FireMachinegun( vec3_t origin, vec3_t dir, int owner, int t
 * CG_Fire_SunflowerPattern
 */
 static void CG_Fire_SunflowerPattern( vec3_t start, vec3_t dir, int ignore, int count,
-									  int hspread, int vspread, int range, void ( *impact )( trace_t *tr ) ) {
-	int i;
-	float r;
-	float u;
-	float fi;
-	trace_t trace, *water_trace;
-
+									  int spread, int range, void ( *impact )( trace_t *tr ) ) {
 	vec3_t right, up;
 	ViewVectors( dir, right, up );
 
-	for( i = 0; i < count; i++ ) {
-		fi = i * 2.4f; //magic value creating Fibonacci numbers
-		r = cosf( fi ) * hspread * sqrtf( fi );
-		u = sinf( fi ) * vspread * sqrtf( fi );
+	for( int i = 0; i < count; i++ ) {
+		float fi = i * 2.4f; //magic value creating Fibonacci numbers
+		float r = cosf( fi ) * spread * sqrtf( fi );
+		float u = sinf( fi ) * spread * sqrtf( fi );
 
-		water_trace = GS_TraceBullet( &client_gs, &trace, start, dir, right, up, r, u, range, ignore, 0 );
+		trace_t trace;
+		trace_t * water_trace = GS_TraceBullet( &client_gs, &trace, start, dir, right, up, r, u, range, ignore, 0 );
 		if( water_trace ) {
 			trace_t *tr = water_trace;
 			if( !VectorCompare( tr->endpos, start ) ) {
@@ -421,16 +413,15 @@ static void CG_Fire_SunflowerPattern( vec3_t start, vec3_t dir, int ignore, int 
 * CG_Event_FireRiotgun
 */
 static void CG_Event_FireRiotgun( vec3_t origin, vec3_t dir, int owner ) {
-	trace_t trace;
-	vec3_t end;
-	const WeaponDef *weapondef = GS_GetWeaponDef( Weapon_Shotgun );
-	const firedef_t *firedef = &weapondef->firedef;
+	const WeaponDef * def = GS_GetWeaponDef( Weapon_Shotgun );
 
-	CG_Fire_SunflowerPattern( origin, dir, owner, firedef->projectile_count,
-							  firedef->spread, firedef->v_spread, firedef->timeout, CG_BulletImpact );
+	CG_Fire_SunflowerPattern( origin, dir, owner, def->projectile_count, def->spread, def->range, CG_BulletImpact );
 
 	// spawn a single sound at the impact
-	VectorMA( origin, firedef->timeout, dir, end );
+	vec3_t end;
+	VectorMA( origin, def->range, dir, end );
+
+	trace_t trace;
 	CG_Trace( &trace, origin, vec3_origin, vec3_origin, end, owner, MASK_SHOT );
 
 	if( trace.ent != -1 && !( trace.surfFlags & SURF_NOIMPACT ) ) {

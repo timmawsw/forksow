@@ -400,8 +400,6 @@ static int CG_MoveFlagsToUpperAnimation( uint32_t moveflags, int carried_weapon 
 		return TORSO_SWIM;
 
 	switch( carried_weapon ) {
-		case WEAP_NONE:
-			return TORSO_HOLD_BLADE; // fixme: a special animation should exist
 		case Weapon_Knife:
 			return TORSO_HOLD_BLADE;
 		case Weapon_Laser:
