@@ -134,7 +134,6 @@ void MSG_ReadData( msg_t *sb, void *buffer, size_t length );
 #define SNAP_DEMO_GZ                    FS_GZ
 
 void SNAP_ParseBaseline( msg_t *msg, SyncEntityState *baselines );
-void SNAP_SkipFrame( msg_t *msg, struct snapshot_s *header );
 struct snapshot_s *SNAP_ParseFrame( msg_t *msg, struct snapshot_s *lastFrame, struct snapshot_s *backup, SyncEntityState *baselines, int showNet );
 
 void SNAP_WriteFrameSnapToClient( struct ginfo_s *gi, struct client_s *client, msg_t *msg, int64_t frameNum, int64_t gameTime,

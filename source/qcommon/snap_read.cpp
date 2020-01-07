@@ -234,7 +234,7 @@ static void SNAP_ParsePacketEntities( msg_t *msg, snapshot_t *oldframe, snapshot
 /*
 * SNAP_ParseFrameHeader
 */
-static snapshot_t *SNAP_ParseFrameHeader( msg_t *msg, snapshot_t *newframe, snapshot_t *backup, bool skipBody ) {
+static snapshot_t *SNAP_ParseFrameHeader( msg_t *msg, snapshot_t *newframe, snapshot_t *backup ) {
 	int len, pos;
 	int areabytes;
 	uint8_t *areabits;
@@ -293,24 +293,10 @@ static snapshot_t *SNAP_ParseFrameHeader( msg_t *msg, snapshot_t *newframe, snap
 			} else {
 				newframe->valid = true; // valid delta parse
 			}
-		} else {
-			newframe->valid = skipBody;
 		}
 	}
 
-	if( skipBody ) {
-		MSG_SkipData( msg, len - ( msg->readcount - pos ) );
-	}
-
 	return newframe;
-}
-
-/*
-* SNAP_SkipFrame
-*/
-void SNAP_SkipFrame( msg_t *msg, snapshot_t *header ) {
-	static snapshot_t frame;
-	SNAP_ParseFrameHeader( msg, header ? header : &frame, NULL, true );
 }
 
 /*
@@ -326,7 +312,7 @@ snapshot_t *SNAP_ParseFrame( msg_t *msg, snapshot_t *lastFrame, snapshot_t *back
 	snapshot_t  *newframe;
 
 	// read header
-	newframe = SNAP_ParseFrameHeader( msg, NULL, backup, false );
+	newframe = SNAP_ParseFrameHeader( msg, NULL, backup );
 	deltaframe = NULL;
 
 	if( showNet == 3 ) {
