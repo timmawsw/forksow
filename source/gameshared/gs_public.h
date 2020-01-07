@@ -89,7 +89,8 @@ enum ItemType {
 	Item_Count
 };
 
-enum RoundType {
+typedef u8 RoundType;
+enum RoundType_ {
 	RoundType_Normal,
 	RoundType_MatchPoint,
 	RoundType_Overtime,

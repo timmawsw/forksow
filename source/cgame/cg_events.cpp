@@ -156,7 +156,7 @@ void CG_LaserBeamEffect( centity_t *cent ) {
 
 	// enable continuous flash on the weapon owner
 	if( cg_weaponFlashes->integer ) {
-		cg_entPModels[cent->current.number].flash_time = cl.serverTime + CG_GetWeaponInfo( Weapon_Laser )->flashTime;
+		cg_entPModels[cent->current.number].flash_time = cl.serverTime + cgs.weaponInfos[ Weapon_Laser ]->flashTime;
 	}
 
 	if( ISVIEWERENTITY( cent->current.number ) ) {
@@ -198,7 +198,7 @@ static void CG_FireWeaponEvent( int entNum, int weapon ) {
 		attenuation = ATTN_NORM;
 	}
 
-	const weaponinfo_t * weaponInfo = CG_GetWeaponInfo( weapon );
+	const weaponinfo_t * weaponInfo = cgs.weaponInfos[ weapon ];
 	const SoundEffect * sfx = weaponInfo->sound_fire;
 
 	if( sfx ) {

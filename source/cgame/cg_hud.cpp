@@ -61,7 +61,7 @@ typedef struct
 } constant_numeric_t;
 
 static const constant_numeric_t cg_numeric_constants[] = {
-	{ "NOTSET", STAT_NOTSET },
+	{ "NOTSET", 9999 },
 
 	// teams
 	{ "TEAM_SPECTATOR", TEAM_SPECTATOR },
@@ -115,12 +115,20 @@ static int CG_Int( const void * p ) {
 	return *( const int * ) p;
 }
 
+static int CG_U8( const void * p ) {
+	return *( const u8 * ) p;
+}
+
+static int CG_S16( const void * p ) {
+	return *( const u8 * ) p;
+}
+
 static int CG_Bool( const void * p ) {
 	return *( const bool * ) p ? 1 : 0;
 }
 
 static int CG_GetPOVnum( const void *parameter ) {
-	return ( cg.predictedPlayerState.POVnum != cgs.playerNum + 1 ) ? cg.predictedPlayerState.POVnum : STAT_NOTSET;
+	return cg.predictedPlayerState.POVnum != cgs.playerNum + 1 ? cg.predictedPlayerState.POVnum : 9999;
 }
 
 static float _getspeed( void ) {
@@ -219,21 +227,20 @@ typedef struct
 
 static const reference_numeric_t cg_numeric_references[] = {
 	// stats
-	{ "HEALTH", CG_Int, (void *)STAT_HEALTH },
-	{ "WEAPON_ITEM", CG_GetStatValue, (void *)STAT_WEAPON },
-	{ "PENDING_WEAPON", CG_GetStatValue, (void *)STAT_PENDING_WEAPON },
+	{ "HEALTH", CG_S16, &cg.predictedPlayerState.health },
+	{ "WEAPON_ITEM", CG_U8, &cg.predictedPlayerState.weapon },
 
-	{ "READY", CG_GetLayoutStatFlag, (void *)STAT_LAYOUT_READY },
+	{ "READY", CG_Bool, &cg.predictedPlayerState.ready },
 
-	{ "TEAM", CG_GetStatValue, (void *)STAT_TEAM },
+	{ "TEAM", CG_Int, &cg.predictedPlayerState.team },
 
-	{ "TEAM_ALPHA_SCORE", CG_GetStatValue, (void *)STAT_TEAM_ALPHA_SCORE },
-	{ "TEAM_BETA_SCORE", CG_GetStatValue, (void *)STAT_TEAM_BETA_SCORE },
+	{ "TEAM_ALPHA_SCORE", CG_U8, &client_gs.gameState.bomb.alpha_score },
+	{ "TEAM_BETA_SCORE", CG_U8, &client_gs.gameState.bomb.beta_score },
 
-	{ "PROGRESS", CG_GetStatValue, (void *)STAT_PROGRESS },
-	{ "PROGRESS_TYPE", CG_GetStatValue, (void *)STAT_PROGRESS_TYPE },
+	{ "PROGRESS", CG_S16, &cg.predictedPlayerState.progress },
+	{ "PROGRESS_TYPE", CG_U8, &cg.predictedPlayerState.progress_type },
 
-	{ "ROUND_TYPE", CG_GetStatValue, (void *)STAT_ROUND_TYPE },
+	{ "ROUND_TYPE", CG_U8, &client_gs.gameState.bomb.round_type },
 
 	{ "CARRYING_BOMB", CG_Bool, &cg.predictedPlayerState.carrying_bomb },
 	{ "CAN_PLANT_BOMB", CG_Bool, &cg.predictedPlayerState.can_plant },

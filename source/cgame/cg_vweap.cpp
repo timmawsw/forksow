@@ -30,7 +30,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 static void CG_ViewWeapon_UpdateProjectionSource( const vec3_t hand_origin, const mat3_t hand_axis, const vec3_t weap_origin, const mat3_t weap_axis ) {
 	orientation_t *tag_result = &cg.weapon.projectionSource;
 	orientation_t tag_weapon;
-	weaponinfo_t *weaponInfo;
 
 	VectorCopy( vec3_origin, tag_weapon.origin );
 	Matrix3_Copy( axis_identity, tag_weapon.axis );
@@ -40,7 +39,7 @@ static void CG_ViewWeapon_UpdateProjectionSource( const vec3_t hand_origin, cons
 				  hand_origin, hand_axis,
 				  weap_origin, weap_axis );
 
-	weaponInfo = CG_GetWeaponInfo( cg.weapon.weapon );
+	const weaponinfo_t * weaponInfo = cgs.weaponInfos[ cg.weapon.weapon ];
 
 	// move to projectionSource tag
 	if( weaponInfo ) {
@@ -166,7 +165,6 @@ static float CG_FrameForTime( int *frame, int64_t curTime, int64_t startTimeStam
 */
 void CG_ViewWeapon_RefreshAnimation( cg_viewweapon_t *viewweapon ) {
 	int baseAnim;
-	weaponinfo_t *weaponInfo;
 	int curframe = 0;
 	float framefrac;
 
@@ -190,7 +188,7 @@ void CG_ViewWeapon_RefreshAnimation( cg_viewweapon_t *viewweapon ) {
 	}
 
 	baseAnim = CG_ViewWeapon_baseanimFromWeaponState( cg.predictedPlayerState.weaponState );
-	weaponInfo = CG_GetWeaponInfo( viewweapon->weapon );
+	const weaponinfo_t * weaponInfo = cgs.weaponInfos[ viewweapon->weapon ];
 
 	// Full restart
 	if( !viewweapon->baseAnimStartTime ) {
@@ -251,14 +249,13 @@ void CG_ViewWeapon_StartAnimationEvent( int newAnim ) {
 */
 void CG_CalcViewWeapon( cg_viewweapon_t *viewweapon ) {
 	orientation_t tag;
-	weaponinfo_t *weaponInfo;
 	vec3_t gunAngles;
 	vec3_t gunOffset;
 	float handOffset;
 
 	CG_ViewWeapon_RefreshAnimation( viewweapon );
 
-	weaponInfo = CG_GetWeaponInfo( viewweapon->weapon );
+	const weaponinfo_t * weaponInfo = cgs.weaponInfos[ viewweapon->weapon ];
 	viewweapon->ent.model = weaponInfo->model[WEAPMODEL_HAND];
 	viewweapon->ent.scale = 1.0f;
 	viewweapon->ent.override_material = NULL;
