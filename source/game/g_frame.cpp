@@ -354,13 +354,6 @@ void G_ClearSnap( void ) {
 		memset( &ent->snap, 0, sizeof( ent->snap ) );
 		if( ent->r.client && trap_GetClientState( PLAYERNUM( ent ) ) >= CS_SPAWNED ) {
 			memset( &ent->r.client->resp.snap, 0, sizeof( ent->r.client->resp.snap ) );
-
-			// set race stats to invisible
-			ent->r.client->ps.stats[STAT_TIME_SELF] = STAT_NOTSET;
-			ent->r.client->ps.stats[STAT_TIME_BEST] = STAT_NOTSET;
-			ent->r.client->ps.stats[STAT_TIME_RECORD] = STAT_NOTSET;
-			ent->r.client->ps.stats[STAT_TIME_ALPHA] = STAT_NOTSET;
-			ent->r.client->ps.stats[STAT_TIME_BETA] = STAT_NOTSET;
 		}
 	}
 

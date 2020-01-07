@@ -890,7 +890,7 @@ void G_ChatMsg( edict_t *ent, edict_t *who, bool teamonly, const char *format, .
 				;   // wtf?
 			} else if( teamonly ) {
 				Com_Printf( "[%s] %s %s\n",
-						  who->r.client->ps.stats[STAT_TEAM] == TEAM_SPECTATOR ? "SPEC" : "TEAM", who->r.client->netname, msg );
+						  who->r.client->ps.team == TEAM_SPECTATOR ? "SPEC" : "TEAM", who->r.client->netname, msg );
 			} else {
 				Com_Printf( "%s: %s\n", who->r.client->netname, msg );
 			}

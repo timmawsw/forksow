@@ -111,14 +111,12 @@ static const constant_numeric_t cg_numeric_constants[] = {
 
 //=============================================================================
 
-static int CG_GetStatValue( const void *parameter ) {
-	assert( (intptr_t)parameter >= 0 && (intptr_t)parameter < MAX_STATS );
-
-	return cg.predictedPlayerState.stats[(intptr_t)parameter];
+static int CG_Int( const void * p ) {
+	return *( const int * ) p;
 }
 
-static int CG_GetLayoutStatFlag( const void *parameter ) {
-	return ( cg.predictedPlayerState.stats[STAT_LAYOUTS] & (intptr_t)parameter ) ? 1 : 0;
+static int CG_Bool( const void * p ) {
+	return *( const bool * ) p ? 1 : 0;
 }
 
 static int CG_GetPOVnum( const void *parameter ) {
@@ -208,24 +206,6 @@ static int CG_DownloadInProgress( const void *parameter ) {
 	return 0;
 }
 
-// ch : backport some of racesow hud elements
-/*********************************************************************************
-lm: edit for race mod,
-    adds bunch of vars to the hud.
-
-*********************************************************************************/
-
-//lm: for readability
-enum race_index {
-	mouse_x,
-	mouse_y,
-	jumpspeed,
-	move_an,
-	diff_an,
-	strafe_an,
-	max_index
-};
-
 static int CG_GetScoreboardShown( const void *parameter ) {
 	return CG_ScoreboardShown() ? 1 : 0;
 }
@@ -239,18 +219,13 @@ typedef struct
 
 static const reference_numeric_t cg_numeric_references[] = {
 	// stats
-	{ "HEALTH", CG_GetStatValue, (void *)STAT_HEALTH },
+	{ "HEALTH", CG_Int, (void *)STAT_HEALTH },
 	{ "WEAPON_ITEM", CG_GetStatValue, (void *)STAT_WEAPON },
 	{ "PENDING_WEAPON", CG_GetStatValue, (void *)STAT_PENDING_WEAPON },
 
 	{ "READY", CG_GetLayoutStatFlag, (void *)STAT_LAYOUT_READY },
 
-	{ "SCORE", CG_GetStatValue, (void *)STAT_SCORE },
 	{ "TEAM", CG_GetStatValue, (void *)STAT_TEAM },
-	{ "RESPAWN_TIME", CG_GetStatValue, (void *)STAT_NEXT_RESPAWN },
-
-	{ "POINTED_PLAYER", CG_GetStatValue, (void *)STAT_POINTED_PLAYER },
-	{ "POINTED_TEAMPLAYER", CG_GetStatValue, (void *)STAT_POINTED_TEAMPLAYER },
 
 	{ "TEAM_ALPHA_SCORE", CG_GetStatValue, (void *)STAT_TEAM_ALPHA_SCORE },
 	{ "TEAM_BETA_SCORE", CG_GetStatValue, (void *)STAT_TEAM_BETA_SCORE },
@@ -260,14 +235,9 @@ static const reference_numeric_t cg_numeric_references[] = {
 
 	{ "ROUND_TYPE", CG_GetStatValue, (void *)STAT_ROUND_TYPE },
 
-	{ "CARRYING_BOMB", CG_GetStatValue, (void *)STAT_CARRYING_BOMB },
-	{ "CAN_PLANT_BOMB", CG_GetStatValue, (void *)STAT_CAN_PLANT_BOMB },
-	{ "CAN_CHANGE_LOADOUT", CG_GetStatValue, (void *)STAT_CAN_CHANGE_LOADOUT },
-
-	{ "ALPHA_PLAYERS_ALIVE", CG_GetStatValue, (void *)STAT_ALPHA_PLAYERS_ALIVE },
-	{ "ALPHA_PLAYERS_TOTAL", CG_GetStatValue, (void *)STAT_ALPHA_PLAYERS_TOTAL },
-	{ "BETA_PLAYERS_ALIVE", CG_GetStatValue, (void *)STAT_BETA_PLAYERS_ALIVE },
-	{ "BETA_PLAYERS_TOTAL", CG_GetStatValue, (void *)STAT_BETA_PLAYERS_TOTAL },
+	{ "CARRYING_BOMB", CG_Bool, &cg.predictedPlayerState.carrying_bomb },
+	{ "CAN_PLANT_BOMB", CG_Bool, &cg.predictedPlayerState.can_plant },
+	{ "CAN_CHANGE_LOADOUT", CG_Bool, &cg.predictedPlayerState.can_change_loadout },
 
 	// other
 	{ "CHASING", CG_GetPOVnum, NULL },
@@ -1280,7 +1250,7 @@ static bool CG_LFuncDrawCallvote( struct cg_layoutnode_s *argumentnode, int numA
 	const char * yeses = cgs.configStrings[ CS_CALLVOTE_YES_VOTES ];
 	const char * required = cgs.configStrings[ CS_CALLVOTE_REQUIRED_VOTES ];
 
-	bool voted = cg.predictedPlayerState.stats[ STAT_LAYOUTS ] & STAT_LAYOUT_VOTED;
+	bool voted = cg.predictedPlayerState.voted;
 	float padding = layout_cursor_font_size * 0.5f;
 
 	if( !voted ) {
@@ -1502,11 +1472,11 @@ enum {
 //=============================================================================
 
 static bool CG_IsWeaponSelected( int weapon ) {
-	if( cg.view.playerPrediction && cg.predictedWeaponSwitch && cg.predictedWeaponSwitch != cg.predictedPlayerState.stats[STAT_PENDING_WEAPON] ) {
+	if( cg.view.playerPrediction && cg.predictedWeaponSwitch && cg.predictedWeaponSwitch != cg.predictedPlayerState.pending_weapon ) {
 		return weapon == cg.predictedWeaponSwitch;
 	}
 
-	return weapon == cg.predictedPlayerState.stats[STAT_PENDING_WEAPON];
+	return weapon == cg.predictedPlayerState.pending_weapon;
 }
 
 constexpr float SEL_WEAP_X_OFFSET = 0.25f;

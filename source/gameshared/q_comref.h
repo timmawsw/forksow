@@ -80,7 +80,6 @@ typedef enum {
 #define SHORT2ANGLE( x )    ( ( x ) * ( 360.0 / 65536 ) )
 
 #define MAX_GAMECOMMANDS    256     // command names for command completion
-#define MAX_WEAPONDEFS      MAX_ITEMS
 
 //
 // config strings are a general means of communication from

@@ -28,7 +28,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gameshared/q_math.h"
 #include "gameshared/q_shared.h"
 #include "gameshared/q_cvar.h"
-#include "gameshared/q_comref.h"
 #include "gameshared/q_collision.h"
 #include "gameshared/gs_public.h"
 
@@ -139,8 +138,7 @@ void SNAP_SkipFrame( msg_t *msg, struct snapshot_s *header );
 struct snapshot_s *SNAP_ParseFrame( msg_t *msg, struct snapshot_s *lastFrame, struct snapshot_s *backup, SyncEntityState *baselines, int showNet );
 
 void SNAP_WriteFrameSnapToClient( struct ginfo_s *gi, struct client_s *client, msg_t *msg, int64_t frameNum, int64_t gameTime,
-								  SyncEntityState *baselines, struct client_entities_s *client_entities,
-								  int numcmds, gcommand_t *commands, const char *commandsData );
+	SyncEntityState *baselines, struct client_entities_s *client_entities );
 
 void SNAP_BuildClientFrameSnap( struct cmodel_state_s *cms, struct ginfo_s *gi, int64_t frameNum, int64_t timeStamp,
 								struct client_s *client,

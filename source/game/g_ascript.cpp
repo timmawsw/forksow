@@ -116,27 +116,6 @@ static const asEnumVal_t asMatchStateEnumVals[] =
 	ASLIB_ENUM_VAL_NULL
 };
 
-static const asEnumVal_t asHUDStatEnumVals[] =
-{
-	ASLIB_ENUM_VAL( STAT_PROGRESS ),
-	ASLIB_ENUM_VAL( STAT_PROGRESS_TYPE ),
-	ASLIB_ENUM_VAL( STAT_ROUND_TYPE ),
-	ASLIB_ENUM_VAL( STAT_CARRYING_BOMB ),
-	ASLIB_ENUM_VAL( STAT_CAN_PLANT_BOMB ),
-	ASLIB_ENUM_VAL( STAT_CAN_CHANGE_LOADOUT ),
-	ASLIB_ENUM_VAL( STAT_ALPHA_PLAYERS_ALIVE ),
-	ASLIB_ENUM_VAL( STAT_ALPHA_PLAYERS_TOTAL ),
-	ASLIB_ENUM_VAL( STAT_BETA_PLAYERS_ALIVE ),
-	ASLIB_ENUM_VAL( STAT_BETA_PLAYERS_TOTAL ),
-	ASLIB_ENUM_VAL( STAT_TIME_SELF ),
-	ASLIB_ENUM_VAL( STAT_TIME_BEST ),
-	ASLIB_ENUM_VAL( STAT_TIME_RECORD ),
-	ASLIB_ENUM_VAL( STAT_TIME_ALPHA ),
-	ASLIB_ENUM_VAL( STAT_TIME_BETA ),
-
-	ASLIB_ENUM_VAL_NULL
-};
-
 static const asEnumVal_t asTeamEnumVals[] =
 {
 	ASLIB_ENUM_VAL( TEAM_SPECTATOR ),
@@ -426,7 +405,6 @@ static const asEnum_t asGameEnums[] =
 	{ "configstrings_e", asConfigstringEnumVals },
 	{ "state_effects_e", asEffectEnumVals },
 	{ "matchstates_e", asMatchStateEnumVals },
-	{ "hudstats_e", asHUDStatEnumVals },
 	{ "teams_e", asTeamEnumVals },
 	{ "entitytype_e", asEntityTypeEnumVals },
 	{ "solid_e", asSolidEnumVals },
@@ -853,19 +831,19 @@ static void objectGameClient_InventoryGiveWeapon( WeaponType weapon, bool give, 
 static void objectGameClient_InventoryClear( gclient_t *self ) {
 	memset( self->ps.weapons, 0, sizeof( self->ps.weapons ) );
 
-	self->ps.stats[STAT_WEAPON] = Weapon_Count;
-	self->ps.stats[STAT_PENDING_WEAPON] = Weapon_Count;
+	self->ps.weapon = Weapon_Count;
+	self->ps.pending_weapon = Weapon_Count;
 	self->ps.weaponState = WEAPON_STATE_READY;
 }
 
 static void objectGameClient_SelectWeapon( int index, gclient_t *self ) {
 	if( index < 0 || index >= Weapon_Count ) {
-		self->ps.stats[STAT_PENDING_WEAPON] = GS_SelectBestWeapon( &self->ps );
+		self->ps.pending_weapon = GS_SelectBestWeapon( &self->ps );
 		return;
 	}
 
 	if( self->ps.weapons[ index ].owned ) {
-		self->ps.stats[STAT_PENDING_WEAPON] = index;
+		self->ps.pending_weapon = index;
 	}
 }
 
@@ -897,28 +875,6 @@ static void objectGameClient_execGameCommand( asstring_t *msg, gclient_t *self )
 	}
 
 	trap_GameCmd( PLAYERENT( playerNum ), msg->buffer );
-}
-
-static void objectGameClient_setHUDStat( int stat, int value, gclient_t *self ) {
-	if( !ISGAMETYPESTAT( stat ) ) {
-		if( stat > 0 && stat < GS_GAMETYPE_STATS_START ) {
-			Com_Printf( "* WARNING: stat %i is write protected\n", stat );
-		} else {
-			Com_Printf( "* WARNING: %i is not a valid stat\n", stat );
-		}
-		return;
-	}
-
-	self->ps.stats[ stat ] = ( (short)value & 0xFFFF );
-}
-
-static int objectGameClient_getHUDStat( int stat, gclient_t *self ) {
-	if( stat < 0 && stat >= MAX_STATS ) {
-		Com_Printf( "* WARNING: stat %i is out of range\n", stat );
-		return 0;
-	}
-
-	return self->ps.stats[ stat ];
 }
 
 static void objectGameClient_setPMoveFeatures( unsigned int bitmask, gclient_t *self ) {
@@ -1050,8 +1006,6 @@ static const asMethod_t gameclient_Methods[] =
 	{ ASLIB_FUNCTION_DECL( void, selectWeapon, ( int tag ) ), asFUNCTION( objectGameClient_SelectWeapon ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( void, addAward, ( const String &in ) ), asFUNCTION( objectGameClient_addAward ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( void, execGameCommand, ( const String &in ) ), asFUNCTION( objectGameClient_execGameCommand ), asCALL_CDECL_OBJLAST },
-	{ ASLIB_FUNCTION_DECL( void, setHUDStat, ( int stat, int value ) ), asFUNCTION( objectGameClient_setHUDStat ), asCALL_CDECL_OBJLAST },
-	{ ASLIB_FUNCTION_DECL( int, getHUDStat, ( int stat ) const ), asFUNCTION( objectGameClient_getHUDStat ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( void, set_pmoveFeatures, ( uint bitmask ) ), asFUNCTION( objectGameClient_setPMoveFeatures ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( void, set_pmoveMaxSpeed, ( float speed ) ), asFUNCTION( objectGameClient_setPMoveMaxSpeed ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( void, set_pmoveJumpSpeed, ( float speed ) ), asFUNCTION( objectGameClient_setPMoveJumpSpeed ), asCALL_CDECL_OBJLAST },
@@ -1085,8 +1039,10 @@ static const asProperty_t gameclient_Properties[] =
 	{ ASLIB_PROPERTY_DECL( bool, chaseTeamonly ), ASLIB_FOFFSET( gclient_t, resp.chase.teamonly ) },
 	{ ASLIB_PROPERTY_DECL( int, chaseFollowMode ), ASLIB_FOFFSET( gclient_t, resp.chase.followmode ) },
 	{ ASLIB_PROPERTY_DECL( const int, ping ), ASLIB_FOFFSET( gclient_t, r.ping ) },
-	{ ASLIB_PROPERTY_DECL( const int16, weapon ), ASLIB_FOFFSET( gclient_t, ps.stats[STAT_WEAPON] ) },
-	{ ASLIB_PROPERTY_DECL( const int16, pendingWeapon ), ASLIB_FOFFSET( gclient_t, ps.stats[STAT_PENDING_WEAPON] ) },
+	{ ASLIB_PROPERTY_DECL( const WeaponType, weapon ), ASLIB_FOFFSET( gclient_t, ps.weapon ) },
+	{ ASLIB_PROPERTY_DECL( const WeaponType, pendingWeapon ), ASLIB_FOFFSET( gclient_t, ps.pending_weapon ) },
+	{ ASLIB_PROPERTY_DECL( bool, canChangeLoadout ), ASLIB_FOFFSET( gclient_t, ps.can_change_loadout ) },
+	{ ASLIB_PROPERTY_DECL( bool, canPlant ), ASLIB_FOFFSET( gclient_t, ps.can_plant ) },
 	{ ASLIB_PROPERTY_DECL( int64, lastActivity ), ASLIB_FOFFSET( gclient_t, level.last_activity ) },
 	{ ASLIB_PROPERTY_DECL( const int64, uCmdTimeStamp ), ASLIB_FOFFSET( gclient_t, ucmd.serverTimeStamp ) },
 
@@ -1658,10 +1614,6 @@ static g_teamlist_t *asFunc_GetTeamlist( int teamNum ) {
 	return &teamlist[teamNum];
 }
 
-static const Item *asFunc_GS_FindItemByTag( int tag ) {
-	return GS_FindItemByTag( tag );
-}
-
 static const Item *asFunc_GS_FindItemByName( asstring_t *name ) {
 	return ( !name || !name->len ) ? NULL : GS_FindItemByName( name->buffer );
 }
@@ -1928,7 +1880,6 @@ static const asglobfuncs_t asGameGlobFuncs[] =
 	{ "Entity @G_GetEntity( int entNum )", asFUNCTION( asFunc_GetEntity ), NULL },
 	{ "Client @G_GetClient( int clientNum )", asFUNCTION( asFunc_GetClient ), NULL },
 	{ "Team @G_GetTeam( int team )", asFUNCTION( asFunc_GetTeamlist ), NULL },
-	{ "const Item @G_GetItem( int tag )", asFUNCTION( asFunc_GS_FindItemByTag ), NULL },
 	{ "const Item @G_GetItemByName( const String &in name )", asFUNCTION( asFunc_GS_FindItemByName ), NULL },
 	{ "array<Entity @> @G_FindInRadius( const Vec3 &in, float radius )", asFUNCTION( asFunc_G_FindInRadius ), NULL },
 	{ "array<Entity @> @G_FindByClassname( const String &in )", asFUNCTION( asFunc_G_FindByClassname ), NULL },

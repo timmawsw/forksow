@@ -581,7 +581,7 @@ static void CG_AddGenericEnt( centity_t *cent ) {
 	DrawModel( model, transform, color );
 
 	if( cent->current.silhouetteColor.a > 0 ) {
-		if( ( cent->current.effects & EF_TEAM_SILHOUETTE ) == 0 || ISREALSPECTATOR() || cent->current.team == cg.predictedPlayerState.stats[ STAT_TEAM ] ) {
+		if( ( cent->current.effects & EF_TEAM_SILHOUETTE ) == 0 || ISREALSPECTATOR() || cent->current.team == cg.predictedPlayerState.team ) {
 			Vec4 silhouette_color = Vec4(
 				cent->current.silhouetteColor.r / 255.0f,
 				cent->current.silhouetteColor.g / 255.0f,

@@ -41,7 +41,7 @@ void CG_PredictedEvent( int entNum, int ev, int parm ) {
 	if( ucmdReady && ( cg.predictingTimeStamp > cg.predictedEventTimes[ev] ) ) {
 		// inhibit the fire event when there is a weapon change predicted
 		if( ev == EV_FIREWEAPON ) {
-			if( cg.predictedWeaponSwitch && ( cg.predictedWeaponSwitch != cg.predictedPlayerState.stats[STAT_PENDING_WEAPON] ) ) {
+			if( cg.predictedWeaponSwitch && cg.predictedWeaponSwitch != cg.predictedPlayerState.pending_weapon ) {
 				return;
 			}
 		}
@@ -54,9 +54,9 @@ void CG_PredictedEvent( int entNum, int ev, int parm ) {
 /*
 * CG_Predict_ChangeWeapon
 */
-void CG_Predict_ChangeWeapon( int new_weapon ) {
+void CG_Predict_ChangeWeapon( WeaponType weapon ) {
 	if( cg.view.playerPrediction ) {
-		cg.predictedWeaponSwitch = new_weapon;
+		cg.predictedWeaponSwitch = weapon;
 	}
 }
 

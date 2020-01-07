@@ -149,9 +149,8 @@ static void CG_SC_PlayerStats() {
 	Com_Printf( "\nWeapon\n" );
 	Com_Printf( "    hit/shot percent\n" );
 
-	for( int i = Weapon_Knife; i < Weapon_Count; i++ ) {
-		const Item * item = GS_FindItemByTag( i );
-		assert( item );
+	for( WeaponType i = Weapon_Knife; i < Weapon_Count; i++ ) {
+		const WeaponDef * weapon = GS_GetWeaponDef( i );
 
 		int shots = ParseIntOr0( &s );
 		if( shots < 1 ) { // only continue with registered shots
@@ -160,7 +159,7 @@ static void CG_SC_PlayerStats() {
 		int hits = ParseIntOr0( &s );
 
 		// name
-		Com_Printf( "%s%2s" S_COLOR_WHITE ": ", ImGuiColorToken( item->color ).token, item->short_name );
+		Com_Printf( "%s%2s" S_COLOR_WHITE ": ", ImGuiColorToken( weapon->color ).token, weapon->short_name );
 
 #define STATS_PERCENT( hit, total ) ( ( total ) == 0 ? 0 : ( ( hit ) == ( total ) ? 100 : (float)( hit ) * 100.0f / (float)( total ) ) )
 
@@ -398,7 +397,7 @@ void CG_UseItem( const char * name ) {
 		const WeaponDef * weapon = GS_GetWeaponDef( i );
 		if( Q_stricmp( weapon->name, name ) == 0 || Q_stricmp( weapon->short_name, name ) == 0 ) {
 			CG_Predict_ChangeWeapon( i );
-			cg.lastWeapon = cg.predictedPlayerState.stats[STAT_PENDING_WEAPON];
+			cg.lastWeapon = cg.predictedPlayerState.pending_weapon;
 			Cbuf_ExecuteText( EXEC_NOW, va( "cmd use %i", i ) );
 		}
 	}
@@ -417,7 +416,7 @@ static void CG_Cmd_UseItem_f( void ) {
 }
 
 static WeaponType CG_UseWeaponStep( const SyncPlayerState * playerState, bool next, WeaponType predicted_equipped_weapon ) {
-	WeaponType weapon = predicted_equipped_item;
+	WeaponType weapon = predicted_equipped_weapon;
 	while( true ) {
 		weapon = ( weapon + ( next ? 1 : -1 ) ) % Weapon_Count;
 		if( weapon < 0 ) {
@@ -453,7 +452,7 @@ static void CG_Cmd_NextWeapon_f( void ) {
 	if( weapon != Weapon_Count ) {
 		CG_Predict_ChangeWeapon( weapon );
 		Cbuf_ExecuteText( EXEC_NOW, va( "cmd use %i", weapon ) );
-		cg.lastWeapon = cg.predictedPlayerState.stats[STAT_PENDING_WEAPON];
+		cg.lastWeapon = cg.predictedPlayerState.pending_weapon;
 	}
 }
 
@@ -474,7 +473,7 @@ static void CG_Cmd_PrevWeapon_f( void ) {
 	if( weapon != Weapon_Count ) {
 		CG_Predict_ChangeWeapon( weapon );
 		Cbuf_ExecuteText( EXEC_NOW, va( "cmd use %i", weapon ) );
-		cg.lastWeapon = cg.predictedPlayerState.stats[STAT_PENDING_WEAPON];
+		cg.lastWeapon = cg.predictedPlayerState.pending_weapon;
 	}
 }
 
@@ -488,24 +487,24 @@ static void CG_Cmd_LastWeapon_f( void ) {
 		return;
 	}
 
-	if( cg.lastWeapon != Weapon_Count && cg.lastWeapon != cg.predictedPlayerState.stats[STAT_PENDING_WEAPON] ) {
+	if( cg.lastWeapon != Weapon_Count && cg.lastWeapon != cg.predictedPlayerState.pending_weapon ) {
 		CG_Predict_ChangeWeapon( cg.lastWeapon );
 		Cbuf_ExecuteText( EXEC_NOW, va( "cmd use %i", cg.lastWeapon ) );
-		cg.lastWeapon = cg.predictedPlayerState.stats[STAT_PENDING_WEAPON];
+		cg.lastWeapon = cg.predictedPlayerState.pending_weapon;
 	}
 }
 
 static void CG_Cmd_Weapon_f() {
 	int w = atoi( Cmd_Argv( 1 ) );
 	int seen = 0;
-	for( int i = Weapon_Knife; i < Weapon_Count; i++ ) {
-		if( cg.predictedPlayerState.inventory[ i ] == 0 )
+	for( WeaponType i = Weapon_Knife; i < Weapon_Count; i++ ) {
+		if( !cg.predictedPlayerState.weapons[ i ].owned )
 			continue;
 		seen++;
 
 		if( seen == w ) {
-			const Item * item = GS_FindItemByTag( i );
-			CG_UseItem( item->name );
+			const WeaponDef * def = GS_GetWeaponDef( i );
+			CG_UseItem( def->name );
 		}
 	}
 }

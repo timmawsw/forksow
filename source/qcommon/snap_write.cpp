@@ -229,8 +229,7 @@ static void SNAP_WriteMultiPOVCommands( ginfo_t *gi, client_t *client, msg_t *ms
 * SNAP_WriteFrameSnapToClient
 */
 void SNAP_WriteFrameSnapToClient( ginfo_t *gi, client_t *client, msg_t *msg, int64_t frameNum, int64_t gameTime,
-								  SyncEntityState *baselines, client_entities_t *client_entities,
-								  int numcmds, gcommand_t *commands, const char *commandsData ) {
+								  SyncEntityState *baselines, client_entities_t *client_entities ) {
 	client_snapshot_t *frame, *oldframe;
 	int flags, i, index, pos, length;
 

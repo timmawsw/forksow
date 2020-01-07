@@ -719,7 +719,7 @@ static void GameMenuButton( const char * label, const char * command, bool * cli
 	}
 }
 
-static bool WeaponButton( int cash, int weapon, ImVec2 size, Vec4 * tint ) {
+static bool WeaponButton( int cash, WeaponType weapon, ImVec2 size, Vec4 * tint ) {
 	ImGui::PushStyleColor( ImGuiCol_Button, Vec4( 0 ) );
 	ImGui::PushStyleColor( ImGuiCol_ButtonHovered, Vec4( 0 ) );
 	ImGui::PushStyleColor( ImGuiCol_ButtonActive, Vec4( 0 ) );
@@ -728,7 +728,7 @@ static bool WeaponButton( int cash, int weapon, ImVec2 size, Vec4 * tint ) {
 	const Material * icon = cgs.media.shaderWeaponIcon[ weapon - 1 ];
 	Vec2 half_pixel = 0.5f / Vec2( icon->texture->width, icon->texture->height );
 
-	int cost = GS_FindItemByTag( weapon )->cost;
+	int cost = GS_GetWeaponDef( weapon )->cost;
 	bool selected = selected_weapons[ weapon ];
 
 	if( !selected && cost > cash ) {
@@ -747,11 +747,11 @@ static bool WeaponButton( int cash, int weapon, ImVec2 size, Vec4 * tint ) {
 
 
 static void GameMenu() {
-	bool spectating = cg.predictedPlayerState.stats[ STAT_REALTEAM ] == TEAM_SPECTATOR;
+	bool spectating = cg.predictedPlayerState.real_team == TEAM_SPECTATOR;
 	bool ready = false;
 
 	if( GS_MatchState( &client_gs ) <= MATCH_STATE_WARMUP ) {
-		ready = ( cg.predictedPlayerState.stats[ STAT_LAYOUTS ] & STAT_LAYOUT_READY ) != 0;
+		ready = ( cg.predictedPlayerState.ready ) != 0;
 	} else if( GS_MatchState( &client_gs ) == MATCH_STATE_COUNTDOWN ) {
 		ready = true;
 	}
@@ -821,9 +821,9 @@ static void GameMenu() {
 		int hovered = Weapon_Count;
 
 		int cash = MAX_CASH;
-		for( int i = 0; i < Weapon_Count; i++ ) {
+		for( WeaponType i = 0; i < Weapon_Count; i++ ) {
 			if( selected_weapons[ i ] ) {
-				cash -= GS_FindItemByTag( i )->cost;
+				cash -= GS_GetWeaponDef( i )->cost;
 			}
 		}
 
@@ -850,7 +850,7 @@ static void GameMenu() {
 			ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, ImGui::GetStyle().ItemSpacing.y ) );
 			ImGui::NextColumn();
 
-			constexpr int weapon_order[] = {
+			constexpr WeaponType weapon_order[] = {
 				Weapon_Railgun, Weapon_RocketLauncher, Weapon_Laser,
 				Weapon_MachineGun, Weapon_Shotgun, Weapon_Plasma,
 				Weapon_GrenadeLauncher
@@ -861,7 +861,7 @@ static void GameMenu() {
 
 				if( bigger_font ) ImGui::PushFont( cls.medium_font );
 				for( size_t i = 0; i < ARRAY_COUNT( weapon_order ); i++ ) {
-					int weapon = weapon_order[ i ];
+					WeaponType weapon = weapon_order[ i ];
 
 					Vec4 tint;
 					if( WeaponButton( cash, weapon, icon_size, &tint ) || ImGui::IsKeyPressed( '1' + i, false ) ) {
@@ -872,8 +872,8 @@ static void GameMenu() {
 						hovered = weapon;
 					}
 
-					int cost = GS_FindItemByTag( weapon )->cost;
-					RGB8 color = GS_FindItemByTag( weapon )->color;
+					int cost = GS_GetWeaponDef( weapon )->cost;
+					RGB8 color = GS_GetWeaponDef( weapon )->color;
 					ImGuiColorToken token = ImGuiColorToken( color.r * tint.x, color.g * tint.y, color.b * tint.z, 255 * tint.w );
 					ColumnCenterText( temp( "{}{}: {}", token, i + 1, GS_GetWeaponDef( weapon )->name ) );
 					ColumnCenterText( temp( "{}${}.{02}", token, cost / 100, cost % 100 ) );

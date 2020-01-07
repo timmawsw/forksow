@@ -35,6 +35,14 @@ struct qfontface_s;
 // structs and variables shared with the main engine
 //
 
+#define MAX_PARSE_GAMECOMMANDS  256
+
+typedef struct {
+	bool all;
+	uint8_t targets[MAX_CLIENTS / 8];
+	size_t commandOffset;           // offset of the data in gamecommandsData
+} gcommand_t;
+
 #define MAX_PARSE_ENTITIES  1024
 typedef struct snapshot_s {
 	bool valid;             // cleared if delta parsing was invalid

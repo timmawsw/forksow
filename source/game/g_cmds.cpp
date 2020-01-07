@@ -150,9 +150,9 @@ static void Cmd_Use_f( edict_t * ent ) {
 	const char * name = Cmd_Args();
 
 	const char * err = NULL;
-	int num = strtonum( err, 0, Weapon_Count, &err );
+	int num = strtonum( name, 0, Weapon_Count, &err );
 	if( err == NULL ) {
-		ent->r.client->ps.stats[STAT_PENDING_WEAPON] = num;
+		ent->r.client->ps.pending_weapon = num;
 	}
 }
 

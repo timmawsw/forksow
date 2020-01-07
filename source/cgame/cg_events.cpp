@@ -717,7 +717,7 @@ void CG_EntityEvent( SyncEntityState *ent, int ev, int parm, bool predicted ) {
 			}
 
 			if( viewer ) {
-				cg.predictedWeaponSwitch = 0;
+				cg.predictedWeaponSwitch = Weapon_Count;
 			}
 
 			// reset weapon animation timers

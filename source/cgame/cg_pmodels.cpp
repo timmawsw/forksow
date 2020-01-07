@@ -931,7 +931,7 @@ void CG_DrawPlayer( centity_t *cent ) {
 
 	DrawModel( meta->model, transform, color, pose.skinning_matrices );
 
-	bool same_team = GS_TeamBasedGametype( &client_gs ) && cg.predictedPlayerState.stats[ STAT_TEAM ] == cent->current.team;
+	bool same_team = GS_TeamBasedGametype( &client_gs ) && cg.predictedPlayerState.team == cent->current.team;
 	if( !corpse && ( ISREALSPECTATOR() || same_team ) ) {
 		DrawModelSilhouette( meta->model, transform, color, pose.skinning_matrices );
 	}

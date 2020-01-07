@@ -778,10 +778,31 @@ static void Delta( DeltaBuffer * buf, SyncPlayerState & player, const SyncPlayer
 
 	Delta( buf, player.plrkeys, baseline.plrkeys );
 
-	Delta( buf, player.stats, baseline.stats );
-
 	Delta( buf, player.weapons, baseline.weapons );
 	Delta( buf, player.items, baseline.items );
+
+	Delta( buf, player.show_scoreboard, baseline.show_scoreboard );
+	Delta( buf, player.ready, baseline.ready );
+	Delta( buf, player.voted, baseline.voted );
+	Delta( buf, player.can_change_loadout, baseline.can_change_loadout );
+	Delta( buf, player.can_plant, baseline.can_plant );
+	Delta( buf, player.carrying_bomb, baseline.carrying_bomb );
+
+	Delta( buf, player.health, baseline.health );
+
+	Delta( buf, player.weapon, baseline.weapon );
+	Delta( buf, player.pending_weapon, baseline.pending_weapon );
+	Delta( buf, player.weapon_time, baseline.weapon_time );
+
+	Delta( buf, player.team, baseline.team );
+	Delta( buf, player.real_team, baseline.real_team );
+
+	Delta( buf, player.progress_type, baseline.progress_type );
+	Delta( buf, player.progress, baseline.progress );
+
+	Delta( buf, player.last_killer, baseline.last_killer );
+	Delta( buf, player.pointed_player, baseline.pointed_player );
+	Delta( buf, player.pointed_health, baseline.pointed_health );
 }
 
 void MSG_WriteDeltaPlayerState( msg_t * msg, const SyncPlayerState * baseline, const SyncPlayerState * player ) {

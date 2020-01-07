@@ -21,6 +21,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #pragma once
 
 #include "gameshared/gs_qrespath.h"
+#include "gameshared/q_comref.h"
+#include "gameshared/q_collision.h"
 #include "gameshared/q_math.h"
 
 //===============================================================
@@ -66,7 +68,8 @@ enum MatchState {
 	MATCH_STATE_TOTAL
 };
 
-enum WeaponType {
+typedef u8 WeaponType;
+enum WeaponType_ : WeaponType {
 	Weapon_Knife,
 	Weapon_MachineGun,
 	Weapon_Shotgun,
@@ -84,6 +87,24 @@ enum ItemType {
 	Item_FakeBomb,
 
 	Item_Count
+};
+
+enum RoundType {
+	RoundType_Normal,
+	RoundType_MatchPoint,
+	RoundType_Overtime,
+	RoundType_OvertimeMatchPoint,
+};
+
+enum BombDown {
+	BombDown_Dropped,
+	BombDown_Planting,
+};
+
+enum BombProgress {
+	BombProgress_Nothing,
+	BombProgress_Planting,
+	BombProgress_Defusing,
 };
 
 enum {
@@ -260,15 +281,17 @@ struct SyncPlayerState {
 
 	WeaponType weapon;
 	WeaponType pending_weapon;
+	s16 weapon_time;
 
 	int team;
-	int realteam;
+	int real_team;
 
-	BombProgress progress_type;
+	u8 progress_type; // enum ProgressType
 	s16 progress;
 
 	int last_killer;
-	int pointed_teamplayer;
+	int pointed_player;
+	int pointed_health;
 };
 
 // usercmd_t is sent to the server each client frame
@@ -432,7 +455,6 @@ struct Item {
 	int cost;
 };
 
-const Item *GS_FindItemByTag( const int tag );
 const Item *GS_FindItemByName( const char *name );
 const Item *GS_Cmd_UseItem( const gs_state_t * gs, SyncPlayerState *playerState, const char *string, int typeMask );
 const Item *GS_Cmd_NextWeapon_f( const gs_state_t * gs, SyncPlayerState *playerState, int predictedWeaponSwitch );
@@ -675,24 +697,6 @@ typedef enum {
 	PSEV_MAX_EVENTS = 0xFF
 } playerstate_event_t;
 
-enum RoundType {
-	RoundType_Normal,
-	RoundType_MatchPoint,
-	RoundType_Overtime,
-	RoundType_OvertimeMatchPoint,
-};
-
-enum BombDown {
-	BombDown_Dropped,
-	BombDown_Planting,
-};
-
-enum BombProgress {
-	BombProgress_Nothing,
-	BombProgress_Planting,
-	BombProgress_Defusing,
-};
-
 //===============================================================
 
 #define EVENT_ENTITIES_START    96 // entity types above this index will get event treatment
@@ -784,18 +788,8 @@ struct WeaponDef {
 	int spread;
 };
 
-const WeaponDef * GS_GetWeaponDef( int weapon );
+const WeaponDef * GS_GetWeaponDef( WeaponType weapon );
 WeaponType GS_SelectBestWeapon( const SyncPlayerState * player );
 int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState *playerState, int buttons, int msecs, int timeDelta );
 trace_t *GS_TraceBullet( const gs_state_t * gs, trace_t *trace, vec3_t start, vec3_t dir, vec3_t right, vec3_t up, float r, float u, int range, int ignore, int timeDelta );
 void GS_TraceLaserBeam( const gs_state_t * gs, trace_t *trace, vec3_t origin, vec3_t angles, float range, int ignore, int timeDelta, void ( *impact )( trace_t *tr, vec3_t dir ) );
-
-//==============================================
-
-#define MAX_PARSE_GAMECOMMANDS  256
-
-typedef struct {
-	bool all;
-	uint8_t targets[MAX_CLIENTS / 8];
-	size_t commandOffset;           // offset of the data in gamecommandsData
-} gcommand_t;

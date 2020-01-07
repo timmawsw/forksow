@@ -172,7 +172,7 @@ void CG_ViewWeapon_RefreshAnimation( cg_viewweapon_t *viewweapon ) {
 
 	// if the pov changed, or weapon changed, force restart
 	if( viewweapon->POVnum != cg.predictedPlayerState.POVnum ||
-		viewweapon->weapon != cg.predictedPlayerState.stats[STAT_WEAPON] ) {
+		viewweapon->weapon != cg.predictedPlayerState.weapon ) {
 		viewweapon->eventAnim = 0;
 		viewweapon->eventAnimStartTime = 0;
 		viewweapon->baseAnim = 0;
@@ -180,7 +180,7 @@ void CG_ViewWeapon_RefreshAnimation( cg_viewweapon_t *viewweapon ) {
 	}
 
 	viewweapon->POVnum = cg.predictedPlayerState.POVnum;
-	viewweapon->weapon = cg.predictedPlayerState.stats[STAT_WEAPON];
+	viewweapon->weapon = cg.predictedPlayerState.weapon;
 
 	// hack cause of missing animation config
 	if( viewweapon->weapon == Weapon_Count ) {

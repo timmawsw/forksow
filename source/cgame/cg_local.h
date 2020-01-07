@@ -348,7 +348,7 @@ typedef struct {
 	int64_t predictedEventTimes[PREDICTABLE_EVENTS_MAX];
 	vec3_t predictionError;
 	SyncPlayerState predictedPlayerState;     // current in use, predicted or interpolated
-	int predictedWeaponSwitch;              // inhibit shooting prediction while a weapon change is expected
+	u8 predictedWeaponSwitch;              // inhibit shooting prediction while a weapon change is expected
 	int predictedGroundEntity;
 
 	// prediction optimization (don't run all ucmds in not needed)
@@ -410,7 +410,7 @@ extern mempool_t *cg_mempool;
 #define ISVIEWERENTITY( entNum )  ( cg.predictedPlayerState.POVnum > 0 && (int)cg.predictedPlayerState.POVnum == ( entNum ) && cg.view.type == VIEWDEF_PLAYERVIEW )
 #define ISBRUSHMODEL( x ) ( ( x > 0 ) && ( (int)x < CM_NumInlineModels( cl.cms ) ) )
 
-#define ISREALSPECTATOR()       ( cg.frame.playerState.stats[STAT_REALTEAM] == TEAM_SPECTATOR )
+#define ISREALSPECTATOR()       ( cg.frame.playerState.real_team == TEAM_SPECTATOR )
 
 extern centity_t cg_entities[MAX_EDICTS];
 
