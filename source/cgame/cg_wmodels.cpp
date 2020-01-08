@@ -364,9 +364,7 @@ struct weaponinfo_s *CG_RegisterWeaponModel( char *cgs_name, int weaponTag ) {
 * as a replacement, so, weapon 0 will have the animation script
 * even if the registration failed
 */
-struct weaponinfo_s *CG_CreateWeaponZeroModel( char *filename ) {
-	COM_StripExtension( filename );
-
+struct weaponinfo_s *CG_CreateWeaponZeroModel() {
 	weaponinfo_t * weaponinfo = &cg_pWeaponModelInfos[ 0 ];
 	if( weaponinfo->inuse ) {
 		return weaponinfo;
@@ -379,7 +377,7 @@ struct weaponinfo_s *CG_CreateWeaponZeroModel( char *filename ) {
 	CG_CreateHandDefaultAnimations( weaponinfo );
 	weaponinfo->inuse = true;
 
-	Q_strncpyz( weaponinfo->name, filename, sizeof( weaponinfo->name ) );
+	Q_strncpyz( weaponinfo->name, "", sizeof( weaponinfo->name ) );
 
 	return weaponinfo; //no checks
 }

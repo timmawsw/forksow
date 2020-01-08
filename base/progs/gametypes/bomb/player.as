@@ -53,7 +53,7 @@ class cPlayer {
 
 	void giveInventory() {
 		this.client.inventoryClear();
-		this.client.inventoryGiveItem( Weapon_Knife );
+		this.client.giveWeapon( Weapon_Knife, true );
 
 		for( WeaponType i = Weapon_MachineGun; i < Weapon_Count; i++ ) {
 			if( this.loadout[ i ] ) {
@@ -96,7 +96,7 @@ class cPlayer {
 				int weapon = token.toInt();
 				if( weapon >= 0 && weapon < Weapon_Count ) {
 					this.loadout[ weapon ] = true;
-					cash -= G_GetItem( weapon ).cost;
+					cash -= WeaponCost( WeaponType( weapon ) );
 				}
 			}
 		}

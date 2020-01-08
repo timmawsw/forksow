@@ -481,8 +481,6 @@ static void CG_Cmd_PrevWeapon_f( void ) {
 * CG_Cmd_PrevWeapon_f
 */
 static void CG_Cmd_LastWeapon_f( void ) {
-	const Item *item;
-
 	if( !cg.frame.valid || cgs.demoPlaying ) {
 		return;
 	}

@@ -816,7 +816,7 @@ static edict_t *objectGameClient_GetEntity( gclient_t *self ) {
 }
 
 static void objectGameClient_GiveWeapon( WeaponType weapon, bool give, gclient_t *self ) {
-	if( weapon < 0 || weapon >= Weapon_Count ) {
+	if( weapon >= Weapon_Count ) {
 		return;
 	}
 
@@ -826,6 +826,7 @@ static void objectGameClient_GiveWeapon( WeaponType weapon, bool give, gclient_t
 	}
 
 	PLAYERENT( playerNum )->r.client->ps.weapons[ weapon ].owned = give;
+	PLAYERENT( playerNum )->r.client->ps.weapons[ weapon ].ammo = GS_GetWeaponDef( weapon )->clip_size;
 }
 
 static void objectGameClient_InventoryClear( gclient_t *self ) {
@@ -1042,8 +1043,11 @@ static const asProperty_t gameclient_Properties[] =
 	{ ASLIB_PROPERTY_DECL( const WeaponType, weapon ), ASLIB_FOFFSET( gclient_t, ps.weapon ) },
 	{ ASLIB_PROPERTY_DECL( const WeaponType, pendingWeapon ), ASLIB_FOFFSET( gclient_t, ps.pending_weapon ) },
 	{ ASLIB_PROPERTY_DECL( bool, canChangeLoadout ), ASLIB_FOFFSET( gclient_t, ps.can_change_loadout ) },
+	{ ASLIB_PROPERTY_DECL( bool, carryingBomb ), ASLIB_FOFFSET( gclient_t, ps.carrying_bomb ) },
 	{ ASLIB_PROPERTY_DECL( bool, canPlant ), ASLIB_FOFFSET( gclient_t, ps.can_plant ) },
 	{ ASLIB_PROPERTY_DECL( int64, lastActivity ), ASLIB_FOFFSET( gclient_t, level.last_activity ) },
+	{ ASLIB_PROPERTY_DECL( BombProgress, progressType ), ASLIB_FOFFSET( gclient_t, ps.progress_type ) },
+	{ ASLIB_PROPERTY_DECL( int16, progress ), ASLIB_FOFFSET( gclient_t, ps.progress ) },
 	{ ASLIB_PROPERTY_DECL( const int64, uCmdTimeStamp ), ASLIB_FOFFSET( gclient_t, ucmd.serverTimeStamp ) },
 
 	ASLIB_PROPERTY_NULL
@@ -1785,6 +1789,10 @@ static CScriptArrayInterface *asFunc_G_FindByClassname( asstring_t *str ) {
 	return arr;
 }
 
+static int asFunc_WeaponCost( WeaponType weapon ) {
+	return GS_GetWeaponDef( weapon )->cost;
+}
+
 static void asFunc_PositionedSound( asvec3_t *origin, int channel, int soundindex, float attenuation ) {
 	if( !origin ) {
 		return;
@@ -1877,6 +1885,8 @@ static const asglobfuncs_t asGameGlobFuncs[] =
 	{ "Team @G_GetTeam( int team )", asFUNCTION( asFunc_GetTeamlist ), NULL },
 	{ "array<Entity @> @G_FindInRadius( const Vec3 &in, float radius )", asFUNCTION( asFunc_G_FindInRadius ), NULL },
 	{ "array<Entity @> @G_FindByClassname( const String &in )", asFUNCTION( asFunc_G_FindByClassname ), NULL },
+
+	{ "int WeaponCost( WeaponType )", asFUNCTION( asFunc_WeaponCost ), NULL },
 
 	// misc management utils
 	{ "void G_RemoveProjectiles( Entity @ )", asFUNCTION( asFunc_G_Match_RemoveProjectiles ), NULL },

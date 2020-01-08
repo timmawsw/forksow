@@ -118,9 +118,13 @@ static bool GS_CheckAmmoInWeapon( const SyncPlayerState * player, WeaponType wea
 int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int buttons, int msecs, int timeDelta ) {
 	bool refire = false;
 
-	assert( player->pending_weapon >= 0 && player->pending_weapon < Weapon_Count );
+	assert( player->pending_weapon <= Weapon_Count );
 
 	if( GS_MatchPaused( gs ) ) {
+		return player->weapon;
+	}
+
+	if( player->weapon == Weapon_Count ) {
 		return player->weapon;
 	}
 

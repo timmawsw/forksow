@@ -275,8 +275,8 @@ struct SyncPlayerState {
 	bool ready;
 	bool voted;
 	bool can_change_loadout;
-	bool can_plant;
 	bool carrying_bomb;
+	bool can_plant;
 
 	s16 health;
 

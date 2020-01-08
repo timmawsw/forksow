@@ -185,14 +185,11 @@ char *_CG_CopyString( const char *in, const char *filename, int fileline ) {
 * CG_RegisterWeaponModels
 */
 static void CG_RegisterWeaponModels( void ) {
-	for( int i = 0; i < cgs.numWeaponModels; i++ ) {
+	for( WeaponType i = 0; i < cgs.numWeaponModels; i++ ) {
 		cgs.weaponInfos[i] = CG_RegisterWeaponModel( cgs.weaponModels[i], i );
 	}
 
-	// special case for weapon 0. Must always load the animation script
-	if( !cgs.weaponInfos[0] ) {
-		cgs.weaponInfos[0] = CG_CreateWeaponZeroModel( cgs.weaponModels[0] );
-	}
+	cgs.weaponInfos[ Weapon_Count ] = CG_CreateWeaponZeroModel();
 }
 
 /*
@@ -214,9 +211,7 @@ static void CG_RegisterModels( void ) {
 			}
 		}
 
-		cgs.numWeaponModels = 1;
-		Q_strncpyz( cgs.weaponModels[0], "", sizeof( cgs.weaponModels[0] ) );
-
+		cgs.numWeaponModels = 0;
 		cgs.precacheModelsStart = 1;
 	}
 
@@ -231,10 +226,7 @@ static void CG_RegisterModels( void ) {
 		cgs.precacheModelsStart = i;
 
 		if( name[0] == '#' ) {
-			// special player weapon model
-			if( cgs.numWeaponModels >= Weapon_Count ) {
-				continue;
-			}
+			assert( cgs.numWeaponModels < Weapon_Count );
 
 			if( !CG_LoadingItemName( name ) ) {
 				return;

@@ -112,13 +112,13 @@ void setTeamProgress( int teamNum, int percent, BombProgress type ) {
 			Client @client = @ent.client;
 
 			if( ent.isGhosting() ) {
-				client.setHUDStat( STAT_PROGRESS, 0 );
-				client.setHUDStat( STAT_PROGRESS_TYPE, BombProgress_Nothing );
+				client.progress = 0;
+				client.progressType = BombProgress_Nothing;
 				continue;
 			}
 
-			client.setHUDStat( STAT_PROGRESS, percent );
-			client.setHUDStat( STAT_PROGRESS_TYPE, type );
+			client.progress = percent;
+			client.progressType = type;
 		}
 	}
 }
@@ -287,7 +287,7 @@ void GT_PlayerRespawn( Entity @ent, int old_team, int new_team ) {
 	int matchState = match.getState();
 
 	if( matchState <= MATCH_STATE_WARMUP ) {
-		client.setHUDStat( STAT_CAN_CHANGE_LOADOUT, new_team >= TEAM_ALPHA ? 1 : 0 );
+		client.canChangeLoadout = new_team >= TEAM_ALPHA;
 	}
 
 	if( new_team != old_team ) {
@@ -375,15 +375,9 @@ void GT_ThinkRules() {
 			continue; // don't bother if they're not ingame
 		}
 
-		bool can_change_loadout = !client.getEnt().isGhosting() && roundState == RoundState_Pre;
-
-		client.setHUDStat( STAT_CARRYING_BOMB, 0 );
-		client.setHUDStat( STAT_CAN_PLANT_BOMB, 0 );
-		client.setHUDStat( STAT_CAN_CHANGE_LOADOUT, can_change_loadout ? 1 : 0 );
-		client.setHUDStat( STAT_ALPHA_PLAYERS_ALIVE, MSG_ALIVE_ALPHA );
-		client.setHUDStat( STAT_ALPHA_PLAYERS_TOTAL, MSG_TOTAL_ALPHA );
-		client.setHUDStat( STAT_BETA_PLAYERS_ALIVE, MSG_ALIVE_BETA );
-		client.setHUDStat( STAT_BETA_PLAYERS_TOTAL, MSG_TOTAL_BETA );
+		client.canChangeLoadout = !client.getEnt().isGhosting() && roundState == RoundState_Pre;
+		client.carryingBomb = false;
+		client.canPlant = false;
 	}
 
 	if( bombState == BombState_Planted ) {
@@ -399,11 +393,10 @@ void GT_ThinkRules() {
 	}
 
 	if( bombState == BombState_Carried ) {
-		bombCarrier.client.setHUDStat( STAT_CARRYING_BOMB, 1 );
+		bombCarrier.client.carryingBomb = true;
 
 		// seems like physics only gets run on alternating frames
-		int can_plant = bombCarrierCanPlantTime >= levelTime - 50 ? 1 : 0;
-		bombCarrier.client.setHUDStat( STAT_CAN_PLANT_BOMB, can_plant );
+		bombCarrier.client.canPlant = bombCarrierCanPlantTime >= levelTime - 50;
 
 		bombCarrierLastPos = bombCarrier.origin;
 		bombCarrierLastVel = bombCarrier.velocity;

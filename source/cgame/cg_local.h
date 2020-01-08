@@ -300,7 +300,7 @@ typedef struct {
 
 	char weaponModels[ Weapon_Count ][MAX_QPATH];
 	int numWeaponModels;
-	weaponinfo_t *weaponInfos[ Weapon_Count ];    // indexed list of weapon model infos
+	weaponinfo_t *weaponInfos[ Weapon_Count + 1 ];
 	orientation_t weaponItemTag;
 
 	cg_clientInfo_t clientInfo[MAX_CLIENTS];
