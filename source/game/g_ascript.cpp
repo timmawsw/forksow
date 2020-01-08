@@ -815,7 +815,7 @@ static edict_t *objectGameClient_GetEntity( gclient_t *self ) {
 	return PLAYERENT( playerNum );
 }
 
-static void objectGameClient_InventoryGiveWeapon( WeaponType weapon, bool give, gclient_t *self ) {
+static void objectGameClient_GiveWeapon( WeaponType weapon, bool give, gclient_t *self ) {
 	if( weapon < 0 || weapon >= Weapon_Count ) {
 		return;
 	}
@@ -1001,7 +1001,7 @@ static const asMethod_t gameclient_Methods[] =
 	{ ASLIB_FUNCTION_DECL( void, clearPlayerStateEvents, ( ) ), asFUNCTION( objectGameClient_ClearPlayerStateEvents ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( const String @, get_name, ( ) const ), asFUNCTION( objectGameClient_getName ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( Entity @, getEnt, ( ) const ), asFUNCTION( objectGameClient_GetEntity ), asCALL_CDECL_OBJLAST },
-	{ ASLIB_FUNCTION_DECL( void, inventoryGiveWeapon, ( WeaponType weapon, bool give ) ), asFUNCTION( objectGameClient_InventoryGiveWeapon ), asCALL_CDECL_OBJLAST },
+	{ ASLIB_FUNCTION_DECL( void, giveWeapon, ( WeaponType weapon, bool give ) ), asFUNCTION( objectGameClient_GiveWeapon ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( void, inventoryClear, ( ) ), asFUNCTION( objectGameClient_InventoryClear ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( void, selectWeapon, ( int tag ) ), asFUNCTION( objectGameClient_SelectWeapon ), asCALL_CDECL_OBJLAST },
 	{ ASLIB_FUNCTION_DECL( void, addAward, ( const String &in ) ), asFUNCTION( objectGameClient_addAward ), asCALL_CDECL_OBJLAST },
