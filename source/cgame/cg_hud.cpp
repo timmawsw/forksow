@@ -1493,6 +1493,7 @@ static bool CG_IsWeaponSelected( int weapon ) {
 constexpr float SEL_WEAP_X_OFFSET = 0.25f;
 
 static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih, Alignment alignment, float font_size ) {
+	ggprint( "{} {}\n", cg.predictedPlayerState.weapon, cg.predictedPlayerState.pending_weapon );
 	int num_weapons = 0;
 	for( int i = 0; i < Weapon_Count; i++ ) {
 		if( cg.predictedPlayerState.weapons[ i ].owned ) {
@@ -1817,28 +1818,22 @@ static bool CG_LFuncDrawPlayerName( struct cg_layoutnode_s *argumentnode, int nu
 }
 
 static bool CG_LFuncDrawNumeric( struct cg_layoutnode_s *argumentnode, int numArguments ) {
-	int value = (int)CG_GetNumericArg( &argumentnode );
+	int value = CG_GetNumericArg( &argumentnode );
 	DrawText( GetHUDFont(), layout_cursor_font_size, va( "%i", value ), layout_cursor_alignment, layout_cursor_x, layout_cursor_y, layout_cursor_color, layout_cursor_font_border );
 	return true;
 }
 
-static void CG_LFuncsWeaponIcons( struct cg_layoutnode_s *argumentnode ) {
-	int offx, offy, w, h;
-
-	offx = (int)( CG_GetNumericArg( &argumentnode ) * frame_static.viewport_width / 800 );
-	offy = (int)( CG_GetNumericArg( &argumentnode ) * frame_static.viewport_height / 600 );
-	w = (int)( CG_GetNumericArg( &argumentnode ) * frame_static.viewport_width / 800 );
-	h = (int)( CG_GetNumericArg( &argumentnode ) * frame_static.viewport_height / 600 );
+static bool CG_LFuncDrawWeaponIcons( struct cg_layoutnode_s *argumentnode, int numArguments ) {
+	int offx = CG_GetNumericArg( &argumentnode ) * frame_static.viewport_width / 800;
+	int offy = CG_GetNumericArg( &argumentnode ) * frame_static.viewport_height / 600;
+	int w = CG_GetNumericArg( &argumentnode ) * frame_static.viewport_width / 800;
+	int h = CG_GetNumericArg( &argumentnode ) * frame_static.viewport_height / 600;
 	float font_size = CG_GetNumericArg( &argumentnode );
 
 	CG_DrawWeaponIcons( layout_cursor_x, layout_cursor_y, offx, offy, w, h, layout_cursor_alignment, font_size );
-}
 
-static bool CG_LFuncDrawWeaponIcons( struct cg_layoutnode_s *argumentnode, int numArguments ) {
-	CG_LFuncsWeaponIcons( argumentnode );
 	return true;
 }
-
 
 static bool CG_LFuncDrawCrossHair( struct cg_layoutnode_s *argumentnode, int numArguments ) {
 	CG_DrawCrosshair();
@@ -1864,7 +1859,6 @@ static bool CG_LFuncIf( struct cg_layoutnode_s *argumentnode, int numArguments )
 static bool CG_LFuncIfNot( struct cg_layoutnode_s *argumentnode, int numArguments ) {
 	return (int)CG_GetNumericArg( &argumentnode ) == 0;
 }
-
 
 typedef struct cg_layoutcommand_s
 {

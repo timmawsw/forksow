@@ -393,7 +393,7 @@ void CG_UseItem( const char * name ) {
 		return;
 	}
 
-	for( int i = 0; i < Weapon_Count; i++ ) {
+	for( WeaponType i = 0; i < Weapon_Count; i++ ) {
 		const WeaponDef * weapon = GS_GetWeaponDef( i );
 		if( Q_stricmp( weapon->name, name ) == 0 || Q_stricmp( weapon->short_name, name ) == 0 ) {
 			CG_Predict_ChangeWeapon( i );

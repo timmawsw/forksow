@@ -125,6 +125,7 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int b
 	}
 
 	if( player->weapon == Weapon_Count ) {
+		player->weapon = player->pending_weapon;
 		return player->weapon;
 	}
 
