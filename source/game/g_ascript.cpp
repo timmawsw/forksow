@@ -1384,7 +1384,6 @@ static const asMethod_t gedict_Methods[] =
 static const asProperty_t gedict_Properties[] =
 {
 	{ ASLIB_PROPERTY_DECL( Client @, client ), ASLIB_FOFFSET( edict_t, r.client ) },
-	{ ASLIB_PROPERTY_DECL( Item @, item ), ASLIB_FOFFSET( edict_t, item ) },
 	{ ASLIB_PROPERTY_DECL( Entity @, groundEntity ), ASLIB_FOFFSET( edict_t, groundentity ) },
 	{ ASLIB_PROPERTY_DECL( Entity @, owner ), ASLIB_FOFFSET( edict_t, r.owner ) },
 	{ ASLIB_PROPERTY_DECL( Entity @, enemy ), ASLIB_FOFFSET( edict_t, enemy ) },
@@ -1612,10 +1611,6 @@ static g_teamlist_t *asFunc_GetTeamlist( int teamNum ) {
 	}
 
 	return &teamlist[teamNum];
-}
-
-static const Item *asFunc_GS_FindItemByName( asstring_t *name ) {
-	return ( !name || !name->len ) ? NULL : GS_FindItemByName( name->buffer );
 }
 
 static void asFunc_G_Match_RemoveProjectiles( edict_t *owner ) {
@@ -1880,7 +1875,6 @@ static const asglobfuncs_t asGameGlobFuncs[] =
 	{ "Entity @G_GetEntity( int entNum )", asFUNCTION( asFunc_GetEntity ), NULL },
 	{ "Client @G_GetClient( int clientNum )", asFUNCTION( asFunc_GetClient ), NULL },
 	{ "Team @G_GetTeam( int team )", asFUNCTION( asFunc_GetTeamlist ), NULL },
-	{ "const Item @G_GetItemByName( const String &in name )", asFUNCTION( asFunc_GS_FindItemByName ), NULL },
 	{ "array<Entity @> @G_FindInRadius( const Vec3 &in, float radius )", asFUNCTION( asFunc_G_FindInRadius ), NULL },
 	{ "array<Entity @> @G_FindByClassname( const String &in )", asFUNCTION( asFunc_G_FindByClassname ), NULL },
 
