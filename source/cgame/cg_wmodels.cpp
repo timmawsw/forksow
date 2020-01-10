@@ -18,25 +18,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-/*
-==========================================================================
+#include "cgame/cg_local.h"
 
-- SPLITMODELS -
-
-==========================================================================
-*/
-
-// - Adding the weapon models in split pieces
-// by Jalisk0
-
-#include "cg_local.h"
-
-
-//======================================================================
-//						weaponinfo Registering
-//======================================================================
-
-static weaponinfo_t cg_pWeaponModelInfos[Weapon_Count];
+static weaponinfo_t cg_pWeaponModelInfos[ Weapon_Count + 1 ];
 
 static const char *wmPartSufix[] = { "", "_flash", "_hand", "_barrel", NULL };
 
@@ -338,7 +322,7 @@ static void CG_WeaponModelUpdateRegistration( weaponinfo_t *weaponinfo, char *fi
 /*
 * CG_RegisterWeaponModel
 */
-struct weaponinfo_s *CG_RegisterWeaponModel( char *cgs_name, int weaponTag ) {
+struct weaponinfo_s *CG_RegisterWeaponModel( char *cgs_name, WeaponType weaponTag ) {
 	char filename[MAX_QPATH];
 	Q_strncpyz( filename, cgs_name, sizeof( filename ) );
 	COM_StripExtension( filename );
@@ -365,7 +349,7 @@ struct weaponinfo_s *CG_RegisterWeaponModel( char *cgs_name, int weaponTag ) {
 * even if the registration failed
 */
 struct weaponinfo_s *CG_CreateWeaponZeroModel() {
-	weaponinfo_t * weaponinfo = &cg_pWeaponModelInfos[ 0 ];
+	weaponinfo_t * weaponinfo = &cg_pWeaponModelInfos[ Weapon_Count ];
 	if( weaponinfo->inuse ) {
 		return weaponinfo;
 	}

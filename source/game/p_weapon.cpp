@@ -18,9 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-// g_weapon.c
-
-#include "g_local.h"
+#include "game/g_local.h"
 
 void SV_Physics_LinearProjectile( edict_t *ent );
 
@@ -29,12 +27,6 @@ void SV_Physics_LinearProjectile( edict_t *ent );
 #ifdef PLASMAHACK
 void W_Plasma_Backtrace( edict_t *ent, const vec3_t start );
 #endif
-
-//======================================================================
-//
-// WEAPON FIRING
-//
-//======================================================================
 
 /*
 * G_ProjectileDistancePrestep
@@ -163,9 +155,8 @@ void G_FireWeapon( edict_t *ent, int parm ) {
 
 	// shoot
 	edict_t * projectile = NULL;
-	int weapon = ( parm >> 1 ) & 0x3f;
 
-	switch( weapon ) {
+	switch( parm ) {
 		default:
 			return;
 
@@ -204,7 +195,7 @@ void G_FireWeapon( edict_t *ent, int parm ) {
 
 	// add stats
 	if( ent->r.client != NULL ) {
-		ent->r.client->level.stats.accuracy_shots[ weapon ] += GS_GetWeaponDef( weapon )->projectile_count;
+		ent->r.client->level.stats.accuracy_shots[ parm ] += GS_GetWeaponDef( parm )->projectile_count;
 	}
 
 	if( projectile != NULL ) {

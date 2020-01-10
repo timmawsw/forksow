@@ -276,7 +276,7 @@ void CG_PModel_ClearEventAnimations( int entNum );
 //
 void CG_WModelsInit();
 struct weaponinfo_s *CG_CreateWeaponZeroModel();
-struct weaponinfo_s *CG_RegisterWeaponModel( char *cgs_name, int weaponTag );
+struct weaponinfo_s *CG_RegisterWeaponModel( char *cgs_name, WeaponType weaponTag );
 void CG_AddWeaponOnTag( entity_t *ent, const orientation_t *tag, int weapon, int effects,
 	orientation_t *projectionSource, int64_t flash_time, int64_t barrel_time );
 

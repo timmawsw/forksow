@@ -186,10 +186,6 @@ static void CG_Event_LaserBeam( const vec3_t origin, const vec3_t dir, int entNu
 * CG_FireWeaponEvent
 */
 static void CG_FireWeaponEvent( int entNum, int weapon ) {
-	if( !weapon ) {
-		return;
-	}
-
 	// hack idle attenuation on the plasmagun to reduce sound flood on the scene
 	float attenuation;
 	if( weapon == Weapon_Plasma ) {
@@ -709,7 +705,7 @@ void CG_EntityEvent( SyncEntityState *ent, int ev, int parm, bool predicted ) {
 		//  PREDICTABLE EVENTS
 
 		case EV_WEAPONACTIVATE: {
-			int weapon = ( parm >> 1 ) & 0x3f;
+			int weapon = parm >> 1;
 			bool silent = ( parm & 1 ) != 0;
 			if( predicted ) {
 				cg_entities[ent->number].current.weapon = weapon;
@@ -737,13 +733,11 @@ void CG_EntityEvent( SyncEntityState *ent, int ev, int parm, bool predicted ) {
 
 		case EV_SMOOTHREFIREWEAPON: // the server never sends this event
 			if( predicted ) {
-				int weapon = ( parm >> 1 ) & 0x3f;
-
-				cg_entities[ent->number].current.weapon = weapon;
+				cg_entities[ent->number].current.weapon = parm;
 
 				CG_ViewWeapon_RefreshAnimation( &cg.weapon );
 
-				if( weapon == Weapon_Laser ) {
+				if( parm == Weapon_Laser ) {
 					vec3_t origin;
 					VectorCopy( cg.predictedPlayerState.pmove.origin, origin );
 					origin[2] += cg.predictedPlayerState.viewheight;
@@ -755,13 +749,16 @@ void CG_EntityEvent( SyncEntityState *ent, int ev, int parm, bool predicted ) {
 			break;
 
 		case EV_FIREWEAPON: {
-			int weapon = ( parm >> 1 ) & 0x3f;
+			if( parm < 0 || parm >= Weapon_Count )
+				return;
 
 			if( predicted ) {
-				cg_entities[ent->number].current.weapon = weapon;
+				cg_entities[ent->number].current.weapon = parm;
 			}
 
-			CG_FireWeaponEvent( ent->number, weapon );
+			CG_FireWeaponEvent( ent->number, parm );
+
+			printf( "fireweapon %d\n", parm );
 
 			if( predicted ) {
 				vec3_t origin;
@@ -769,16 +766,16 @@ void CG_EntityEvent( SyncEntityState *ent, int ev, int parm, bool predicted ) {
 				origin[2] += cg.predictedPlayerState.viewheight;
 				AngleVectors( cg.predictedPlayerState.viewangles, dir, NULL, NULL );
 
-				if( weapon == Weapon_Railgun ) {
+				if( parm == Weapon_Railgun ) {
 					CG_Event_WeaponBeam( origin, dir, ent->number );
 				}
-				else if( weapon == Weapon_Shotgun ) {
+				else if( parm == Weapon_Shotgun ) {
 					CG_Event_FireRiotgun( origin, dir, ent->number );
 				}
-				else if( weapon == Weapon_Laser ) {
+				else if( parm == Weapon_Laser ) {
 					CG_Event_LaserBeam( origin, dir, ent->number );
 				}
-				else if( weapon == Weapon_MachineGun ) {
+				else if( parm == Weapon_MachineGun ) {
 					CG_Event_FireMachinegun( origin, dir, ent->number, ent->team );
 				}
 			}

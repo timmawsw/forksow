@@ -757,7 +757,7 @@ static void CG_SetupViewDef( cg_viewdef_t *view, int type ) {
 	}
 
 	if( !view->playerPrediction ) {
-		cg.predictedWeaponSwitch = 0;
+		cg.predictedWeaponSwitch = Weapon_Count;
 	}
 }
 

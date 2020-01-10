@@ -1483,7 +1483,7 @@ enum {
 //=============================================================================
 
 static bool CG_IsWeaponSelected( int weapon ) {
-	if( cg.view.playerPrediction && cg.predictedWeaponSwitch && cg.predictedWeaponSwitch != cg.predictedPlayerState.pending_weapon ) {
+	if( cg.view.playerPrediction && cg.predictedWeaponSwitch != Weapon_Count && cg.predictedWeaponSwitch != cg.predictedPlayerState.pending_weapon ) {
 		return weapon == cg.predictedWeaponSwitch;
 	}
 
@@ -1493,7 +1493,6 @@ static bool CG_IsWeaponSelected( int weapon ) {
 constexpr float SEL_WEAP_X_OFFSET = 0.25f;
 
 static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih, Alignment alignment, float font_size ) {
-	ggprint( "{} {}\n", cg.predictedPlayerState.weapon, cg.predictedPlayerState.pending_weapon );
 	int num_weapons = 0;
 	for( int i = 0; i < Weapon_Count; i++ ) {
 		if( cg.predictedPlayerState.weapons[ i ].owned ) {
@@ -1507,7 +1506,6 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 	int total_height = max( 0, num_weapons * offy - pady );
 
 	int drawn_weapons = 0;
-	bool selected_found = false;
 	for( int i = 0; i < Weapon_Count; i++ ) {
 		if( !cg.predictedPlayerState.weapons[ i ].owned )
 			continue;
@@ -1519,7 +1517,6 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 		int curih = ih;
 
 		if( CG_IsWeaponSelected( i ) ) {
-			selected_found = true;
 			cury -= ih * SEL_WEAP_X_OFFSET;
 		}
 

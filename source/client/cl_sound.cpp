@@ -444,8 +444,10 @@ static void StartSound( PlayingSound * ps, u8 i ) {
 
 	int idx = random_uniform( &cls.rng, 0, config.num_random_sounds );
 	ALuint buffer;
-	if( !FindSound( config.sounds[ idx ], &buffer ) )
+	if( !FindSound( config.sounds[ idx ], &buffer ) ) {
+		printf( "cant find osund\n" );
 		return;
+	}
 
 	if( num_free_sound_sources == 0 ) {
 		Com_Printf( S_COLOR_YELLOW "Too many playing sounds!" );

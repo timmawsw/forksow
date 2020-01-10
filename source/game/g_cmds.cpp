@@ -17,7 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-#include "g_local.h"
+#include "game/g_local.h"
 
 /*
 * G_Teleport
@@ -151,7 +151,7 @@ static void Cmd_Use_f( edict_t * ent ) {
 
 	const char * err = NULL;
 	int num = strtonum( name, 0, Weapon_Count, &err );
-	if( err == NULL ) {
+	if( err == NULL && GS_CanEquip( &ent->r.client->ps, num ) ) {
 		ent->r.client->ps.pending_weapon = num;
 	}
 }

@@ -348,7 +348,7 @@ typedef struct {
 	int64_t predictedEventTimes[PREDICTABLE_EVENTS_MAX];
 	vec3_t predictionError;
 	SyncPlayerState predictedPlayerState;     // current in use, predicted or interpolated
-	u8 predictedWeaponSwitch;              // inhibit shooting prediction while a weapon change is expected
+	WeaponType predictedWeaponSwitch;              // inhibit shooting prediction while a weapon change is expected
 	int predictedGroundEntity;
 
 	// prediction optimization (don't run all ucmds in not needed)

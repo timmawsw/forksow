@@ -233,15 +233,13 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int b
 	}
 
 	if( player->weaponState == WEAPON_STATE_FIRING ) {
-		int parm = player->weapon << 1;
-
 		player->weapon_time += def->reload_time;
 		player->weaponState = WEAPON_STATE_REFIRE;
 
 		if( refire && def->smooth_refire ) {
-			gs->api.PredictedEvent( player->POVnum, EV_SMOOTHREFIREWEAPON, parm );
+			gs->api.PredictedEvent( player->POVnum, EV_SMOOTHREFIREWEAPON, player->weapon );
 		} else {
-			gs->api.PredictedEvent( player->POVnum, EV_FIREWEAPON, parm );
+			gs->api.PredictedEvent( player->POVnum, EV_FIREWEAPON, player->weapon );
 		}
 
 		if( def->clip_size > 0 ) {

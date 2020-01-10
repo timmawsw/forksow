@@ -725,7 +725,7 @@ static bool WeaponButton( int cash, WeaponType weapon, ImVec2 size, Vec4 * tint 
 	ImGui::PushStyleColor( ImGuiCol_ButtonActive, Vec4( 0 ) );
 	defer { ImGui::PopStyleColor( 3 ); };
 
-	const Material * icon = cgs.media.shaderWeaponIcon[ weapon - 1 ];
+	const Material * icon = cgs.media.shaderWeaponIcon[ weapon ];
 	Vec2 half_pixel = 0.5f / Vec2( icon->texture->width, icon->texture->height );
 
 	int cost = GS_GetWeaponDef( weapon )->cost;
