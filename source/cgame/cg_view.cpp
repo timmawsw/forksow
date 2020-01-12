@@ -723,6 +723,28 @@ static void CG_SetupViewDef( cg_viewdef_t *view, int type ) {
 				view->angles[i] = cg.predictedPlayerState.viewangles[i];
 			}
 
+			// recoil
+			if( cg.recoiling ) {
+				if( cg.recoil == 0.0f ) {
+					float d = cg.recoil_initial_pitch - cl.viewangles[ PITCH ];
+					if( d <= 0.0f ) {
+						cg.recoiling = false;
+					}
+					else {
+						constexpr float reset_degrees_per_second = 80.0f;
+						cl.viewangles[ PITCH ] += Min2( reset_degrees_per_second * cls.frametime * 0.001f, d );
+					}
+				}
+				else {
+					float kick = cg.recoil * 20.0f * cls.frametime * 0.001f;
+					cl.viewangles[ PITCH ] -= kick;
+					cg.recoil -= kick;
+					if( cg.recoil < 0.1f ) {
+						cg.recoil = 0.0f;
+					}
+				}
+			}
+
 			CG_ViewSmoothPredictedSteps( view->origin ); // smooth out stair climbing
 		} else {
 			cg.predictingTimeStamp = cl.serverTime;
@@ -758,6 +780,7 @@ static void CG_SetupViewDef( cg_viewdef_t *view, int type ) {
 
 	if( !view->playerPrediction ) {
 		cg.predictedWeaponSwitch = Weapon_Count;
+		cg.recoiling = false;
 	}
 }
 
@@ -1004,27 +1027,6 @@ void CG_RenderView( unsigned extrapolationTime ) {
 	CG_FlashGameWindow(); // notify player of important game events
 
 	CG_UpdateChaseCam();
-
-	if( cg.recoiling ) {
-		if( cg.recoil == 0.0f ) {
-			float d = cg.recoil_initial_pitch - cl.viewangles[ PITCH ];
-			if( d <= 0.0f ) {
-				cg.recoiling = false;
-			}
-			else {
-				constexpr float reset_degrees_per_second = 80.0f;
-				cl.viewangles[ PITCH ] += Min2( reset_degrees_per_second * cls.frametime * 0.001f, d );
-			}
-		}
-		else {
-			float kick = cg.recoil * 20.0f * cls.frametime * 0.001f;
-			cl.viewangles[ PITCH ] -= kick;
-			cg.recoil -= kick;
-			if( cg.recoil < 0.1f ) {
-				cg.recoil = 0.0f;
-			}
-		}
-	}
 
 	if( CG_DemoCam_Update() ) {
 		CG_SetupViewDef( &cg.view, CG_DemoCam_GetViewType() );
