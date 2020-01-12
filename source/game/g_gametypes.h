@@ -75,7 +75,6 @@ typedef struct {
 	bool countdownEnabled;
 	bool matchAbortDisabled;
 	bool shootingDisabled;
-	bool infiniteAmmo;
 	bool customDeadBodyCam;
 	bool removeInactivePlayers;
 	bool selfDamage;

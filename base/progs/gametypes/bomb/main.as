@@ -490,7 +490,6 @@ void GT_InitGametype() {
 	gametype.countdownEnabled = false;
 	gametype.matchAbortDisabled = false;
 	gametype.shootingDisabled = false;
-	gametype.infiniteAmmo = false;
 	gametype.removeInactivePlayers = true;
 
 	gametype.spawnpointRadius = 256;

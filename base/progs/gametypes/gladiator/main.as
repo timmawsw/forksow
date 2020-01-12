@@ -942,7 +942,6 @@ void GT_InitGametype()
 	gametype.countdownEnabled = false;
 	gametype.matchAbortDisabled = false;
 	gametype.shootingDisabled = false;
-	gametype.infiniteAmmo = true;
 	gametype.removeInactivePlayers = true;
 	gametype.selfDamage = false;
 

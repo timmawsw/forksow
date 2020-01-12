@@ -284,6 +284,7 @@ static void SettingsKeys() {
 	ImGui::Separator();
 
 	KeyBindButton( "Attack", "+attack" );
+	KeyBindButton( "Reload", "+reload" );
 	KeyBindButton( "Drop bomb", "drop" );
 	KeyBindButton( "Shop", "gametypemenu" );
 	KeyBindButton( "Scoreboard", "+scores" );
@@ -962,7 +963,7 @@ static void GameMenu() {
 					ColumnCenterText( temp("{}Reload", ImGuiColorToken( 255, 200, 0, 255 ) ) );
 					ImGui::SetCursorPosY( pos_y + txt_spacing );
 
-					char * reload = temp( "{.1}s", weapon->reload_time / 1000.f );
+					char * reload = temp( "{.1}s", weapon->refire_time / 1000.f );
 					RemoveTrailingZeroesFloat( reload );
 					ColumnCenterText( reload );
 

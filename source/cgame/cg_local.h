@@ -290,8 +290,6 @@ typedef struct {
 	unsigned snapFrameTime;
 	unsigned extrapolationTime;
 
-	char *demoAudioStream;
-
 	//
 	// locally derived information from server state
 	//
@@ -377,6 +375,10 @@ typedef struct {
 	// all cyclic walking effects
 	//
 	float xyspeed;
+
+	bool recoiling;
+	float recoil;
+	float recoil_initial_pitch;
 
 	float oldBobTime;
 	int bobCycle;                   // odd cycles are right foot going forward

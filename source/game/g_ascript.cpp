@@ -354,17 +354,6 @@ static const asEnumVal_t asAxisEnumVals[] =
 	ASLIB_ENUM_VAL_NULL
 };
 
-static const asEnumVal_t asButtonEnumVals[] =
-{
-	ASLIB_ENUM_VAL( BUTTON_NONE ),
-	ASLIB_ENUM_VAL( BUTTON_ATTACK ),
-	ASLIB_ENUM_VAL( BUTTON_WALK ),
-	ASLIB_ENUM_VAL( BUTTON_SPECIAL ),
-	ASLIB_ENUM_VAL( BUTTON_ZOOM ),
-
-	ASLIB_ENUM_VAL_NULL
-};
-
 static const asEnumVal_t asBombProgressEnumVals[] =
 {
 	ASLIB_ENUM_VAL( BombProgress_Nothing ),
@@ -422,7 +411,6 @@ static const asEnum_t asGameEnums[] =
 	{ "keyicon_e", asKeyiconEnumVals },
 
 	{ "axis_e", asAxisEnumVals },
-	{ "button_e", asButtonEnumVals },
 
 	{ "BombProgress", asBombProgressEnumVals },
 	{ "BombDown", asBombDownEnumVals },
@@ -584,7 +572,6 @@ static const asProperty_t gametypedescr_Properties[] =
 	{ ASLIB_PROPERTY_DECL( bool, countdownEnabled ), ASLIB_FOFFSET( gametype_descriptor_t, countdownEnabled ) },
 	{ ASLIB_PROPERTY_DECL( bool, matchAbortDisabled ), ASLIB_FOFFSET( gametype_descriptor_t, matchAbortDisabled ) },
 	{ ASLIB_PROPERTY_DECL( bool, shootingDisabled ), ASLIB_FOFFSET( gametype_descriptor_t, shootingDisabled ) },
-	{ ASLIB_PROPERTY_DECL( bool, infiniteAmmo ), ASLIB_FOFFSET( gametype_descriptor_t, infiniteAmmo ) },
 	{ ASLIB_PROPERTY_DECL( int, spawnpointRadius ), ASLIB_FOFFSET( gametype_descriptor_t, spawnpointRadius ) },
 	{ ASLIB_PROPERTY_DECL( bool, customDeadBodyCam ), ASLIB_FOFFSET( gametype_descriptor_t, customDeadBodyCam ) },
 	{ ASLIB_PROPERTY_DECL( bool, removeInactivePlayers ), ASLIB_FOFFSET( gametype_descriptor_t, removeInactivePlayers ) },

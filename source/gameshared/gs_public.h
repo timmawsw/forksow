@@ -121,7 +121,6 @@ enum {
 #define GAMESTAT_FLAG_ISRACE ( 1 << 5LL )
 #define GAMESTAT_FLAG_COUNTDOWN ( 1 << 6LL )
 #define GAMESTAT_FLAG_SELFDAMAGE ( 1 << 7LL )
-#define GAMESTAT_FLAG_INFINITEAMMO ( 1 << 8LL )
 
 struct SyncBombGameState {
 	RoundType round_type;
@@ -355,7 +354,6 @@ typedef struct {
 #define GS_MatchPaused( gs ) ( ( ( gs )->gameState.flags & GAMESTAT_FLAG_PAUSED ) != 0 )
 #define GS_MatchWaiting( gs ) ( ( ( gs )->gameState.flags & GAMESTAT_FLAG_WAITING ) != 0 )
 #define GS_Countdown( gs ) ( ( ( gs )->gameState.flags & GAMESTAT_FLAG_COUNTDOWN ) != 0 )
-#define GS_InfiniteAmmo( gs ) ( ( ( gs )->gameState.flags & GAMESTAT_FLAG_INFINITEAMMO ) != 0 )
 
 #define GS_MatchState( gs ) ( ( gs )->gameState.match_state )
 #define GS_MaxPlayersInTeam( gs ) ( ( gs )->gameState.max_team_players )
@@ -752,9 +750,8 @@ enum {
 	WEAPON_STATE_READY,
 	WEAPON_STATE_ACTIVATING,
 	WEAPON_STATE_DROPPING,
-	WEAPON_STATE_FIRING,
-	WEAPON_STATE_NOAMMOCLICK,
-	WEAPON_STATE_REFIRE,        // projectile loading
+	WEAPON_STATE_REFIRE,
+	WEAPON_STATE_RELOADING,
 };
 
 struct WeaponDef {
@@ -771,11 +768,13 @@ struct WeaponDef {
 
 	int projectile_count;
 	int clip_size;
+	unsigned int reload_time;
 
 	unsigned int weaponup_time;
 	unsigned int weapondown_time;
-	unsigned int reload_time;
+	unsigned int refire_time;
 	unsigned int range;
+	float recoil;
 	bool smooth_refire;
 
 	float damage;

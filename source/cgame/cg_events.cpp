@@ -171,7 +171,7 @@ void CG_LaserBeamEffect( centity_t *cent ) {
 static void CG_Event_LaserBeam( const vec3_t origin, const vec3_t dir, int entNum ) {
 	// lasergun's smooth refire
 	// it appears that 64ms is that maximum allowed time interval between prediction events on localhost
-	unsigned int range = Max2( GS_GetWeaponDef( Weapon_Laser )->reload_time + 10, 65u );
+	unsigned int range = Max2( GS_GetWeaponDef( Weapon_Laser )->refire_time + 10, 65u );
 
 	centity_t *cent = &cg_entities[entNum];
 	VectorCopy( origin, cent->laserOrigin );
@@ -208,7 +208,6 @@ static void CG_FireWeaponEvent( int entNum, int weapon ) {
 	}
 
 	// flash and barrel effects
-
 	if( weapon == Weapon_Knife && weaponInfo->barrelTime ) {
 		// start barrel rotation or offsetting
 		cg_entPModels[entNum].barrel_time = cl.serverTime + weaponInfo->barrelTime;
@@ -234,7 +233,7 @@ static void CG_FireWeaponEvent( int entNum, int weapon ) {
 			CG_PModel_AddAnimation( entNum, 0, TORSO_SHOOT_PISTOL, 0, EVENT_CHANNEL );
 			break;
 
-		default:
+		case Weapon_MachineGun:
 		case Weapon_Shotgun:
 		case Weapon_Plasma:
 			CG_PModel_AddAnimation( entNum, 0, TORSO_SHOOT_LIGHTWEAPON, 0, EVENT_CHANNEL );
@@ -253,6 +252,15 @@ static void CG_FireWeaponEvent( int entNum, int weapon ) {
 	// add animation to the view weapon model
 	if( ISVIEWERENTITY( entNum ) && !cg.view.thirdperson ) {
 		CG_ViewWeapon_StartAnimationEvent( weapon == Weapon_Knife ? WEAPANIM_ATTACK_WEAK : WEAPANIM_ATTACK_STRONG );
+	}
+
+	// recoil
+	if( cg.view.playerPrediction && ISVIEWERENTITY( entNum ) ) {
+		if( !cg.recoiling ) {
+			cg.recoil_initial_pitch = cl.viewangles[ PITCH ];
+			cg.recoiling = true;
+		}
+		cg.recoil += GS_GetWeaponDef( weapon )->recoil;
 	}
 }
 
@@ -757,8 +765,6 @@ void CG_EntityEvent( SyncEntityState *ent, int ev, int parm, bool predicted ) {
 			}
 
 			CG_FireWeaponEvent( ent->number, parm );
-
-			printf( "fireweapon %d\n", parm );
 
 			if( predicted ) {
 				vec3_t origin;

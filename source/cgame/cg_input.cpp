@@ -45,6 +45,7 @@ static Button button_crouch;
 static Button button_walk;
 
 static Button button_attack;
+static Button button_reload;
 static Button button_zoom;
 
 static void ClearButton( Button * b ) {
@@ -125,11 +126,13 @@ static void IN_WalkUp() { KeyUp( &button_walk ); }
 
 static void IN_AttackDown() { KeyDown( &button_attack ); }
 static void IN_AttackUp() { KeyUp( &button_attack ); }
+static void IN_ReloadDown() { KeyDown( &button_reload ); }
+static void IN_ReloadUp() { KeyUp( &button_reload ); }
 static void IN_ZoomDown() { KeyDown( &button_zoom ); }
 static void IN_ZoomUp() { KeyUp( &button_zoom ); }
 
 unsigned int CG_GetButtonBits() {
-	unsigned int buttons = BUTTON_NONE;
+	unsigned int buttons = 0;
 
 	if( button_attack.down || button_attack.edge ) {
 		buttons |= BUTTON_ATTACK;
@@ -139,6 +142,11 @@ unsigned int CG_GetButtonBits() {
 	if( button_special.down || button_special.edge ) {
 		buttons |= BUTTON_SPECIAL;
 		button_special.edge = false;
+	}
+
+	if( button_reload.down || button_reload.edge ) {
+		buttons |= BUTTON_RELOAD;
+		button_reload.edge = false;
 	}
 
 	if( button_zoom.down ) {
@@ -333,6 +341,8 @@ void CG_InitInput() {
 
 	Cmd_AddCommand( "+attack", IN_AttackDown );
 	Cmd_AddCommand( "-attack", IN_AttackUp );
+	Cmd_AddCommand( "+reload", IN_ReloadDown );
+	Cmd_AddCommand( "-reload", IN_ReloadUp );
 	Cmd_AddCommand( "+zoom", IN_ZoomDown );
 	Cmd_AddCommand( "-zoom", IN_ZoomUp );
 

@@ -96,8 +96,6 @@ void GS_TraceLaserBeam( const gs_state_t * gs, trace_t *trace, vec3_t origin, ve
 //
 //============================================================
 
-#define NOAMMOCLICK_PENALTY 100
-
 WeaponType GS_SelectBestWeapon( const SyncPlayerState * player ) {
 	for( int weapon = Weapon_Count - 1; weapon >= 0; weapon-- ) {
 		if( !player->weapons[ weapon ].owned )
@@ -160,21 +158,21 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int b
 		player->weaponState = WEAPON_STATE_READY;
 	}
 
-	if( player->weaponState == WEAPON_STATE_NOAMMOCLICK ) {
+	if( player->weaponState == WEAPON_STATE_RELOADING ) {
 		if( player->weapon_time > 0 ) {
 			return player->weapon;
 		}
 
-		if( player->weapon != player->pending_weapon ) {
-			player->weaponState = WEAPON_STATE_READY;
-		}
+		player->weapons[ player->weapon ].ammo = def->clip_size;
+		player->weaponState = WEAPON_STATE_READY;
+		gs->api.PredictedEvent( player->POVnum, EV_WEAPONACTIVATE, player->weapon << 1 );
 	}
 
 	// there is a weapon to be changed
 	if( player->weapon != player->pending_weapon ) {
 		if( player->weaponState == WEAPON_STATE_READY || player->weaponState == WEAPON_STATE_ACTIVATING ) {
 			player->weaponState = WEAPON_STATE_DROPPING;
-			player->weapon_time += def->weapondown_time;
+			player->weapon_time = def->weapondown_time;
 
 			if( def->weapondown_time ) {
 				gs->api.PredictedEvent( player->POVnum, EV_WEAPONDROP, 0 );
@@ -194,7 +192,7 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int b
 		// update the firedef
 		def = GS_GetWeaponDef( player->weapon );
 		player->weaponState = WEAPON_STATE_ACTIVATING;
-		player->weapon_time += def->weaponup_time;
+		player->weapon_time = def->weaponup_time;
 
 		int parm = player->weapon << 1;
 		if( !had_weapon_before )
@@ -211,7 +209,7 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int b
 		player->weaponState = WEAPON_STATE_READY;
 	}
 
-	if( player->weaponState == WEAPON_STATE_READY || player->weaponState == WEAPON_STATE_NOAMMOCLICK ) {
+	if( player->weaponState == WEAPON_STATE_READY ) {
 		if( player->weapon_time > 0 ) {
 			return player->weapon;
 		}
@@ -219,33 +217,28 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int b
 		if( !GS_ShootingDisabled( gs ) ) {
 			if( buttons & BUTTON_ATTACK ) {
 				if( GS_CheckAmmoInWeapon( player, player->weapon ) ) {
-					player->weaponState = WEAPON_STATE_FIRING;
-				}
-				else if( player->weaponState != WEAPON_STATE_NOAMMOCLICK ) {
-					// player has no ammo nor clips
-					player->weaponState = WEAPON_STATE_NOAMMOCLICK;
-					player->weapon_time += NOAMMOCLICK_PENALTY;
-					gs->api.PredictedEvent( player->POVnum, EV_NOAMMOCLICK, 0 );
-					return player->weapon;
+					player->weapon_time = def->refire_time;
+					player->weaponState = WEAPON_STATE_REFIRE;
+
+					if( refire && def->smooth_refire ) {
+						gs->api.PredictedEvent( player->POVnum, EV_SMOOTHREFIREWEAPON, player->weapon );
+					} else {
+						gs->api.PredictedEvent( player->POVnum, EV_FIREWEAPON, player->weapon );
+					}
+
+					if( def->clip_size > 0 ) {
+						player->weapons[ player->weapon ].ammo--;
+						if( player->weapons[ player->weapon ].ammo == 0 ) {
+							gs->api.PredictedEvent( player->POVnum, EV_NOAMMOCLICK, 0 );
+							player->weapon_time = def->reload_time;
+							player->weaponState = WEAPON_STATE_RELOADING;
+						}
+					}
 				}
 			}
-		}
-	}
-
-	if( player->weaponState == WEAPON_STATE_FIRING ) {
-		player->weapon_time += def->reload_time;
-		player->weaponState = WEAPON_STATE_REFIRE;
-
-		if( refire && def->smooth_refire ) {
-			gs->api.PredictedEvent( player->POVnum, EV_SMOOTHREFIREWEAPON, player->weapon );
-		} else {
-			gs->api.PredictedEvent( player->POVnum, EV_FIREWEAPON, player->weapon );
-		}
-
-		if( def->clip_size > 0 ) {
-			player->weapons[ player->weapon ].ammo--;
-			if( player->weapons[ player->weapon ].ammo == 0 ) {
-				gs->api.PredictedEvent( player->POVnum, EV_NOAMMOCLICK, 0 );
+			else if( buttons & BUTTON_RELOAD ) {
+				player->weapon_time = def->reload_time;
+				player->weaponState = WEAPON_STATE_RELOADING;
 			}
 		}
 	}
