@@ -19,6 +19,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include "qcommon/string.h"
 #include "game/g_local.h"
 
 /*
@@ -129,17 +130,11 @@ static void G_UpdateServerInfo( void ) {
 
 	// g_match_score
 	if( GS_MatchState( &server_gs ) >= MATCH_STATE_PLAYTIME && GS_TeamBasedGametype( &server_gs ) ) {
-		char score[MAX_INFO_STRING];
+		String< MAX_INFO_STRING > score( "{}: {} {}: {}",
+			GS_TeamName( TEAM_ALPHA ), server_gs.gameState.bomb.alpha_score,
+			GS_TeamName( TEAM_BETA ), server_gs.gameState.bomb.beta_score );
 
-		score[0] = 0;
-		Q_strncatz( score, va( " %s: %i", GS_TeamName( TEAM_ALPHA ), teamlist[TEAM_ALPHA].score ), sizeof( score ) );
-		Q_strncatz( score, va( " %s: %i", GS_TeamName( TEAM_BETA ), teamlist[TEAM_BETA].score ), sizeof( score ) );
-
-		if( strlen( score ) >= MAX_INFO_VALUE ) {
-			// prevent "invalid info cvar value" flooding
-			score[0] = '\0';
-		}
-		Cvar_ForceSet( "g_match_score", score );
+		Cvar_ForceSet( "g_match_score", score.c_str() );
 	} else {
 		Cvar_ForceSet( "g_match_score", "" );
 	}

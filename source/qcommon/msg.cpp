@@ -720,7 +720,7 @@ void MSG_ReadDeltaUsercmd( msg_t * msg, const usercmd_t * baseline, usercmd_t * 
 //
 // 	{ PSOFS( pmove.gravity ), 32, 1, WIRE_UBASE128 },
 //
-// 	{ PSOFS( weaponState ), 8, 1, WIRE_FIXED_INT8 },
+// 	{ PSOFS( weapon_state ), 8, 1, WIRE_FIXED_INT8 },
 //
 // 	{ PSOFS( fov ), 0, 1, WIRE_HALF_FLOAT },
 //
@@ -767,7 +767,7 @@ static void Delta( DeltaBuffer * buf, SyncPlayerState & player, const SyncPlayer
 
 	DeltaAngle( buf, player.viewangles, baseline.viewangles );
 
-	Delta( buf, player.weaponState, baseline.weaponState );
+	Delta( buf, player.weapon_state, baseline.weapon_state );
 
 	DeltaHalf( buf, player.fov, baseline.fov );
 
@@ -834,6 +834,16 @@ void MSG_ReadDeltaPlayerState( msg_t * msg, const SyncPlayerState * baseline, Sy
 // DELTA GAME STATES
 //==================================================
 
+static void Delta( DeltaBuffer * buf, SyncBombGameState & bomb, const SyncBombGameState & baseline ) {
+	Delta( buf, bomb.round_type, baseline.round_type );
+	Delta( buf, bomb.alpha_score, baseline.alpha_score );
+	Delta( buf, bomb.beta_score, baseline.beta_score );
+	Delta( buf, bomb.alpha_players_alive, baseline.alpha_players_alive );
+	Delta( buf, bomb.alpha_players_total, baseline.alpha_players_total );
+	Delta( buf, bomb.beta_players_alive, baseline.beta_players_alive );
+	Delta( buf, bomb.beta_players_total, baseline.beta_players_total );
+}
+
 static void Delta( DeltaBuffer * buf, SyncGameState & state, const SyncGameState & baseline ) {
 	Delta( buf, state.flags, baseline.flags );
 	Delta( buf, state.match_state, baseline.match_state );
@@ -841,6 +851,7 @@ static void Delta( DeltaBuffer * buf, SyncGameState & state, const SyncGameState
 	Delta( buf, state.match_duration, baseline.match_duration );
 	Delta( buf, state.clock_override, baseline.clock_override );
 	Delta( buf, state.max_team_players, baseline.max_team_players );
+	Delta( buf, state.bomb, baseline.bomb );
 }
 
 void MSG_WriteDeltaGameState( msg_t * msg, const SyncGameState * baseline, const SyncGameState * state ) {

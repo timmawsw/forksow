@@ -43,14 +43,7 @@ typedef struct {
 	int asRefCount;
 } score_stats_t;
 
-// this is only really used to create the script objects
 typedef struct {
-	bool dummy;
-} match_t;
-
-typedef struct {
-	match_t match;
-
 	void *initFunc;
 	void *spawnFunc;
 	void *matchStateStartedFunc;
@@ -85,7 +78,6 @@ typedef struct {
 typedef struct {
 	int playerIndices[MAX_CLIENTS];
 	int numplayers;
-	int score;
 	int ping;
 	bool locked;
 

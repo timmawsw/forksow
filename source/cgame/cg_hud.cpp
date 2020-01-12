@@ -131,6 +131,10 @@ static int CG_GetPOVnum( const void *parameter ) {
 	return cg.predictedPlayerState.POVnum != cgs.playerNum + 1 ? cg.predictedPlayerState.POVnum : 9999;
 }
 
+static int CG_IsTeamBased( const void *parameter ) {
+	return GS_TeamBasedGametype( &client_gs ) ? 1 : 0;
+}
+
 static float _getspeed( void ) {
 	vec3_t hvel;
 
@@ -234,6 +238,7 @@ static const reference_numeric_t cg_numeric_references[] = {
 
 	{ "TEAM", CG_Int, &cg.predictedPlayerState.team },
 
+	{ "TEAMBASED", CG_IsTeamBased, NULL },
 	{ "ALPHA_SCORE", CG_U8, &client_gs.gameState.bomb.alpha_score },
 	{ "ALPHA_PLAYERS_ALIVE", CG_U8, &client_gs.gameState.bomb.alpha_players_alive },
 	{ "ALPHA_PLAYERS_TOTAL", CG_U8, &client_gs.gameState.bomb.alpha_players_total },
@@ -1505,6 +1510,13 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 	int total_width = max( 0, num_weapons * offx - padx );
 	int total_height = max( 0, num_weapons * offy - pady );
 
+	int border = iw * 0.03f;
+	int padding = iw * 0.1f;
+	int innerw = iw - border * 2;
+	int innerh = ih - border * 2;
+	int iconw = iw - border * 2 - padding * 2;
+	int iconh = ih - border * 2 - padding * 2;
+
 	int drawn_weapons = 0;
 	for( int i = 0; i < Weapon_Count; i++ ) {
 		if( !cg.predictedPlayerState.weapons[ i ].owned )
@@ -1513,40 +1525,56 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 		int curx = CG_HorizontalAlignForWidth( x + offx * drawn_weapons, alignment, total_width );
 		int cury = CG_VerticalAlignForHeight( y + offy * drawn_weapons, alignment, total_height );
 
-		int curiw = iw;
-		int curih = ih;
-
 		if( CG_IsWeaponSelected( i ) ) {
 			cury -= ih * SEL_WEAP_X_OFFSET;
 		}
 
 		Vec4 color = Vec4( 1.0f );
-		Vec4 color_bg = Vec4( 0.5f );
 
 		int ammo = cg.predictedPlayerState.weapons[ i ].ammo;
-		int clip_size = GS_GetWeaponDef( i )->clip_size;
+		const WeaponDef * def = GS_GetWeaponDef( i );
+		float ammo_frac = 1.0f;
 
-		if( clip_size != 0 ) {
-			color = Vec4( 0.0f, 1.0f, 0.0f, 1.0f );
-			color_bg = Vec4( 0.0f, 0.5f, 0.0f, 1.0f );
-
-			float ammo_frac = float( ammo ) / float( clip_size );
-			if( ammo_frac <= 0.67f ) {
-				color = Vec4( 1.0f, 0.5f, 0.0f, 1.0f );
-				color_bg = Vec4( 0.5f, 0.25f, 0.0f, 1.0f );
+		if( def->clip_size != 0 ) {
+			if( i == cg.predictedPlayerState.weapon && cg.predictedPlayerState.weapon_state == WEAPON_STATE_RELOADING ) {
+				ammo_frac = 1.0f - float( cg.predictedPlayerState.weapon_time ) / float( def->reload_time );
 			}
-			if( ammo_frac <= 0.34f ) {
-				color = Vec4( 1.0f, 0.0f, 0.0f, 1.0f );
-				color_bg = Vec4( 0.5f, 0.0f, 0.0f, 1.0f );
+			else {
+				color = Vec4( 0.0f, 1.0f, 0.0f, 1.0f );
+				ammo_frac = float( ammo ) / float( def->clip_size );
 			}
 		}
 
-		Draw2DBox( curx, cury, curiw, curih, cgs.white_material, color );
-		Draw2DBox( curx + roundf( curiw * 0.03f ), cury + roundf( curih * 0.03f ), roundf( curiw * 0.95f ), roundf( curih * 0.95f ), cgs.white_material, color_bg );
-		Draw2DBox( curx + roundf( curiw * 0.16f ), cury + roundf( curih * 0.16f ), roundf( curiw * 0.69f ), roundf( curiw * 0.69f ), CG_GetWeaponIcon( i ), color );
+		if( ammo_frac < 0.5f ) {
+			color = Lerp( vec4_red, Unlerp( 0.0f, ammo_frac, 0.5f ), vec4_yellow );
+		}
+		else {
+			color = Lerp( vec4_yellow, Unlerp( 0.5f, ammo_frac, 1.0f ), vec4_green );
+		}
 
-		if( clip_size != 0 ) {
-			DrawText( GetHUDFont(), font_size + (curiw - iw)/4, va( "%i", ammo ), Alignment_LeftBottom, curx + curiw*0.15f, cury + curih*0.85f, layout_cursor_color, layout_cursor_font_border );
+		Vec4 color_bg = Vec4( color.xyz() / 2.0f, 1.0f );
+
+		const Material * icon = cgs.media.shaderWeaponIcon[ i ];
+
+		if( ammo_frac < 1.0f ) {
+			Draw2DBox( curx, cury, iw, ih, cgs.white_material, Vec4( 0.5f, 0.5f, 0.5f, 1.0f ) );
+			Draw2DBox( curx + border, cury + border, innerw, innerh, cgs.white_material, Vec4( 0.2f, 0.2f, 0.2f, 1.0f ) );
+			Draw2DBox( curx + border + padding, cury + border + padding, iconw, iconh, icon, Vec4( 0.5f, 0.5f, 0.5f, 1.0f ) );
+		}
+
+		Vec2 half_pixel = 0.5f / Vec2( icon->texture->width, icon->texture->height );
+
+		Draw2DBox( curx, cury + ih * ( 1.0f - ammo_frac ), iw, ih * ammo_frac, cgs.white_material, color );
+		Draw2DBox( curx + border, cury + ih * ( 1.0f - ammo_frac ) + border, innerw, ih * ammo_frac - border * 2, cgs.white_material, color_bg );
+
+		float asdf = Max2( ih * ( 1.0f - ammo_frac ), float( padding ) ) - padding;
+		Draw2DBoxUV( curx + border + padding, cury + border + padding + asdf,
+			iconw, iconh - asdf,
+			Vec2( half_pixel.x, Lerp( half_pixel.y, asdf / iconh, 1.0f - half_pixel.y ) ), 1.0f - half_pixel,
+			CG_GetWeaponIcon( i ), color );
+
+		if( def->clip_size != 0 ) {
+			DrawText( GetHUDFont(), font_size, va( "%i", ammo ), Alignment_LeftBottom, curx + iw*0.15f, cury + ih*0.85f, layout_cursor_color, layout_cursor_font_border );
 		}
 
 		drawn_weapons++;

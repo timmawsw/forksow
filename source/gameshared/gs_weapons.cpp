@@ -128,7 +128,7 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int b
 	}
 
 	if( player->pmove.pm_type != PM_NORMAL ) {
-		player->weaponState = WEAPON_STATE_READY;
+		player->weapon_state = WEAPON_STATE_READY;
 		player->pending_weapon = Weapon_Count;
 		player->weapon = Weapon_Count;
 		player->weapon_time = 0;
@@ -148,30 +148,20 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int b
 	const WeaponDef * def = GS_GetWeaponDef( player->weapon );
 
 	// during cool-down time it can shoot again or go into reload time
-	if( player->weaponState == WEAPON_STATE_REFIRE ) {
+	if( player->weapon_state == WEAPON_STATE_REFIRE ) {
 		if( player->weapon_time > 0 ) {
 			return player->weapon;
 		}
 
 		refire = true;
 
-		player->weaponState = WEAPON_STATE_READY;
-	}
-
-	if( player->weaponState == WEAPON_STATE_RELOADING ) {
-		if( player->weapon_time > 0 ) {
-			return player->weapon;
-		}
-
-		player->weapons[ player->weapon ].ammo = def->clip_size;
-		player->weaponState = WEAPON_STATE_READY;
-		gs->api.PredictedEvent( player->POVnum, EV_WEAPONACTIVATE, player->weapon << 1 );
+		player->weapon_state = WEAPON_STATE_READY;
 	}
 
 	// there is a weapon to be changed
 	if( player->weapon != player->pending_weapon ) {
-		if( player->weaponState == WEAPON_STATE_READY || player->weaponState == WEAPON_STATE_ACTIVATING ) {
-			player->weaponState = WEAPON_STATE_DROPPING;
+		if( player->weapon_state == WEAPON_STATE_READY || player->weapon_state == WEAPON_STATE_ACTIVATING || player->weapon_state == WEAPON_STATE_RELOADING ) {
+			player->weapon_state = WEAPON_STATE_DROPPING;
 			player->weapon_time = def->weapondown_time;
 
 			if( def->weapondown_time ) {
@@ -180,8 +170,25 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int b
 		}
 	}
 
+	if( player->weapon_state == WEAPON_STATE_RELOADING ) {
+		if( player->weapon_time > 0 ) {
+			if( ( buttons & BUTTON_ATTACK ) != 0 && GS_CheckAmmoInWeapon( player, player->weapon ) ) {
+				player->weapon_time = 0;
+				player->weapon_state = WEAPON_STATE_READY;
+			}
+			else {
+				return player->weapon;
+			}
+		}
+		else {
+			player->weapons[ player->weapon ].ammo = def->clip_size;
+			player->weapon_state = WEAPON_STATE_READY;
+			gs->api.PredictedEvent( player->POVnum, EV_WEAPONACTIVATE, player->weapon << 1 );
+		}
+	}
+
 	// do the change
-	if( player->weaponState == WEAPON_STATE_DROPPING ) {
+	if( player->weapon_state == WEAPON_STATE_DROPPING ) {
 		if( player->weapon_time > 0 ) {
 			return player->weapon;
 		}
@@ -191,7 +198,7 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int b
 
 		// update the firedef
 		def = GS_GetWeaponDef( player->weapon );
-		player->weaponState = WEAPON_STATE_ACTIVATING;
+		player->weapon_state = WEAPON_STATE_ACTIVATING;
 		player->weapon_time = def->weaponup_time;
 
 		int parm = player->weapon << 1;
@@ -201,15 +208,15 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int b
 		gs->api.PredictedEvent( player->POVnum, EV_WEAPONACTIVATE, parm );
 	}
 
-	if( player->weaponState == WEAPON_STATE_ACTIVATING ) {
+	if( player->weapon_state == WEAPON_STATE_ACTIVATING ) {
 		if( player->weapon_time > 0 ) {
 			return player->weapon;
 		}
 
-		player->weaponState = WEAPON_STATE_READY;
+		player->weapon_state = WEAPON_STATE_READY;
 	}
 
-	if( player->weaponState == WEAPON_STATE_READY ) {
+	if( player->weapon_state == WEAPON_STATE_READY ) {
 		if( player->weapon_time > 0 ) {
 			return player->weapon;
 		}
@@ -218,7 +225,7 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int b
 			if( buttons & BUTTON_ATTACK ) {
 				if( GS_CheckAmmoInWeapon( player, player->weapon ) ) {
 					player->weapon_time = def->refire_time;
-					player->weaponState = WEAPON_STATE_REFIRE;
+					player->weapon_state = WEAPON_STATE_REFIRE;
 
 					if( refire && def->smooth_refire ) {
 						gs->api.PredictedEvent( player->POVnum, EV_SMOOTHREFIREWEAPON, player->weapon );
@@ -231,14 +238,14 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int b
 						if( player->weapons[ player->weapon ].ammo == 0 ) {
 							gs->api.PredictedEvent( player->POVnum, EV_NOAMMOCLICK, 0 );
 							player->weapon_time = def->reload_time;
-							player->weaponState = WEAPON_STATE_RELOADING;
+							player->weapon_state = WEAPON_STATE_RELOADING;
 						}
 					}
 				}
 			}
 			else if( buttons & BUTTON_RELOAD ) {
 				player->weapon_time = def->reload_time;
-				player->weaponState = WEAPON_STATE_RELOADING;
+				player->weapon_state = WEAPON_STATE_RELOADING;
 			}
 		}
 	}

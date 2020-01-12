@@ -432,56 +432,56 @@ static asIObjectType *asEntityArrayType() {
 
 // CLASS: Match
 
-static void objectMatch_launchState( int state, match_t *self ) {
+static void objectMatch_launchState( int state, SyncGameState *self ) {
 	if( state >= MATCH_STATE_NONE && state < MATCH_STATE_TOTAL ) {
 		G_Match_LaunchState( state );
 	}
 }
 
-static void objectMatch_startAutorecord( match_t *self ) {
+static void objectMatch_startAutorecord( SyncGameState *self ) {
 	G_Match_Autorecord_Start();
 }
 
-static void objectMatch_stopAutorecord( match_t *self ) {
+static void objectMatch_stopAutorecord( SyncGameState *self ) {
 	G_Match_Autorecord_Stop();
 }
 
-static bool objectMatch_scoreLimitHit( match_t *self ) {
+static bool objectMatch_scoreLimitHit( SyncGameState *self ) {
 	return G_Match_ScorelimitHit();
 }
 
-static bool objectMatch_timeLimitHit( match_t *self ) {
+static bool objectMatch_timeLimitHit( SyncGameState *self ) {
 	return G_Match_TimelimitHit();
 }
 
-static bool objectMatch_isPaused( match_t *self ) {
+static bool objectMatch_isPaused( SyncGameState *self ) {
 	return GS_MatchPaused( &server_gs );
 }
 
-static int64_t objectMatch_startTime( match_t *self ) {
+static int64_t objectMatch_startTime( SyncGameState *self ) {
 	return GS_MatchStartTime( &server_gs );
 }
 
-static int64_t objectMatch_endTime( match_t *self ) {
+static int64_t objectMatch_endTime( SyncGameState *self ) {
 	return GS_MatchEndTime( &server_gs );
 }
 
-static int objectMatch_getState( match_t *self ) {
+static int objectMatch_getState( SyncGameState *self ) {
 	return GS_MatchState( &server_gs );
 }
 
-static asstring_t *objectMatch_getScore( match_t *self ) {
+static asstring_t *objectMatch_getScore( SyncGameState *self ) {
 	const char *s = trap_GetConfigString( CS_MATCHSCORE );
 
 	return game.asExport->asStringFactoryBuffer( s, strlen( s ) );
 }
 
-static void objectMatch_setScore( asstring_t *name, match_t *self ) {
+static void objectMatch_setScore( asstring_t *name, SyncGameState *self ) {
 	trap_ConfigString( CS_MATCHSCORE, name->buffer );
 }
 
-static void objectMatch_setClockOverride( int64_t time, match_t *self ) {
-	server_gs.gameState.clock_override = time;
+static void objectMatch_setClockOverride( int64_t time, SyncGameState *self ) {
+	self->clock_override = time;
 }
 
 static const asFuncdef_t match_Funcdefs[] =
@@ -514,6 +514,12 @@ static const asMethod_t match_Methods[] =
 
 static const asProperty_t match_Properties[] =
 {
+	{ ASLIB_PROPERTY_DECL( uint8, alphaScore ), offsetof( SyncGameState, bomb.alpha_score ) },
+	{ ASLIB_PROPERTY_DECL( uint8, alphaPlayersTotal ), offsetof( SyncGameState, bomb.alpha_players_total ) },
+	{ ASLIB_PROPERTY_DECL( uint8, alphaPlayersAlive ), offsetof( SyncGameState, bomb.alpha_players_alive ) },
+	{ ASLIB_PROPERTY_DECL( uint8, betaScore ), offsetof( SyncGameState, bomb.beta_score ) },
+	{ ASLIB_PROPERTY_DECL( uint8, betaPlayersTotal ), offsetof( SyncGameState, bomb.beta_players_total ) },
+	{ ASLIB_PROPERTY_DECL( uint8, betaPlayersAlive ), offsetof( SyncGameState, bomb.beta_players_alive ) },
 	ASLIB_PROPERTY_NULL
 };
 
@@ -521,7 +527,7 @@ static const asClassDescriptor_t asMatchClassDescriptor =
 {
 	"Match",                    /* name */
 	static_cast<asEObjTypeFlags>( asOBJ_REF | asOBJ_NOHANDLE ), /* object type flags */
-	sizeof( match_t ),          /* size */
+	sizeof( SyncGameState ),          /* size */
 	match_Funcdefs,             /* funcdefs */
 	match_ObjectBehaviors,      /* object behaviors */
 	match_Methods,              /* methods */
@@ -562,20 +568,20 @@ static const asMethod_t gametypedescr_Methods[] =
 
 static const asProperty_t gametypedescr_Properties[] =
 {
-	{ ASLIB_PROPERTY_DECL( bool, isTeamBased ), ASLIB_FOFFSET( gametype_descriptor_t, isTeamBased ) },
-	{ ASLIB_PROPERTY_DECL( bool, isRace ), ASLIB_FOFFSET( gametype_descriptor_t, isRace ) },
-	{ ASLIB_PROPERTY_DECL( bool, hasChallengersQueue ), ASLIB_FOFFSET( gametype_descriptor_t, hasChallengersQueue ) },
-	{ ASLIB_PROPERTY_DECL( bool, hasChallengersRoulette ), ASLIB_FOFFSET( gametype_descriptor_t, hasChallengersRoulette ) },
-	{ ASLIB_PROPERTY_DECL( int, maxPlayersPerTeam ), ASLIB_FOFFSET( gametype_descriptor_t, maxPlayersPerTeam ) },
-	{ ASLIB_PROPERTY_DECL( bool, readyAnnouncementEnabled ), ASLIB_FOFFSET( gametype_descriptor_t, readyAnnouncementEnabled ) },
-	{ ASLIB_PROPERTY_DECL( bool, scoreAnnouncementEnabled ), ASLIB_FOFFSET( gametype_descriptor_t, scoreAnnouncementEnabled ) },
-	{ ASLIB_PROPERTY_DECL( bool, countdownEnabled ), ASLIB_FOFFSET( gametype_descriptor_t, countdownEnabled ) },
-	{ ASLIB_PROPERTY_DECL( bool, matchAbortDisabled ), ASLIB_FOFFSET( gametype_descriptor_t, matchAbortDisabled ) },
-	{ ASLIB_PROPERTY_DECL( bool, shootingDisabled ), ASLIB_FOFFSET( gametype_descriptor_t, shootingDisabled ) },
-	{ ASLIB_PROPERTY_DECL( int, spawnpointRadius ), ASLIB_FOFFSET( gametype_descriptor_t, spawnpointRadius ) },
-	{ ASLIB_PROPERTY_DECL( bool, customDeadBodyCam ), ASLIB_FOFFSET( gametype_descriptor_t, customDeadBodyCam ) },
-	{ ASLIB_PROPERTY_DECL( bool, removeInactivePlayers ), ASLIB_FOFFSET( gametype_descriptor_t, removeInactivePlayers ) },
-	{ ASLIB_PROPERTY_DECL( bool, selfDamage ), ASLIB_FOFFSET( gametype_descriptor_t, selfDamage ) },
+	{ ASLIB_PROPERTY_DECL( bool, isTeamBased ), offsetof( gametype_descriptor_t, isTeamBased ) },
+	{ ASLIB_PROPERTY_DECL( bool, isRace ), offsetof( gametype_descriptor_t, isRace ) },
+	{ ASLIB_PROPERTY_DECL( bool, hasChallengersQueue ), offsetof( gametype_descriptor_t, hasChallengersQueue ) },
+	{ ASLIB_PROPERTY_DECL( bool, hasChallengersRoulette ), offsetof( gametype_descriptor_t, hasChallengersRoulette ) },
+	{ ASLIB_PROPERTY_DECL( int, maxPlayersPerTeam ), offsetof( gametype_descriptor_t, maxPlayersPerTeam ) },
+	{ ASLIB_PROPERTY_DECL( bool, readyAnnouncementEnabled ), offsetof( gametype_descriptor_t, readyAnnouncementEnabled ) },
+	{ ASLIB_PROPERTY_DECL( bool, scoreAnnouncementEnabled ), offsetof( gametype_descriptor_t, scoreAnnouncementEnabled ) },
+	{ ASLIB_PROPERTY_DECL( bool, countdownEnabled ), offsetof( gametype_descriptor_t, countdownEnabled ) },
+	{ ASLIB_PROPERTY_DECL( bool, matchAbortDisabled ), offsetof( gametype_descriptor_t, matchAbortDisabled ) },
+	{ ASLIB_PROPERTY_DECL( bool, shootingDisabled ), offsetof( gametype_descriptor_t, shootingDisabled ) },
+	{ ASLIB_PROPERTY_DECL( int, spawnpointRadius ), offsetof( gametype_descriptor_t, spawnpointRadius ) },
+	{ ASLIB_PROPERTY_DECL( bool, customDeadBodyCam ), offsetof( gametype_descriptor_t, customDeadBodyCam ) },
+	{ ASLIB_PROPERTY_DECL( bool, removeInactivePlayers ), offsetof( gametype_descriptor_t, removeInactivePlayers ) },
+	{ ASLIB_PROPERTY_DECL( bool, selfDamage ), offsetof( gametype_descriptor_t, selfDamage ) },
 
 	ASLIB_PROPERTY_NULL
 };
@@ -649,9 +655,8 @@ static const asMethod_t teamlist_Methods[] =
 
 static const asProperty_t teamlist_Properties[] =
 {
-	{ ASLIB_PROPERTY_DECL( int, score ), ASLIB_FOFFSET( g_teamlist_t, score ) },
-	{ ASLIB_PROPERTY_DECL( const int, numPlayers ), ASLIB_FOFFSET( g_teamlist_t, numplayers ) },
-	{ ASLIB_PROPERTY_DECL( const int, ping ), ASLIB_FOFFSET( g_teamlist_t, ping ) },
+	{ ASLIB_PROPERTY_DECL( const int, numPlayers ), offsetof( g_teamlist_t, numplayers ) },
+	{ ASLIB_PROPERTY_DECL( const int, ping ), offsetof( g_teamlist_t, ping ) },
 
 	ASLIB_PROPERTY_NULL
 };
@@ -705,12 +710,12 @@ static const asMethod_t scorestats_Methods[] =
 
 static const asProperty_t scorestats_Properties[] =
 {
-	{ ASLIB_PROPERTY_DECL( const int, score ), ASLIB_FOFFSET( score_stats_t, score ) },
-	{ ASLIB_PROPERTY_DECL( const int, deaths ), ASLIB_FOFFSET( score_stats_t, deaths ) },
-	{ ASLIB_PROPERTY_DECL( const int, frags ), ASLIB_FOFFSET( score_stats_t, frags ) },
-	{ ASLIB_PROPERTY_DECL( const int, suicides ), ASLIB_FOFFSET( score_stats_t, suicides ) },
-	{ ASLIB_PROPERTY_DECL( const int, totalDamageGiven ), ASLIB_FOFFSET( score_stats_t, total_damage_given ) },
-	{ ASLIB_PROPERTY_DECL( const int, totalDamageReceived ), ASLIB_FOFFSET( score_stats_t, total_damage_received ) },
+	{ ASLIB_PROPERTY_DECL( const int, score ), offsetof( score_stats_t, score ) },
+	{ ASLIB_PROPERTY_DECL( const int, deaths ), offsetof( score_stats_t, deaths ) },
+	{ ASLIB_PROPERTY_DECL( const int, frags ), offsetof( score_stats_t, frags ) },
+	{ ASLIB_PROPERTY_DECL( const int, suicides ), offsetof( score_stats_t, suicides ) },
+	{ ASLIB_PROPERTY_DECL( const int, totalDamageGiven ), offsetof( score_stats_t, total_damage_given ) },
+	{ ASLIB_PROPERTY_DECL( const int, totalDamageReceived ), offsetof( score_stats_t, total_damage_received ) },
 
 	ASLIB_PROPERTY_NULL
 };
@@ -821,7 +826,7 @@ static void objectGameClient_InventoryClear( gclient_t *self ) {
 
 	self->ps.weapon = Weapon_Count;
 	self->ps.pending_weapon = Weapon_Count;
-	self->ps.weaponState = WEAPON_STATE_READY;
+	self->ps.weapon_state = WEAPON_STATE_READY;
 }
 
 static void objectGameClient_SelectWeapon( int index, gclient_t *self ) {
@@ -1014,28 +1019,28 @@ static const asMethod_t gameclient_Methods[] =
 
 static const asProperty_t gameclient_Properties[] =
 {
-	{ ASLIB_PROPERTY_DECL( Stats, stats ), ASLIB_FOFFSET( gclient_t, level.stats ) },
-	{ ASLIB_PROPERTY_DECL( const bool, connecting ), ASLIB_FOFFSET( gclient_t, connecting ) },
-	{ ASLIB_PROPERTY_DECL( const bool, multiview ), ASLIB_FOFFSET( gclient_t, multiview ) },
-	{ ASLIB_PROPERTY_DECL( int, team ), ASLIB_FOFFSET( gclient_t, team ) },
-	{ ASLIB_PROPERTY_DECL( const int, hand ), ASLIB_FOFFSET( gclient_t, hand ) },
-	{ ASLIB_PROPERTY_DECL( const bool, isOperator ), ASLIB_FOFFSET( gclient_t, isoperator ) },
-	{ ASLIB_PROPERTY_DECL( const int64, queueTimeStamp ), ASLIB_FOFFSET( gclient_t, queueTimeStamp ) },
-	{ ASLIB_PROPERTY_DECL( const int, muted ), ASLIB_FOFFSET( gclient_t, muted ) },
-	{ ASLIB_PROPERTY_DECL( const bool, chaseActive ), ASLIB_FOFFSET( gclient_t, resp.chase.active ) },
-	{ ASLIB_PROPERTY_DECL( int, chaseTarget ), ASLIB_FOFFSET( gclient_t, resp.chase.target ) },
-	{ ASLIB_PROPERTY_DECL( bool, chaseTeamonly ), ASLIB_FOFFSET( gclient_t, resp.chase.teamonly ) },
-	{ ASLIB_PROPERTY_DECL( int, chaseFollowMode ), ASLIB_FOFFSET( gclient_t, resp.chase.followmode ) },
-	{ ASLIB_PROPERTY_DECL( const int, ping ), ASLIB_FOFFSET( gclient_t, r.ping ) },
-	{ ASLIB_PROPERTY_DECL( const WeaponType, weapon ), ASLIB_FOFFSET( gclient_t, ps.weapon ) },
-	{ ASLIB_PROPERTY_DECL( const WeaponType, pendingWeapon ), ASLIB_FOFFSET( gclient_t, ps.pending_weapon ) },
-	{ ASLIB_PROPERTY_DECL( bool, canChangeLoadout ), ASLIB_FOFFSET( gclient_t, ps.can_change_loadout ) },
-	{ ASLIB_PROPERTY_DECL( bool, carryingBomb ), ASLIB_FOFFSET( gclient_t, ps.carrying_bomb ) },
-	{ ASLIB_PROPERTY_DECL( bool, canPlant ), ASLIB_FOFFSET( gclient_t, ps.can_plant ) },
-	{ ASLIB_PROPERTY_DECL( int64, lastActivity ), ASLIB_FOFFSET( gclient_t, level.last_activity ) },
-	{ ASLIB_PROPERTY_DECL( BombProgress, progressType ), ASLIB_FOFFSET( gclient_t, ps.progress_type ) },
-	{ ASLIB_PROPERTY_DECL( int16, progress ), ASLIB_FOFFSET( gclient_t, ps.progress ) },
-	{ ASLIB_PROPERTY_DECL( const int64, uCmdTimeStamp ), ASLIB_FOFFSET( gclient_t, ucmd.serverTimeStamp ) },
+	{ ASLIB_PROPERTY_DECL( Stats, stats ), offsetof( gclient_t, level.stats ) },
+	{ ASLIB_PROPERTY_DECL( const bool, connecting ), offsetof( gclient_t, connecting ) },
+	{ ASLIB_PROPERTY_DECL( const bool, multiview ), offsetof( gclient_t, multiview ) },
+	{ ASLIB_PROPERTY_DECL( int, team ), offsetof( gclient_t, team ) },
+	{ ASLIB_PROPERTY_DECL( const int, hand ), offsetof( gclient_t, hand ) },
+	{ ASLIB_PROPERTY_DECL( const bool, isOperator ), offsetof( gclient_t, isoperator ) },
+	{ ASLIB_PROPERTY_DECL( const int64, queueTimeStamp ), offsetof( gclient_t, queueTimeStamp ) },
+	{ ASLIB_PROPERTY_DECL( const int, muted ), offsetof( gclient_t, muted ) },
+	{ ASLIB_PROPERTY_DECL( const bool, chaseActive ), offsetof( gclient_t, resp.chase.active ) },
+	{ ASLIB_PROPERTY_DECL( int, chaseTarget ), offsetof( gclient_t, resp.chase.target ) },
+	{ ASLIB_PROPERTY_DECL( bool, chaseTeamonly ), offsetof( gclient_t, resp.chase.teamonly ) },
+	{ ASLIB_PROPERTY_DECL( int, chaseFollowMode ), offsetof( gclient_t, resp.chase.followmode ) },
+	{ ASLIB_PROPERTY_DECL( const int, ping ), offsetof( gclient_t, r.ping ) },
+	{ ASLIB_PROPERTY_DECL( const WeaponType, weapon ), offsetof( gclient_t, ps.weapon ) },
+	{ ASLIB_PROPERTY_DECL( const WeaponType, pendingWeapon ), offsetof( gclient_t, ps.pending_weapon ) },
+	{ ASLIB_PROPERTY_DECL( bool, canChangeLoadout ), offsetof( gclient_t, ps.can_change_loadout ) },
+	{ ASLIB_PROPERTY_DECL( bool, carryingBomb ), offsetof( gclient_t, ps.carrying_bomb ) },
+	{ ASLIB_PROPERTY_DECL( bool, canPlant ), offsetof( gclient_t, ps.can_plant ) },
+	{ ASLIB_PROPERTY_DECL( int64, lastActivity ), offsetof( gclient_t, level.last_activity ) },
+	{ ASLIB_PROPERTY_DECL( BombProgress, progressType ), offsetof( gclient_t, ps.progress_type ) },
+	{ ASLIB_PROPERTY_DECL( int16, progress ), offsetof( gclient_t, ps.progress ) },
+	{ ASLIB_PROPERTY_DECL( const int64, uCmdTimeStamp ), offsetof( gclient_t, ucmd.serverTimeStamp ) },
 
 	ASLIB_PROPERTY_NULL
 };
@@ -1374,58 +1379,58 @@ static const asMethod_t gedict_Methods[] =
 
 static const asProperty_t gedict_Properties[] =
 {
-	{ ASLIB_PROPERTY_DECL( Client @, client ), ASLIB_FOFFSET( edict_t, r.client ) },
-	{ ASLIB_PROPERTY_DECL( Entity @, groundEntity ), ASLIB_FOFFSET( edict_t, groundentity ) },
-	{ ASLIB_PROPERTY_DECL( Entity @, owner ), ASLIB_FOFFSET( edict_t, r.owner ) },
-	{ ASLIB_PROPERTY_DECL( Entity @, enemy ), ASLIB_FOFFSET( edict_t, enemy ) },
-	{ ASLIB_PROPERTY_DECL( Entity @, activator ), ASLIB_FOFFSET( edict_t, activator ) },
-	{ ASLIB_PROPERTY_DECL( int, type ), ASLIB_FOFFSET( edict_t, s.type ) },
-	{ ASLIB_PROPERTY_DECL( int, modelindex ), ASLIB_FOFFSET( edict_t, s.modelindex ) },
-	{ ASLIB_PROPERTY_DECL( int, modelindex2 ), ASLIB_FOFFSET( edict_t, s.modelindex2 ) },
-	{ ASLIB_PROPERTY_DECL( int, radius ), ASLIB_FOFFSET( edict_t, s.radius ) },
-	{ ASLIB_PROPERTY_DECL( int, ownerNum ), ASLIB_FOFFSET( edict_t, s.ownerNum ) },
-	{ ASLIB_PROPERTY_DECL( int, counterNum ), ASLIB_FOFFSET( edict_t, s.counterNum ) },
-	{ ASLIB_PROPERTY_DECL( int, colorRGBA ), ASLIB_FOFFSET( edict_t, s.colorRGBA ) },
-	{ ASLIB_PROPERTY_DECL( uint, silhouetteColor ), ASLIB_FOFFSET( edict_t, s.silhouetteColor ) },
-	{ ASLIB_PROPERTY_DECL( int, weapon ), ASLIB_FOFFSET( edict_t, s.weapon ) },
-	{ ASLIB_PROPERTY_DECL( bool, teleported ), ASLIB_FOFFSET( edict_t, s.teleported ) },
-	{ ASLIB_PROPERTY_DECL( uint, effects ), ASLIB_FOFFSET( edict_t, s.effects ) },
-	{ ASLIB_PROPERTY_DECL( int, sound ), ASLIB_FOFFSET( edict_t, s.sound ) },
-	{ ASLIB_PROPERTY_DECL( int, team ), ASLIB_FOFFSET( edict_t, s.team ) },
-	{ ASLIB_PROPERTY_DECL( int, light ), ASLIB_FOFFSET( edict_t, s.light ) },
-	{ ASLIB_PROPERTY_DECL( const bool, inuse ), ASLIB_FOFFSET( edict_t, r.inuse ) },
-	{ ASLIB_PROPERTY_DECL( uint, svflags ), ASLIB_FOFFSET( edict_t, r.svflags ) },
-	{ ASLIB_PROPERTY_DECL( int, solid ), ASLIB_FOFFSET( edict_t, r.solid ) },
-	{ ASLIB_PROPERTY_DECL( int, clipMask ), ASLIB_FOFFSET( edict_t, r.clipmask ) },
-	{ ASLIB_PROPERTY_DECL( int, spawnFlags ), ASLIB_FOFFSET( edict_t, spawnflags ) },
-	{ ASLIB_PROPERTY_DECL( int, style ), ASLIB_FOFFSET( edict_t, style ) },
-	{ ASLIB_PROPERTY_DECL( int, moveType ), ASLIB_FOFFSET( edict_t, movetype ) },
-	{ ASLIB_PROPERTY_DECL( int64, nextThink ), ASLIB_FOFFSET( edict_t, nextThink ) },
-	{ ASLIB_PROPERTY_DECL( float, health ), ASLIB_FOFFSET( edict_t, health ) },
-	{ ASLIB_PROPERTY_DECL( int, maxHealth ), ASLIB_FOFFSET( edict_t, max_health ) },
-	{ ASLIB_PROPERTY_DECL( int, viewHeight ), ASLIB_FOFFSET( edict_t, viewheight ) },
-	{ ASLIB_PROPERTY_DECL( int, takeDamage ), ASLIB_FOFFSET( edict_t, takedamage ) },
-	{ ASLIB_PROPERTY_DECL( int, damage ), ASLIB_FOFFSET( edict_t, dmg ) },
-	{ ASLIB_PROPERTY_DECL( int, projectileMaxDamage ), ASLIB_FOFFSET( edict_t, projectileInfo.maxDamage ) },
-	{ ASLIB_PROPERTY_DECL( int, projectileMinDamage ), ASLIB_FOFFSET( edict_t, projectileInfo.minDamage ) },
-	{ ASLIB_PROPERTY_DECL( int, projectileMaxKnockback ), ASLIB_FOFFSET( edict_t, projectileInfo.maxKnockback ) },
-	{ ASLIB_PROPERTY_DECL( int, projectileMinKnockback ), ASLIB_FOFFSET( edict_t, projectileInfo.minKnockback ) },
-	{ ASLIB_PROPERTY_DECL( float, projectileSplashRadius ), ASLIB_FOFFSET( edict_t, projectileInfo.radius ) },
-	{ ASLIB_PROPERTY_DECL( int, count ), ASLIB_FOFFSET( edict_t, count ) },
-	{ ASLIB_PROPERTY_DECL( float, wait ), ASLIB_FOFFSET( edict_t, wait ) },
-	{ ASLIB_PROPERTY_DECL( float, delay ), ASLIB_FOFFSET( edict_t, delay ) },
-	{ ASLIB_PROPERTY_DECL( float, random ), ASLIB_FOFFSET( edict_t, random ) },
-	{ ASLIB_PROPERTY_DECL( int, waterLevel ), ASLIB_FOFFSET( edict_t, waterlevel ) },
-	{ ASLIB_PROPERTY_DECL( float, attenuation ), ASLIB_FOFFSET( edict_t, attenuation ) },
-	{ ASLIB_PROPERTY_DECL( int, mass ), ASLIB_FOFFSET( edict_t, mass ) },
-	{ ASLIB_PROPERTY_DECL( int64, timeStamp ), ASLIB_FOFFSET( edict_t, timeStamp ) },
+	{ ASLIB_PROPERTY_DECL( Client @, client ), offsetof( edict_t, r.client ) },
+	{ ASLIB_PROPERTY_DECL( Entity @, groundEntity ), offsetof( edict_t, groundentity ) },
+	{ ASLIB_PROPERTY_DECL( Entity @, owner ), offsetof( edict_t, r.owner ) },
+	{ ASLIB_PROPERTY_DECL( Entity @, enemy ), offsetof( edict_t, enemy ) },
+	{ ASLIB_PROPERTY_DECL( Entity @, activator ), offsetof( edict_t, activator ) },
+	{ ASLIB_PROPERTY_DECL( int, type ), offsetof( edict_t, s.type ) },
+	{ ASLIB_PROPERTY_DECL( int, modelindex ), offsetof( edict_t, s.modelindex ) },
+	{ ASLIB_PROPERTY_DECL( int, modelindex2 ), offsetof( edict_t, s.modelindex2 ) },
+	{ ASLIB_PROPERTY_DECL( int, radius ), offsetof( edict_t, s.radius ) },
+	{ ASLIB_PROPERTY_DECL( int, ownerNum ), offsetof( edict_t, s.ownerNum ) },
+	{ ASLIB_PROPERTY_DECL( int, counterNum ), offsetof( edict_t, s.counterNum ) },
+	{ ASLIB_PROPERTY_DECL( int, colorRGBA ), offsetof( edict_t, s.colorRGBA ) },
+	{ ASLIB_PROPERTY_DECL( uint, silhouetteColor ), offsetof( edict_t, s.silhouetteColor ) },
+	{ ASLIB_PROPERTY_DECL( int, weapon ), offsetof( edict_t, s.weapon ) },
+	{ ASLIB_PROPERTY_DECL( bool, teleported ), offsetof( edict_t, s.teleported ) },
+	{ ASLIB_PROPERTY_DECL( uint, effects ), offsetof( edict_t, s.effects ) },
+	{ ASLIB_PROPERTY_DECL( int, sound ), offsetof( edict_t, s.sound ) },
+	{ ASLIB_PROPERTY_DECL( int, team ), offsetof( edict_t, s.team ) },
+	{ ASLIB_PROPERTY_DECL( int, light ), offsetof( edict_t, s.light ) },
+	{ ASLIB_PROPERTY_DECL( const bool, inuse ), offsetof( edict_t, r.inuse ) },
+	{ ASLIB_PROPERTY_DECL( uint, svflags ), offsetof( edict_t, r.svflags ) },
+	{ ASLIB_PROPERTY_DECL( int, solid ), offsetof( edict_t, r.solid ) },
+	{ ASLIB_PROPERTY_DECL( int, clipMask ), offsetof( edict_t, r.clipmask ) },
+	{ ASLIB_PROPERTY_DECL( int, spawnFlags ), offsetof( edict_t, spawnflags ) },
+	{ ASLIB_PROPERTY_DECL( int, style ), offsetof( edict_t, style ) },
+	{ ASLIB_PROPERTY_DECL( int, moveType ), offsetof( edict_t, movetype ) },
+	{ ASLIB_PROPERTY_DECL( int64, nextThink ), offsetof( edict_t, nextThink ) },
+	{ ASLIB_PROPERTY_DECL( float, health ), offsetof( edict_t, health ) },
+	{ ASLIB_PROPERTY_DECL( int, maxHealth ), offsetof( edict_t, max_health ) },
+	{ ASLIB_PROPERTY_DECL( int, viewHeight ), offsetof( edict_t, viewheight ) },
+	{ ASLIB_PROPERTY_DECL( int, takeDamage ), offsetof( edict_t, takedamage ) },
+	{ ASLIB_PROPERTY_DECL( int, damage ), offsetof( edict_t, dmg ) },
+	{ ASLIB_PROPERTY_DECL( int, projectileMaxDamage ), offsetof( edict_t, projectileInfo.maxDamage ) },
+	{ ASLIB_PROPERTY_DECL( int, projectileMinDamage ), offsetof( edict_t, projectileInfo.minDamage ) },
+	{ ASLIB_PROPERTY_DECL( int, projectileMaxKnockback ), offsetof( edict_t, projectileInfo.maxKnockback ) },
+	{ ASLIB_PROPERTY_DECL( int, projectileMinKnockback ), offsetof( edict_t, projectileInfo.minKnockback ) },
+	{ ASLIB_PROPERTY_DECL( float, projectileSplashRadius ), offsetof( edict_t, projectileInfo.radius ) },
+	{ ASLIB_PROPERTY_DECL( int, count ), offsetof( edict_t, count ) },
+	{ ASLIB_PROPERTY_DECL( float, wait ), offsetof( edict_t, wait ) },
+	{ ASLIB_PROPERTY_DECL( float, delay ), offsetof( edict_t, delay ) },
+	{ ASLIB_PROPERTY_DECL( float, random ), offsetof( edict_t, random ) },
+	{ ASLIB_PROPERTY_DECL( int, waterLevel ), offsetof( edict_t, waterlevel ) },
+	{ ASLIB_PROPERTY_DECL( float, attenuation ), offsetof( edict_t, attenuation ) },
+	{ ASLIB_PROPERTY_DECL( int, mass ), offsetof( edict_t, mass ) },
+	{ ASLIB_PROPERTY_DECL( int64, timeStamp ), offsetof( edict_t, timeStamp ) },
 
-	{ ASLIB_PROPERTY_DECL( entThink @, think ), ASLIB_FOFFSET( edict_t, asThinkFunc ) },
-	{ ASLIB_PROPERTY_DECL( entTouch @, touch ), ASLIB_FOFFSET( edict_t, asTouchFunc ) },
-	{ ASLIB_PROPERTY_DECL( entUse @, use ), ASLIB_FOFFSET( edict_t, asUseFunc ) },
-	{ ASLIB_PROPERTY_DECL( entPain @, pain ), ASLIB_FOFFSET( edict_t, asPainFunc ) },
-	{ ASLIB_PROPERTY_DECL( entDie @, die ), ASLIB_FOFFSET( edict_t, asDieFunc ) },
-	{ ASLIB_PROPERTY_DECL( entStop @, stop ), ASLIB_FOFFSET( edict_t, asStopFunc ) },
+	{ ASLIB_PROPERTY_DECL( entThink @, think ), offsetof( edict_t, asThinkFunc ) },
+	{ ASLIB_PROPERTY_DECL( entTouch @, touch ), offsetof( edict_t, asTouchFunc ) },
+	{ ASLIB_PROPERTY_DECL( entUse @, use ), offsetof( edict_t, asUseFunc ) },
+	{ ASLIB_PROPERTY_DECL( entPain @, pain ), offsetof( edict_t, asPainFunc ) },
+	{ ASLIB_PROPERTY_DECL( entDie @, die ), offsetof( edict_t, asDieFunc ) },
+	{ ASLIB_PROPERTY_DECL( entStop @, stop ), offsetof( edict_t, asStopFunc ) },
 
 	ASLIB_PROPERTY_NULL
 };
@@ -1517,15 +1522,15 @@ static const asMethod_t astrace_Methods[] =
 
 static const asProperty_t astrace_Properties[] =
 {
-	{ ASLIB_PROPERTY_DECL( const bool, allSolid ), ASLIB_FOFFSET( astrace_t, trace.allsolid ) },
-	{ ASLIB_PROPERTY_DECL( const bool, startSolid ), ASLIB_FOFFSET( astrace_t, trace.startsolid ) },
-	{ ASLIB_PROPERTY_DECL( const float, fraction ), ASLIB_FOFFSET( astrace_t, trace.fraction ) },
-	{ ASLIB_PROPERTY_DECL( const int, surfFlags ), ASLIB_FOFFSET( astrace_t, trace.surfFlags ) },
-	{ ASLIB_PROPERTY_DECL( const int, contents ), ASLIB_FOFFSET( astrace_t, trace.contents ) },
-	{ ASLIB_PROPERTY_DECL( const int, entNum ), ASLIB_FOFFSET( astrace_t, trace.ent ) },
-	{ ASLIB_PROPERTY_DECL( const float, planeDist ), ASLIB_FOFFSET( astrace_t, trace.plane.dist ) },
-	{ ASLIB_PROPERTY_DECL( const int16, planeType ), ASLIB_FOFFSET( astrace_t, trace.plane.type ) },
-	{ ASLIB_PROPERTY_DECL( const int16, planeSignBits ), ASLIB_FOFFSET( astrace_t, trace.plane.signbits ) },
+	{ ASLIB_PROPERTY_DECL( const bool, allSolid ), offsetof( astrace_t, trace.allsolid ) },
+	{ ASLIB_PROPERTY_DECL( const bool, startSolid ), offsetof( astrace_t, trace.startsolid ) },
+	{ ASLIB_PROPERTY_DECL( const float, fraction ), offsetof( astrace_t, trace.fraction ) },
+	{ ASLIB_PROPERTY_DECL( const int, surfFlags ), offsetof( astrace_t, trace.surfFlags ) },
+	{ ASLIB_PROPERTY_DECL( const int, contents ), offsetof( astrace_t, trace.contents ) },
+	{ ASLIB_PROPERTY_DECL( const int, entNum ), offsetof( astrace_t, trace.ent ) },
+	{ ASLIB_PROPERTY_DECL( const float, planeDist ), offsetof( astrace_t, trace.plane.dist ) },
+	{ ASLIB_PROPERTY_DECL( const int16, planeType ), offsetof( astrace_t, trace.plane.type ) },
+	{ ASLIB_PROPERTY_DECL( const int16, planeSignBits ), offsetof( astrace_t, trace.plane.signbits ) },
 
 	ASLIB_PROPERTY_NULL
 };
@@ -1927,7 +1932,7 @@ static const asglobproperties_t asGlobProps[] =
 	{ "const int numEntities", &game.numentities },
 	{ "const int maxClients", &server_gs.maxclients },
 	{ "GametypeDesc gametype", &level.gametype },
-	{ "Match match", &level.gametype.match },
+	{ "Match match", &server_gs.gameState },
 
 	{ NULL }
 };

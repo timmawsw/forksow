@@ -268,7 +268,6 @@ struct SyncPlayerState {
 	bool items[ Item_Count ];
 
 	uint32_t plrkeys;           // infos on the pressed keys of chased player (self if not chasing)
-	uint8_t weaponState;
 
 	bool show_scoreboard;
 	bool ready;
@@ -279,6 +278,7 @@ struct SyncPlayerState {
 
 	s16 health;
 
+	uint8_t weapon_state;
 	WeaponType weapon;
 	WeaponType pending_weapon;
 	s16 weapon_time;

@@ -212,7 +212,7 @@ String @teamScoreboardMessage( int t ) {
 			+ " " + state;
 	}
 
-	return team.score + " " + team.numPlayers + players;
+	return ( t == TEAM_ALPHA ? match.alphaScore : match.betaScore ) + " " + team.numPlayers + players;
 }
 
 String @GT_ScoreboardMessage() {

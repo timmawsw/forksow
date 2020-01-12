@@ -660,7 +660,6 @@ int G_BoxSlideMove( edict_t *ent, int contentmask, float slideBounce, float fric
 void G_Init( unsigned int framemsec );
 void G_Shutdown( void );
 void G_ExitLevel( void );
-SyncGameState *G_GetGameState( void );
 void G_GamestatSetFlag( int flag, bool b );
 void G_Timeout_Reset( void );
 

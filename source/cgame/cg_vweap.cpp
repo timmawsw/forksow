@@ -91,11 +91,11 @@ static void CG_ViewWeapon_AddAngleEffects( vec3_t angles ) {
 /*
 * CG_ViewWeapon_baseanimFromWeaponState
 */
-static int CG_ViewWeapon_baseanimFromWeaponState( int weaponState ) {
-	if( weaponState == WEAPON_STATE_ACTIVATING )
+static int CG_ViewWeapon_baseanimFromWeaponState( int weapon_state ) {
+	if( weapon_state == WEAPON_STATE_ACTIVATING )
 		return WEAPANIM_WEAPONUP;
 
-	if( weaponState == WEAPON_STATE_DROPPING )
+	if( weapon_state == WEAPON_STATE_DROPPING )
 		return WEAPANIM_WEAPDOWN;
 
 	return cg_gunbob->integer ? WEAPANIM_STANDBY : WEAPANIM_NOANIM;
@@ -182,7 +182,7 @@ void CG_ViewWeapon_RefreshAnimation( cg_viewweapon_t *viewweapon ) {
 		return;
 	}
 
-	baseAnim = CG_ViewWeapon_baseanimFromWeaponState( cg.predictedPlayerState.weaponState );
+	baseAnim = CG_ViewWeapon_baseanimFromWeaponState( cg.predictedPlayerState.weapon_state );
 	const weaponinfo_t * weaponInfo = cgs.weaponInfos[ viewweapon->weapon ];
 
 	// Full restart

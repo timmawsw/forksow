@@ -366,9 +366,7 @@ void SV_WriteFrameSnapToClient( client_t *client, msg_t *msg ) {
 */
 void SV_BuildClientFrameSnap( client_t *client ) {
 	SNAP_BuildClientFrameSnap( svs.cms, &sv.gi, sv.framenum, svs.gametime,
-							  client, ge->GetGameState(),
-							   &svs.client_entities,
-							   sv_mempool );
+		client, &server_gs.gameState, &svs.client_entities, sv_mempool );
 }
 
 /*
