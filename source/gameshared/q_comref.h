@@ -111,9 +111,7 @@ typedef enum {
 #define CS_IMAGES           ( CS_SOUNDS + MAX_SOUNDS )
 #define CS_PLAYERINFOS      ( CS_IMAGES + MAX_IMAGES )
 #define CS_GAMECOMMANDS     ( CS_PLAYERINFOS + MAX_CLIENTS )
-#define CS_GENERAL          ( CS_GAMECOMMANDS + MAX_GAMECOMMANDS )
-
-#define MAX_CONFIGSTRINGS   ( CS_GENERAL + MAX_GENERAL )
+#define MAX_CONFIGSTRINGS   ( CS_GAMECOMMANDS + MAX_GAMECOMMANDS )
 
 //==============================================
 
