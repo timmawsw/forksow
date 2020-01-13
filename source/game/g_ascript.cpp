@@ -514,6 +514,7 @@ static const asMethod_t match_Methods[] =
 
 static const asProperty_t match_Properties[] =
 {
+	{ ASLIB_PROPERTY_DECL( uint8, roundType ), offsetof( SyncGameState, round_type ) },
 	{ ASLIB_PROPERTY_DECL( uint8, alphaScore ), offsetof( SyncGameState, bomb.alpha_score ) },
 	{ ASLIB_PROPERTY_DECL( uint8, alphaPlayersTotal ), offsetof( SyncGameState, bomb.alpha_players_total ) },
 	{ ASLIB_PROPERTY_DECL( uint8, alphaPlayersAlive ), offsetof( SyncGameState, bomb.alpha_players_alive ) },

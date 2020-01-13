@@ -123,7 +123,6 @@ enum {
 #define GAMESTAT_FLAG_SELFDAMAGE ( 1 << 7LL )
 
 struct SyncBombGameState {
-	RoundType round_type;
 	u8 alpha_score;
 	u8 beta_score;
 	u8 alpha_players_alive;
@@ -138,6 +137,7 @@ struct SyncGameState {
 	int64_t match_start;
 	int64_t match_duration;
 	int64_t clock_override;
+	RoundType round_type;
 	u8 max_team_players;
 
 	SyncBombGameState bomb;

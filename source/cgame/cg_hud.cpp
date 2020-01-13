@@ -249,7 +249,7 @@ static const reference_numeric_t cg_numeric_references[] = {
 	{ "PROGRESS", CG_S16, &cg.predictedPlayerState.progress },
 	{ "PROGRESS_TYPE", CG_U8, &cg.predictedPlayerState.progress_type },
 
-	{ "ROUND_TYPE", CG_U8, &client_gs.gameState.bomb.round_type },
+	{ "ROUND_TYPE", CG_U8, &client_gs.gameState.round_type },
 
 	{ "CARRYING_BOMB", CG_Bool, &cg.predictedPlayerState.carrying_bomb },
 	{ "CAN_PLANT_BOMB", CG_Bool, &cg.predictedPlayerState.can_plant },

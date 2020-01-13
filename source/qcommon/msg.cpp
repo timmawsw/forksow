@@ -835,7 +835,6 @@ void MSG_ReadDeltaPlayerState( msg_t * msg, const SyncPlayerState * baseline, Sy
 //==================================================
 
 static void Delta( DeltaBuffer * buf, SyncBombGameState & bomb, const SyncBombGameState & baseline ) {
-	Delta( buf, bomb.round_type, baseline.round_type );
 	Delta( buf, bomb.alpha_score, baseline.alpha_score );
 	Delta( buf, bomb.beta_score, baseline.beta_score );
 	Delta( buf, bomb.alpha_players_alive, baseline.alpha_players_alive );
@@ -850,6 +849,7 @@ static void Delta( DeltaBuffer * buf, SyncGameState & state, const SyncGameState
 	Delta( buf, state.match_start, baseline.match_start );
 	Delta( buf, state.match_duration, baseline.match_duration );
 	Delta( buf, state.clock_override, baseline.clock_override );
+	Delta( buf, state.round_type, baseline.round_type );
 	Delta( buf, state.max_team_players, baseline.max_team_players );
 	Delta( buf, state.bomb, baseline.bomb );
 }
