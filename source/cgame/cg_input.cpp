@@ -389,6 +389,8 @@ void CG_ShutdownInput() {
 
 	Cmd_RemoveCommand( "+attack" );
 	Cmd_RemoveCommand( "-attack" );
+	Cmd_RemoveCommand( "+reload" );
+	Cmd_RemoveCommand( "-reload" );
 	Cmd_RemoveCommand( "+zoom" );
 	Cmd_RemoveCommand( "-zoom" );
 

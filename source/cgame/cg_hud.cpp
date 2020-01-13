@@ -1763,16 +1763,9 @@ static bool CG_LFuncDrawBombIndicators( struct cg_layoutnode_s *argumentnode, in
 
 static bool CG_LFuncDrawPlayerIcons( struct cg_layoutnode_s *argumentnode, int numArguments ) {
 	int team = int( CG_GetNumericArg( &argumentnode ) );
-	int alive_index = int( CG_GetNumericArg( &argumentnode ) );
-	int total_index = int( CG_GetNumericArg( &argumentnode ) );
+	int alive = int( CG_GetNumericArg( &argumentnode ) );
+	int total = int( CG_GetNumericArg( &argumentnode ) );
 
-	if( total_index < 0 || alive_index < 0 || total_index >= MAX_CONFIGSTRINGS || alive_index >= MAX_CONFIGSTRINGS ) {
-		Com_Printf( "WARNING 'CG_LFuncDrawPlayerIcons' configstring out of range" );
-		return false;
-	}
-
-	int alive = atoi( cgs.configStrings[ alive_index ] );
-	int total = atoi( cgs.configStrings[ total_index ] );
 	Vec4 team_color = CG_TeamColorVec4( team );
 
 	const Material * icon = FindMaterial( "gfx/hud/guy" );

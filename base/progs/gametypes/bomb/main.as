@@ -363,10 +363,8 @@ void GT_ThinkRules() {
 	uint aliveAlpha = playersAliveOnTeam( TEAM_ALPHA );
 	uint aliveBeta  = playersAliveOnTeam( TEAM_BETA );
 
-	G_ConfigString( MSG_ALIVE_ALPHA, "" + aliveAlpha );
-	G_ConfigString( MSG_TOTAL_ALPHA, "" + alphaAliveAtStart );
-	G_ConfigString( MSG_ALIVE_BETA,  "" + aliveBeta );
-	G_ConfigString( MSG_TOTAL_BETA,  "" + betaAliveAtStart );
+	match.alphaPlayersAlive = aliveAlpha;
+	match.betaPlayersAlive = aliveBeta;
 
 	for( int i = 0; i < maxClients; i++ ) {
 		Client @client = @G_GetClient( i );

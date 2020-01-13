@@ -45,9 +45,6 @@ uint roundCount;
 int attackingTeam;
 int defendingTeam;
 
-uint alphaAliveAtStart;
-uint betaAliveAtStart;
-
 bool attackersHurried;
 bool defendersHurried;
 
@@ -75,7 +72,7 @@ void playerKilled( Entity @victim, Entity @attacker, Entity @inflictor ) {
 
 		player.killsThisRound++;
 
-		int required_for_bongo = attacker.team == TEAM_ALPHA ? betaAliveAtStart : alphaAliveAtStart;
+		int required_for_bongo = attacker.team == TEAM_ALPHA ? match.betaPlayersTotal : match.alphaPlayersTotal;
 		if( required_for_bongo >= 3 && player.killsThisRound == required_for_bongo ) {
 			player.client.addAward( S_COLOR_YELLOW + "King of Bongo!" );
 
@@ -364,8 +361,8 @@ void roundThink() {
 			}
 		}
 
-		alphaAliveAtStart = playersAliveOnTeam( TEAM_ALPHA );
-		betaAliveAtStart = playersAliveOnTeam( TEAM_BETA );
+		match.alphaPlayersTotal = playersAliveOnTeam( TEAM_ALPHA );
+		match.betaPlayersTotal = playersAliveOnTeam( TEAM_BETA );
 
 		last_time = roundStateEndTime - levelTime + int( cvarRoundTime.value * 1000.0f );
 		match.setClockOverride( last_time );

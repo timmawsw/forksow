@@ -213,7 +213,13 @@ int GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, int b
 			return player->weapon;
 		}
 
-		player->weapon_state = WEAPON_STATE_READY;
+		if( player->weapons[ player->weapon ].ammo == 0 ) {
+			player->weapon_time = def->reload_time;
+			player->weapon_state = WEAPON_STATE_RELOADING;
+		}
+		else {
+			player->weapon_state = WEAPON_STATE_READY;
+		}
 	}
 
 	if( player->weapon_state == WEAPON_STATE_READY ) {
