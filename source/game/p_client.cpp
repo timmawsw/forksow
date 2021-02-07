@@ -400,7 +400,6 @@ void G_ClientRespawn( edict_t *self, bool ghost ) {
 	// hold in place briefly
 	client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
 	client->ps.pmove.pm_time = 14;
-	client->ps.pmove.no_control_time = CLIENT_RESPAWN_FREEZE_DELAY;
 
 	G_UseTargets( spawnpoint, self );
 
@@ -1058,13 +1057,7 @@ void ClientThink( edict_t *ent, usercmd_t *ucmd, int timeDelta ) {
 
 	ent->s.weapon = GS_ThinkPlayerWeapon( &server_gs, &client->ps, ucmd, client->timeDelta );
 
-	if( G_IsDead( ent ) ) {
-		if( ent->deathTimeStamp + g_respawn_delay_min->integer <= level.time ) {
-			client->resp.snap.buttons |= ucmd->buttons;
-		}
-	} else if( client->ps.pmove.no_control_time <= 0 ) {
-		client->resp.snap.buttons |= ucmd->buttons;
-	}
+	client->resp.snap.buttons |= ucmd->buttons;
 
 	// generating plrkeys (optimized for net communication)
 	ClientMakePlrkeys( client, ucmd );

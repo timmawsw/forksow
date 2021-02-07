@@ -70,27 +70,232 @@ void GS_TraceLaserBeam( const gs_state_t * gs, trace_t * trace, Vec3 origin, Vec
 	}
 }
 
-SyncPlayerState::WeaponInfo * GS_FindWeapon( SyncPlayerState * player, WeaponType weapon ) {
-	for( size_t i = 0; i < ARRAY_COUNT( player->weapons ); i++ ) {
-		if( player->weapons[ i ].weapon == weapon ) {
-			return &player->weapons[ i ];
+static bool GS_CheckAmmoInWeapon( const SyncPlayerState * player, WeaponType weapon ) {
+	const WeaponDef * def = GS_GetWeaponDef( weapon );
+	return def->clip_size == 0 || player->weapons[ weapon - 1 ].ammo > 0;
+}
+
+enum TransitionType {
+	TransitionType_Normal,
+	TransitionType_NoReset,
+	TransitionType_ForceReset,
+};
+
+struct ItemStateTransition {
+	StringHash next;
+	TransitionType type;
+
+	ItemStateTransition() = default;
+
+	ItemStateTransition( StringHash name ) {
+		next = name;
+		type = TransitionType_Normal;
+	}
+};
+
+static ItemStateTransition NoReset( StringHash name ) {
+	ItemStateTransition t;
+	t.next = name;
+	t.type = TransitionType_NoReset;
+	return t;
+}
+
+static ItemStateTransition ForceReset( StringHash name ) {
+	ItemStateTransition t;
+	t.next = name;
+	t.type = TransitionType_ForceReset;
+	return t;
+}
+
+using ItemStateThinkCallback = ItemStateTransition ( * )( const gs_state_t * gs, StringHash state, s64 state_entry_time, s64 now, SyncPlayerState * ps, const usercmd_t * cmd );
+
+struct ItemState {
+	StringHash name;
+	ItemStateThinkCallback think;
+
+	ItemState( StringHash n, ItemStateThinkCallback t ) {
+		name = n;
+		think = t;
+	}
+};
+
+static ItemStateTransition GenericDelay( StringHash state, s64 state_entry_time, s64 now, s64 delay, StringHash next ) {
+	return now - state_entry_time >= delay ? next : state;
+}
+
+template< size_t N >
+constexpr static Span< const ItemState > MakeStateMachine( const ItemState ( &states )[ N ] ) {
+	return Span< const ItemState >( states, N );
+}
+
+static ItemState generic_gun_states[] = {
+	ItemState( "switch in", []( const gs_state_t * gs, StringHash state, s64 state_entry_time, s64 now, SyncPlayerState * ps, const usercmd_t * cmd ) -> ItemStateTransition {
+		const WeaponDef * def = GS_GetWeaponDef( ps->weapon );
+		return GenericDelay( state, state_entry_time, now, def->weaponup_time, "idle" );
+	} ),
+
+	ItemState( "idle", []( const gs_state_t * gs, StringHash state, s64 state_entry_time, s64 now, SyncPlayerState * ps, const usercmd_t * cmd ) -> ItemStateTransition {
+		const WeaponDef * def = GS_GetWeaponDef( ps->weapon );
+		SyncPlayerState::WeaponInfo * selected_weapon = GS_FindWeapon( ps, ps->weapon );
+
+		if( !GS_ShootingDisabled( gs ) ) {
+			if( cmd->buttons & BUTTON_ATTACK ) {
+				if( GS_CheckAmmoInWeapon( ps, ps->weapon ) ) {
+					gs->api.PredictedFireWeapon( ps->POVnum, ps->weapon );
+
+					if( def->clip_size > 0 ) {
+						selected_weapon->ammo--;
+						if( selected_weapon->ammo == 0 ) {
+							gs->api.PredictedEvent( ps->POVnum, EV_NOAMMOCLICK, 0 );
+						}
+					}
+
+					switch( def->firing_mode ) {
+						case FiringMode_Auto: return "firing";
+						case FiringMode_SemiAuto: return "firing semi-auto";
+						case FiringMode_Smooth: return "firing smooth";
+					}
+				}
+			}
+
+			if( cmd->buttons & BUTTON_RELOAD ) {
+				if( def->clip_size != 0 && selected_weapon->ammo < def->clip_size ) {
+					return "reloading";
+				}
+			}
+		}
+
+		if( cmd->buttons & BUTTON_SPECIAL ) {
+			// ...
+		}
+
+		if( cmd->weaponSwitch != Weapon_None && GS_CanEquip( ps, cmd->weaponSwitch ) ) {
+			// ...
+		}
+
+		return "idle";
+	} ),
+
+	ItemState( "firing", []( const gs_state_t * gs, StringHash state, s64 state_entry_time, s64 now, SyncPlayerState * ps, const usercmd_t * cmd ) -> ItemStateTransition {
+		const WeaponDef * def = GS_GetWeaponDef( ps->weapon );
+		return GenericDelay( state, state_entry_time, now, def->weapondown_time, "idle" );
+	} ),
+
+	ItemState( "firing semi-auto", []( const gs_state_t * gs, StringHash state, s64 state_entry_time, s64 now, SyncPlayerState * ps, const usercmd_t * cmd ) -> ItemStateTransition {
+		const WeaponDef * def = GS_GetWeaponDef( ps->weapon );
+		if( now - state_entry_time < def->refire_time )
+			return state;
+
+		if( cmd->buttons & BUTTON_ATTACK )
+			return state;
+
+		return NoReset( "firing" );
+	} ),
+
+	ItemState( "firing smooth", []( const gs_state_t * gs, StringHash state, s64 state_entry_time, s64 now, SyncPlayerState * ps, const usercmd_t * cmd ) -> ItemStateTransition {
+		const WeaponDef * def = GS_GetWeaponDef( ps->weapon );
+		if( now - state_entry_time < def->refire_time )
+			return state;
+
+		if( cmd->buttons & BUTTON_ATTACK ) {
+			gs->api.PredictedEvent( ps->POVnum, EV_SMOOTHREFIREWEAPON, ps->weapon );
+
+			SyncPlayerState::WeaponInfo * selected_weapon = GS_FindWeapon( ps, ps->weapon );
+			selected_weapon->ammo--;
+
+			if( selected_weapon->ammo == 0 ) {
+				gs->api.PredictedEvent( ps->POVnum, EV_NOAMMOCLICK, 0 );
+			}
+
+			return state;
+		}
+
+		return state;
+	} ),
+
+	ItemState( "reloading", []( const gs_state_t * gs, StringHash state, s64 state_entry_time, s64 now, SyncPlayerState * ps, const usercmd_t * cmd ) -> ItemStateTransition {
+		const WeaponDef * def = GS_GetWeaponDef( ps->weapon );
+		SyncPlayerState::WeaponInfo * selected_weapon = GS_FindWeapon( ps, ps->weapon );
+		if( ( cmd->buttons & BUTTON_ATTACK ) != 0 && GS_CheckAmmoInWeapon( ps, ps->weapon ) )
+			return "idle";
+
+		if( now - state_entry_time < def->reload_time )
+			return state;
+
+		if( def->staged_reloading ) {
+			selected_weapon->ammo++;
+			gs->api.PredictedEvent( ps->POVnum, EV_WEAPONACTIVATE, ps->weapon << 1 );
+			if( selected_weapon->ammo == def->clip_size )
+				return "idle";
+			return ForceReset( "reloading" );
+		}
+
+		selected_weapon->ammo = def->clip_size;
+		gs->api.PredictedEvent( ps->POVnum, EV_WEAPONACTIVATE, ps->weapon << 1 );
+
+		return "idle";
+	} ),
+
+	ItemState( "switch out", []( const gs_state_t * gs, StringHash state, s64 state_entry_time, s64 now, SyncPlayerState * ps, const usercmd_t * cmd ) -> ItemStateTransition {
+		const WeaponDef * def = GS_GetWeaponDef( ps->weapon );
+		return GenericDelay( state, state_entry_time, now, def->weapondown_time, "" );
+	} ),
+};
+
+constexpr static Span< const ItemState > generic_gun_state_machine = MakeStateMachine( generic_gun_states );
+
+static Span< const ItemState > FindItemStateMachine( SyncPlayerState * ps ) {
+	if( ps->weapon == Weapon_None )
+		return Span< ItemState >();
+	return generic_gun_state_machine;
+}
+
+static StringHash CombineHashes( Span< const ItemState > sm, StringHash name ) {
+	return StringHash( Hash64( &sm.ptr, sizeof( sm.ptr ), name.hash ) );
+}
+
+static const ItemState * FindState( Span< const ItemState > sm, StringHash name ) {
+	for( const ItemState & s : sm ) {
+		if( CombineHashes( sm, s.name ) == name ) {
+			return &s;
 		}
 	}
 
+	assert( false && "gg" );
 	return NULL;
 }
 
-static bool GS_CheckAmmoInWeapon( SyncPlayerState * player, WeaponType weapon ) {
-	const WeaponDef * def = GS_GetWeaponDef( weapon );
+void UpdateWeapons( const gs_state_t * gs, s64 now, SyncPlayerState * ps, const usercmd_t * cmd ) {
+	while( true ) {
+		Span< const ItemState > sm = FindItemStateMachine( ps );
+		if( sm.n == 0 )
+			break;
 
-	const SyncPlayerState::WeaponInfo * found_weapon = GS_FindWeapon( player, weapon );
-	if( found_weapon != NULL )
-		return def->clip_size == 0 || found_weapon->ammo > 0;
+		StringHash old_state = ps->new_weapon_state;
+		const ItemState * s = FindState( sm, old_state );
 
-	return false;
+		ItemStateTransition transition = s == NULL ? ItemStateTransition( sm[ 0 ].name ) : s->think( gs, old_state, ps->weapon_state_time, now, ps, cmd );
+		StringHash new_state = CombineHashes( sm, transition.next );
+
+		if( transition.type == TransitionType_Normal ) {
+			if( old_state == new_state )
+				break;
+			ps->new_weapon_state = new_state;
+			ps->weapon_state_time = now;
+		}
+		else if( transition.type == TransitionType_NoReset ) {
+			if( old_state == new_state )
+				break;
+			ps->new_weapon_state = new_state;
+		}
+		else {
+			ps->new_weapon_state = new_state;
+			ps->weapon_state_time = now;
+		}
+	}
 }
 
-WeaponType GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, const usercmd_t * cmd, int timeDelta ) {
+WeaponType GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, const usercmd_t * cmd ) {
 	bool refire = false;
 
 	assert( player->pending_weapon < Weapon_Count );
@@ -113,7 +318,7 @@ WeaponType GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player
 		return player->weapon;
 	}
 
-	int buttons = player->pmove.no_control_time > 0 ? 0 : cmd->buttons;
+	int buttons = cmd->buttons;
 
 	if( cmd->msec == 0 ) {
 		return player->weapon;
@@ -247,9 +452,9 @@ WeaponType GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player
 			if( buttons & BUTTON_ATTACK ) {
 				if( GS_CheckAmmoInWeapon( player, player->weapon ) ) {
 					player->weapon_time = def->refire_time;
-					player->weapon_state = def->mode == FiringMode_SemiAuto ? WeaponState_FiringSemiAuto : WeaponState_Firing;
+					player->weapon_state = def->firing_mode == FiringMode_SemiAuto ? WeaponState_FiringSemiAuto : WeaponState_Firing;
 
-					if( refire && def->mode == FiringMode_Smooth ) {
+					if( refire && def->firing_mode == FiringMode_Smooth ) {
 						gs->api.PredictedEvent( player->POVnum, EV_SMOOTHREFIREWEAPON, player->weapon );
 					}
 					else {

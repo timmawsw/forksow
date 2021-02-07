@@ -247,7 +247,6 @@ struct pmove_state_t {
 
 	u16 features;
 
-	s16 no_control_time;
 	s16 knockback_time;
 	s16 crouch_time;
 	s16 tbag_time;
@@ -280,8 +279,8 @@ struct SyncPlayerState {
 	// WeaponInfo weapons[ Weapon_Count ];
 
 	struct WeaponInfo {
-		WeaponType weapon;
-		int ammo;
+		bool owned;
+		s8 ammo;
 	};
 
 	WeaponInfo weapons[ Weapon_Count - 1 ];
@@ -303,6 +302,9 @@ struct SyncPlayerState {
 	WeaponType pending_weapon;
 	s16 weapon_time;
 	s16 zoom_time;
+
+	StringHash new_weapon_state;
+	s64 weapon_state_time;
 
 	int team;
 	int real_team;
@@ -730,17 +732,17 @@ struct WeaponDef {
 
 	int projectile_count;
 	int clip_size;
-	unsigned int reload_time;
+	s64 reload_time;
 	bool staged_reloading;
 
-	unsigned int weaponup_time;
-	unsigned int weapondown_time;
-	unsigned int refire_time;
-	unsigned int range;
+	s64 weaponup_time;
+	s64 weapondown_time;
+	s64 refire_time;
+	s64 range;
 	Vec2 recoil;
 	Vec2 recoil_min;
 	float recoil_recover;
-	FiringMode mode;
+	FiringMode firing_mode;
 
 	float zoom_fov;
 	float zoom_spread;
@@ -759,7 +761,6 @@ struct WeaponDef {
 };
 
 const WeaponDef * GS_GetWeaponDef( WeaponType weapon );
-SyncPlayerState::WeaponInfo * GS_FindWeapon( SyncPlayerState * player, WeaponType weapon );
 WeaponType MODToWeapon( int mod );
 WeaponType GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, const usercmd_t * cmd, int timeDelta );
 void GS_TraceBullet( const gs_state_t * gs, trace_t * trace, trace_t * wallbang_trace, Vec3 start, Vec3 dir, Vec3 right, Vec3 up, float r, float u, int range, int ignore, int timeDelta );

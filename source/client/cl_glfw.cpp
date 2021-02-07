@@ -620,6 +620,7 @@ int main( int argc, char ** argv ) {
 		AssignMonitorNumbers();
 	}
 
+	// TODO: init console buffer here
 	Qcommon_Init( argc, argv );
 
 	int64_t oldtime = Sys_Milliseconds();

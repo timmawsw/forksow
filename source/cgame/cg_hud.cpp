@@ -2609,7 +2609,7 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 
 	int num_weapons = 0;
 	for( size_t i = 0; i < ARRAY_COUNT( ps->weapons ); i++ ) {
-		if( ps->weapons[ i ].weapon != Weapon_None ) {
+		if( ps->weapons[ i ].owned ) {
 			num_weapons++;
 		}
 	}
@@ -2641,9 +2641,13 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 		Draw2DBox( curx + border + padding, cury + border + padding, iconw, iconh, cgs.media.shaderBombIcon, color );
 	}
 
-	for( int i = 0; i < num_weapons; i++ ) {
-		int curx = CG_HorizontalAlignForWidth( x + offx * ( i + bomb ), alignment, total_width );
-		int cury = CG_VerticalAlignForHeight( y + offy * ( i + bomb ), alignment, total_height );
+	int n = 0;
+	for( WeaponType i = Weapon_None + 1; i < Weapon_Count; i++ ) {
+		if( !ps->weapons[ i - 1 ].owned )
+			continue;
+
+		int curx = CG_HorizontalAlignForWidth( x + offx * ( n + bomb ), alignment, total_width );
+		int cury = CG_VerticalAlignForHeight( y + offy * ( n + bomb ), alignment, total_height );
 
 		WeaponType weap = ps->weapons[ i ].weapon;
 		int ammo = ps->weapons[ i ].ammo;
@@ -2695,18 +2699,17 @@ static void CG_DrawWeaponIcons( int x, int y, int offx, int offy, int iw, int ih
 			DrawText( GetHUDFont(), font_size, va( "%i", ammo ), Alignment_CenterMiddle, curx + iw*0.5f, cury - ih * 0.25f - pady_sel, color, layout_cursor_font_border );
 		}
 
-		// weapon slot binds start from index 1, use drawn_weapons for actual loadout index
-		char bind[ 32 ];
 
 		// UNBOUND can look real stupid so bump size down a bit in case someone is scrolling. this still doesnt fit
 		const float bind_font_size = font_size * 0.55f;
 
 		// first try the weapon specific bind
+		char bind[ 32 ];
 		if( !CG_GetBoundKeysString( va( "use %s", def->short_name ), bind, sizeof( bind ) ) ) {
-			CG_GetBoundKeysString( va( "weapon %i", i + 1 ), bind, sizeof( bind ) );
+			CG_GetBoundKeysString( va( "weapon %i", n + 1 ), bind, sizeof( bind ) );
 		}
 
-		DrawText( GetHUDFont(), bind_font_size, va( "[ %s ]", bind) , Alignment_CenterMiddle, curx + iw*0.5f, cury + ih * 1.2f - pady_sel, layout_cursor_color, layout_cursor_font_border );
+		DrawText( GetHUDFont(), bind_font_size, va( "[ %s ]", bind) , Alignment_CenterMiddle, curx + iw * 0.5f, cury + ih * 1.2f - pady_sel, layout_cursor_color, layout_cursor_font_border );
 	}
 }
 
