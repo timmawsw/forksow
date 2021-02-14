@@ -194,7 +194,8 @@ Vec3 LerpAngles( Vec3 a, float t, Vec3 b ) {
 * returns angle normalized to the range [0 <= angle < 360]
 */
 float AngleNormalize360( float angle ) {
-	return angle - 360.0f * floorf( angle / 360.0f );
+	return PositiveMod( angle, 360.0f );
+	// return angle - 360.0f * floorf( angle / 360.0f );
 }
 
 /*
