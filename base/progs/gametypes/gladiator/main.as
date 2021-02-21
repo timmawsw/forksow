@@ -705,9 +705,8 @@ void GT_PlayerRespawn( Entity @ent, int old_team, int new_team ) {
 		if( weap2 >= weap1 )
 			weap2++;
 
-		ent.client.giveWeapon( WeaponType( weap1 ) );
 		ent.client.giveWeapon( WeaponType( weap2 ) );
-		ent.client.selectWeapon( 0 );
+		ent.client.giveWeapon( WeaponType( weap1 ) );
 		ent.respawnEffect();
 	}
 }

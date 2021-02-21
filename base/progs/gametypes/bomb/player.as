@@ -30,14 +30,16 @@ class cPlayer {
 		this.client.inventoryClear();
 		this.client.giveWeapon( Weapon_Knife );
 
+		/*
+		 * give in order from weakest to strongest so they auto select
+		 * their strongest gun
+		 */
 		for( uint i = 0; i < loadout.length; i++ ) {
-			if( loadout[ i ] != Weapon_None ) {
-				this.client.giveWeapon( this.loadout[ i ] );
+			uint idx = loadout.length - i - 1;
+			if( loadout[ idx ] != Weapon_None ) {
+				this.client.giveWeapon( this.loadout[ idx ] );
 			}
 		}
-
-		this.client.selectWeapon( 0 );
-		this.client.selectWeapon( 1 );
 	}
 
 	void showShop() {

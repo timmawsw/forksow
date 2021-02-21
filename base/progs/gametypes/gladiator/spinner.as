@@ -36,9 +36,8 @@ void spinner_think( Entity@ self ) {
 		Entity @ent = @team.ent( j );
 
 		ent.client.inventoryClear();
-		ent.client.giveWeapon( WeaponType( weapon1 ) );
 		ent.client.giveWeapon( WeaponType( weapon2 ) );
-		ent.client.selectWeapon( 0 );
+		ent.client.giveWeapon( WeaponType( weapon1 ) );
 
 		if( last ) {
 			ent.client.pmoveFeatures = ent.client.pmoveFeatures | PMFEAT_WEAPONSWITCH | PMFEAT_SCOPE;

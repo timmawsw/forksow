@@ -136,7 +136,7 @@ static ItemState generic_gun_states[] = {
 
 	ItemState( "idle", []( const gs_state_t * gs, StringHash state, s64 state_entry_time, s64 now, SyncPlayerState * ps, const usercmd_t * cmd ) -> ItemStateTransition {
 		const WeaponDef * def = GS_GetWeaponDef( ps->weapon );
-		SyncPlayerState::WeaponInfo * selected_weapon = GS_FindWeapon( ps, ps->weapon );
+		SyncPlayerState::WeaponInfo * selected_weapon = &ps->weapons[ ps->weapon ];
 
 		if( !GS_ShootingDisabled( gs ) ) {
 			if( cmd->buttons & BUTTON_ATTACK ) {
@@ -200,10 +200,8 @@ static ItemState generic_gun_states[] = {
 		if( cmd->buttons & BUTTON_ATTACK ) {
 			gs->api.PredictedEvent( ps->POVnum, EV_SMOOTHREFIREWEAPON, ps->weapon );
 
-			SyncPlayerState::WeaponInfo * selected_weapon = GS_FindWeapon( ps, ps->weapon );
-			selected_weapon->ammo--;
-
-			if( selected_weapon->ammo == 0 ) {
+			ps->weapons[ ps->weapon ].ammo--;
+			if( ps->weapons[ ps->weapon ].ammo == 0 ) {
 				gs->api.PredictedEvent( ps->POVnum, EV_NOAMMOCLICK, 0 );
 			}
 
@@ -215,7 +213,7 @@ static ItemState generic_gun_states[] = {
 
 	ItemState( "reloading", []( const gs_state_t * gs, StringHash state, s64 state_entry_time, s64 now, SyncPlayerState * ps, const usercmd_t * cmd ) -> ItemStateTransition {
 		const WeaponDef * def = GS_GetWeaponDef( ps->weapon );
-		SyncPlayerState::WeaponInfo * selected_weapon = GS_FindWeapon( ps, ps->weapon );
+		SyncPlayerState::WeaponInfo * selected_weapon = &ps->weapons[ ps->weapon ];
 		if( ( cmd->buttons & BUTTON_ATTACK ) != 0 && GS_CheckAmmoInWeapon( ps, ps->weapon ) )
 			return "idle";
 
@@ -295,6 +293,7 @@ void UpdateWeapons( const gs_state_t * gs, s64 now, SyncPlayerState * ps, const 
 	}
 }
 
+/*
 WeaponType GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player, const usercmd_t * cmd ) {
 	bool refire = false;
 
@@ -478,10 +477,8 @@ WeaponType GS_ThinkPlayerWeapon( const gs_state_t * gs, SyncPlayerState * player
 
 	return player->weapon;
 }
+*/
 
-bool GS_CanEquip( SyncPlayerState * player, WeaponType weapon ) {
-	if( GS_FindWeapon( player, weapon ) != NULL )
-		return ( player->pmove.features & PMFEAT_WEAPONSWITCH );
-
-	return false;
+bool GS_CanEquip( SyncPlayerState * ps, WeaponType weapon ) {
+	return ( ps->pmove.features & PMFEAT_WEAPONSWITCH ) != 0 && ps->weapons[ weapon ].owned;
 }

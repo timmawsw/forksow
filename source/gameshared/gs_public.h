@@ -275,8 +275,6 @@ struct SyncPlayerState {
 	//
 	// struct GrenadeInfo { short count; };
 	// struct RechargableCloakingDeviceInfo { float energy; };
-	//
-	// WeaponInfo weapons[ Weapon_Count ];
 
 	struct WeaponInfo {
 		bool owned;

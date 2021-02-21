@@ -400,7 +400,7 @@ static WeaponType CG_UseWeaponStep( SyncPlayerState * ps, bool next, WeaponType 
 		return Weapon_Count;
 
 	size_t num_weapons = ARRAY_COUNT( ps->weapons );
-	
+
 	int weapon;
 	for( weapon = 0; weapon < num_weapons; weapon++ ) { //find the basis weapon
 		if( ps->weapons[ weapon ].weapon == predicted_equipped_weapon ) {
